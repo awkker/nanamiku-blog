@@ -113,12 +113,13 @@ const socialLinks = copy.socialLinks
             <div class="space-y-4">
               <div class="flex items-center gap-3">
                 <img
+                  id="about-profile-avatar"
                   src="/picture/author.jpg"
                   alt={copy.profileCard.avatarAlt}
                   class="h-14 w-14 rounded-xl border border-slate-200 object-cover"
                 />
                 <div>
-                  <p class="text-base font-semibold text-slate-900">{copy.profileCard.name}</p>
+                  <p id="about-profile-name" class="text-base font-semibold text-slate-900">{copy.profileCard.name}</p>
                   <p class="text-xs text-slate-500">{copy.profileCard.role}</p>
                 </div>
               </div>
@@ -359,6 +360,8 @@ const socialLinks = copy.socialLinks
       const progressBar = document.getElementById('scroll-progress')
       const backToTop = document.getElementById('back-to-top')
       const topNav = document.querySelector('[data-blog-topnav]')
+      const aboutProfileAvatar = document.getElementById('about-profile-avatar')
+      const aboutProfileName = document.getElementById('about-profile-name')
 
       const updateScrollUI = () => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop
@@ -381,6 +384,31 @@ const socialLinks = copy.socialLinks
       window.addEventListener('scroll', updateScrollUI, { passive: true })
       window.addEventListener('resize', updateScrollUI, { passive: true })
       updateScrollUI()
+
+      const hydrateAboutProfile = async () => {
+        try {
+          const response = await fetch('/api/v1/author-profile', { credentials: 'include' })
+          const payload = await response.json()
+          if (!response.ok || payload?.code !== 0 || !payload?.data) {
+            return
+          }
+
+          const displayName = String(payload.data.display_name || payload.data.username || '').trim()
+          const avatarURL = String(payload.data.avatar_url || '').trim()
+
+          if (displayName && aboutProfileName) {
+            aboutProfileName.textContent = displayName
+          }
+
+          if (avatarURL && aboutProfileAvatar instanceof HTMLImageElement) {
+            aboutProfileAvatar.src = avatarURL
+          }
+        } catch {
+          // keep copy fallback
+        }
+      }
+
+      void hydrateAboutProfile()
 
       backToTop?.addEventListener('click', () => {
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches

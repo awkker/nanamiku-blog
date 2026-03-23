@@ -3,6 +3,14 @@ SELECT id, username, email, password_hash, role, status, display_name, avatar_ur
 FROM admin_users
 WHERE username = $1 AND status = 'active';
 
+-- name: GetAdminByIdentifier :one
+SELECT id, username, email, password_hash, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
+FROM admin_users
+WHERE (username = $1 OR lower(email) = lower($1))
+  AND status = 'active'
+ORDER BY created_at ASC
+LIMIT 1;
+
 -- name: GetAdminByID :one
 SELECT id, username, email, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
 FROM admin_users
@@ -23,6 +31,18 @@ UPDATE admin_users
 SET password_hash = $2, updated_at = now()
 WHERE username = $1
 RETURNING id;
+
+-- name: UpdateAdminPasswordByID :exec
+UPDATE admin_users
+SET password_hash = $2, updated_at = now()
+WHERE id = $1;
+
+-- name: UpdateAdminAccount :exec
+UPDATE admin_users
+SET username = $2,
+    email = $3,
+    updated_at = now()
+WHERE id = $1;
 
 -- name: UpdateAdminProfile :exec
 UPDATE admin_users

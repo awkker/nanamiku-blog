@@ -1,0 +1,19 @@
+---
+import BaseHead from '../../components/base/BaseHead.astro'
+import AdminProfileManager from '../../components/admin/AdminProfileManager.vue'
+import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
+import AdminLayout from '../../layouts/AdminLayout.astro'
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title="个人设置 | Miku Blog" description="后台个人设置" />
+    <AdminRouteGuard />
+  </head>
+  <body>
+    <AdminLayout activeKey="profile" pageTitle="个人设置">
+      <AdminProfileManager client:load />
+    </AdminLayout>
+  </body>
+</html>

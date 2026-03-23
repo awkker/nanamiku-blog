@@ -133,7 +133,7 @@ export function hydrateAuth() {
 export async function loginWithPassword(identifier: string, password: string) {
   try {
     const pair = await api.post<TokenPair>('/auth/login', {
-      username: identifier.trim(),
+      identifier: identifier.trim(),
       password: password.trim(),
     })
 
@@ -189,6 +189,32 @@ export async function updateMyProfile(displayName: string, avatarURL: string) {
   const me = await api.put<MeResponse>('/auth/me', {
     display_name: displayName,
     avatar_url: avatarURL,
+  })
+
+  const user = toAuthUser(me)
+  const current = authState.get()
+  authState.set({
+    status: current.status === 'authenticated' ? 'authenticated' : 'guest',
+    token: current.token,
+    user: current.status === 'authenticated' ? user : null,
+  })
+
+  if (isBrowser()) {
+    try {
+      window.localStorage.setItem(USER_KEY, JSON.stringify(user))
+    } catch {
+      // ignore storage write error
+    }
+  }
+
+  return user
+}
+
+export async function updateMyAccount(username: string, email: string, newPassword: string) {
+  const me = await api.put<MeResponse>('/auth/account', {
+    username,
+    email,
+    new_password: newPassword,
   })
 
   const user = toAuthUser(me)

@@ -104,8 +104,8 @@ const createMoment = `-- name: CreateMoment :one
 INSERT INTO moments (author_name, author_avatar_url, content, image_urls, ip_hash, ua_hash, publish_status, published_at, scheduled_at)
 VALUES (
     $1, $2, $3, $4, $5, $6, $7,
-    CASE WHEN $7 = 'published'::moment_publish_status THEN now() ELSE NULL END,
-    CASE WHEN $7 = 'scheduled'::moment_publish_status THEN $8 ELSE NULL END
+    CASE WHEN $7 = 'published'::moment_publish_status THEN now() ELSE NULL::timestamptz END,
+    CASE WHEN $7 = 'scheduled'::moment_publish_status THEN $8::timestamptz ELSE NULL::timestamptz END
 )
 RETURNING id, created_at
 `
@@ -118,7 +118,7 @@ type CreateMomentParams struct {
 	IpHash          string              `json:"ip_hash"`
 	UaHash          string              `json:"ua_hash"`
 	PublishStatus   MomentPublishStatus `json:"publish_status"`
-	Column8         interface{}         `json:"column_8"`
+	Column8         time.Time           `json:"column_8"`
 }
 
 type CreateMomentRow struct {
@@ -240,6 +240,15 @@ UPDATE moments SET repost_count = GREATEST(repost_count - 1, 0) WHERE id = $1
 
 func (q *Queries) DecrementMomentRepostCount(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, decrementMomentRepostCount, id)
+	return err
+}
+
+const deleteMoment = `-- name: DeleteMoment :exec
+DELETE FROM moments WHERE id = $1
+`
+
+func (q *Queries) DeleteMoment(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteMoment, id)
 	return err
 }
 

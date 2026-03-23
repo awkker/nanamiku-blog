@@ -41,11 +41,11 @@
     >
       <MikuInput
         v-model="identifier"
-        label="用户名"
-        placeholder="admin"
+        label="用户名或邮箱"
+        placeholder="admin 或 admin@miku.blog"
         autocomplete="username"
         :error="errors.identifier"
-        aria-label="用户名"
+        aria-label="用户名或邮箱"
         @focus="clearAuthError"
         required
       />
@@ -160,7 +160,7 @@ onMounted(() => {
 })
 
 function validate() {
-  errors.identifier = identifier.value.trim() ? '' : '用户名不能为空'
+  errors.identifier = identifier.value.trim() ? '' : '账号不能为空'
   errors.password = password.value.trim() ? '' : '密码不能为空'
   return !errors.identifier && !errors.password
 }

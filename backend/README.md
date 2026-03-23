@@ -143,7 +143,7 @@ Server runs at `http://localhost:8080`.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/health` | Health check |
-| POST | `/api/v1/auth/login` | Admin login |
+| POST | `/api/v1/auth/login` | Admin login (username or email) |
 | POST | `/api/v1/auth/refresh` | Refresh token |
 | POST | `/api/v1/auth/logout` | Logout |
 | GET | `/api/v1/guestbook/messages` | List guestbook messages |
@@ -171,6 +171,7 @@ Server runs at `http://localhost:8080`.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/auth/me` | Current admin info |
+| PUT | `/api/v1/auth/account` | Update admin login account (username/email/password) |
 | GET | `/api/v1/admin/dashboard/stats` | Dashboard stats |
 | GET | `/api/v1/admin/dashboard/trend/views` | View trend |
 | GET | `/api/v1/admin/dashboard/trend/comments` | Comment trend |

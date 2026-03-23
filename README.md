@@ -125,6 +125,7 @@ npm run dev                   # 启动开发服务器 :4321
 
 | 模块 | 端点 |
 |------|------|
+| 账号设置 | `GET /auth/me` `PUT /auth/me` `PUT /auth/account` |
 | 仪表盘 | `GET /dashboard/stats` `GET /dashboard/trend/views\|comments\|likes` `GET /dashboard/analytics?range=24h\|7d\|30d&offset=0` |
 | 文章管理 | `GET\|POST /posts` `PUT\|DELETE /posts/:id` `POST /posts/:id/publish\|unpublish\|schedule` |
 | 说说管理 | `GET\|POST /moments` `PUT /moments/:id` `POST /moments/:id/publish\|unpublish\|schedule` |

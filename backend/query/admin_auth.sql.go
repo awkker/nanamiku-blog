@@ -113,6 +113,48 @@ func (q *Queries) GetAdminByID(ctx context.Context, id uuid.UUID) (GetAdminByIDR
 	return i, err
 }
 
+const getAdminByIdentifier = `-- name: GetAdminByIdentifier :one
+SELECT id, username, email, password_hash, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
+FROM admin_users
+WHERE (username = $1 OR lower(email) = lower($1))
+  AND status = 'active'
+ORDER BY created_at ASC
+LIMIT 1
+`
+
+type GetAdminByIdentifierRow struct {
+	ID           uuid.UUID          `json:"id"`
+	Username     string             `json:"username"`
+	Email        string             `json:"email"`
+	PasswordHash string             `json:"password_hash"`
+	Role         string             `json:"role"`
+	Status       string             `json:"status"`
+	DisplayName  string             `json:"display_name"`
+	AvatarUrl    string             `json:"avatar_url"`
+	LastLoginAt  pgtype.Timestamptz `json:"last_login_at"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+}
+
+func (q *Queries) GetAdminByIdentifier(ctx context.Context, username string) (GetAdminByIdentifierRow, error) {
+	row := q.db.QueryRow(ctx, getAdminByIdentifier, username)
+	var i GetAdminByIdentifierRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+		&i.Status,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.LastLoginAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getAdminByUsername = `-- name: GetAdminByUsername :one
 SELECT id, username, email, password_hash, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
 FROM admin_users
@@ -222,12 +264,47 @@ func (q *Queries) TouchRefreshToken(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const updateAdminAccount = `-- name: UpdateAdminAccount :exec
+UPDATE admin_users
+SET username = $2,
+    email = $3,
+    updated_at = now()
+WHERE id = $1
+`
+
+type UpdateAdminAccountParams struct {
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+}
+
+func (q *Queries) UpdateAdminAccount(ctx context.Context, arg UpdateAdminAccountParams) error {
+	_, err := q.db.Exec(ctx, updateAdminAccount, arg.ID, arg.Username, arg.Email)
+	return err
+}
+
 const updateAdminLastLogin = `-- name: UpdateAdminLastLogin :exec
 UPDATE admin_users SET last_login_at = now() WHERE id = $1
 `
 
 func (q *Queries) UpdateAdminLastLogin(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, updateAdminLastLogin, id)
+	return err
+}
+
+const updateAdminPasswordByID = `-- name: UpdateAdminPasswordByID :exec
+UPDATE admin_users
+SET password_hash = $2, updated_at = now()
+WHERE id = $1
+`
+
+type UpdateAdminPasswordByIDParams struct {
+	ID           uuid.UUID `json:"id"`
+	PasswordHash string    `json:"password_hash"`
+}
+
+func (q *Queries) UpdateAdminPasswordByID(ctx context.Context, arg UpdateAdminPasswordByIDParams) error {
+	_, err := q.db.Exec(ctx, updateAdminPasswordByID, arg.ID, arg.PasswordHash)
 	return err
 }
 

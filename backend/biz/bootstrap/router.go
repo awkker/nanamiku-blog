@@ -99,6 +99,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 		{
 			authed.GET("/me", authH.Me)
 			authed.PUT("/me", authH.UpdateMe)
+			authed.PUT("/account", authH.UpdateAccount)
 		}
 
 		// Guestbook
@@ -186,6 +187,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 			adm.POST("/moments/:id/publish", momentsAdminH.Publish)
 			adm.POST("/moments/:id/unpublish", momentsAdminH.Unpublish)
 			adm.POST("/moments/:id/schedule", momentsAdminH.Schedule)
+			adm.DELETE("/moments/:id", momentsAdminH.Delete)
 
 			// Backup export
 			adm.GET("/backup/export", backupH.Export)

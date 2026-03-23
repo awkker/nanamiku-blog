@@ -193,6 +193,20 @@ func (h *MomentsAdminHandler) Schedule(ctx context.Context, c *app.RequestContex
 	c.JSON(consts.StatusOK, dto.OK(nil))
 }
 
+func (h *MomentsAdminHandler) Delete(ctx context.Context, c *app.RequestContext) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid moment id"))
+		return
+	}
+	if err := h.svc.Delete(ctx, id); err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "delete moment failed"))
+		return
+	}
+	_ = h.modSvc.LogAudit(ctx, getAdminID(c), "delete", "moment", id.String(), nil, getClientIP(c))
+	c.JSON(consts.StatusOK, dto.OK(nil))
+}
+
 func parseMomentPublish(status, scheduledAt string) (string, *time.Time, bool) {
 	if status == "" {
 		status = "published"

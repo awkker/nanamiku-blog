@@ -37,8 +37,8 @@ WHERE id = $1;
 INSERT INTO moments (author_name, author_avatar_url, content, image_urls, ip_hash, ua_hash, publish_status, published_at, scheduled_at)
 VALUES (
     $1, $2, $3, $4, $5, $6, $7,
-    CASE WHEN $7 = 'published'::moment_publish_status THEN now() ELSE NULL END,
-    CASE WHEN $7 = 'scheduled'::moment_publish_status THEN $8 ELSE NULL END
+    CASE WHEN $7 = 'published'::moment_publish_status THEN now() ELSE NULL::timestamptz END,
+    CASE WHEN $7 = 'scheduled'::moment_publish_status THEN $8::timestamptz ELSE NULL::timestamptz END
 )
 RETURNING id, created_at;
 
@@ -48,6 +48,9 @@ SET author_name = $2, author_avatar_url = $3, content = $4, image_urls = $5, pub
     published_at = CASE WHEN $6 = 'published'::moment_publish_status THEN COALESCE(published_at, now()) ELSE NULL END,
     scheduled_at = CASE WHEN $6 = 'scheduled'::moment_publish_status THEN $7 ELSE NULL END
 WHERE id = $1;
+
+-- name: DeleteMoment :exec
+DELETE FROM moments WHERE id = $1;
 
 -- name: CheckMomentLike :one
 SELECT count(*) FROM moment_likes WHERE moment_id = $1 AND visitor_id = $2;

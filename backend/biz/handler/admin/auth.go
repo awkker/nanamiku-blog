@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"nanamiku-blog/backend/biz/dto"
 	"nanamiku-blog/backend/biz/errcode"
@@ -22,18 +23,32 @@ func NewAuthHandler(authSvc *service.AuthService) *AuthHandler {
 }
 
 type loginRequest struct {
-	Username string `json:"username" vd:"len($)>0"`
-	Password string `json:"password" vd:"len($)>0"`
+	Identifier string `json:"identifier"`
+	Username   string `json:"username"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
 }
 
 func (h *AuthHandler) Login(ctx context.Context, c *app.RequestContext) {
 	var req loginRequest
-	if err := c.BindAndValidate(&req); err != nil {
+	if err := c.BindJSON(&req); err != nil {
 		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request body"))
 		return
 	}
 
-	pair, err := h.authSvc.Login(ctx, req.Username, req.Password)
+	identifier := strings.TrimSpace(req.Identifier)
+	if identifier == "" {
+		identifier = strings.TrimSpace(req.Username)
+	}
+	if identifier == "" {
+		identifier = strings.TrimSpace(req.Email)
+	}
+	if identifier == "" || strings.TrimSpace(req.Password) == "" {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "identifier and password required"))
+		return
+	}
+
+	pair, err := h.authSvc.Login(ctx, identifier, req.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
 			c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrInvalidCredentials, "invalid username or password"))
@@ -132,6 +147,12 @@ type updateMeRequest struct {
 	AvatarURL   string `json:"avatar_url"`
 }
 
+type updateAccountRequest struct {
+	Username    string `json:"username"`
+	Email       string `json:"email"`
+	NewPassword string `json:"new_password"`
+}
+
 func (h *AuthHandler) UpdateMe(ctx context.Context, c *app.RequestContext) {
 	adminIDVal, exists := c.Get("admin_id")
 	if !exists {
@@ -154,6 +175,55 @@ func (h *AuthHandler) UpdateMe(ctx context.Context, c *app.RequestContext) {
 	admin, err := h.authSvc.UpdateProfile(ctx, adminID, req.DisplayName, req.AvatarURL)
 	if err != nil {
 		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to update admin profile"))
+		return
+	}
+
+	c.JSON(consts.StatusOK, dto.OK(map[string]interface{}{
+		"id":            admin.ID,
+		"username":      admin.Username,
+		"display_name":  admin.DisplayName,
+		"avatar_url":    admin.AvatarUrl,
+		"email":         admin.Email,
+		"role":          admin.Role,
+		"last_login_at": admin.LastLoginAt,
+		"created_at":    admin.CreatedAt,
+	}))
+}
+
+func (h *AuthHandler) UpdateAccount(ctx context.Context, c *app.RequestContext) {
+	adminIDVal, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	adminID, ok := adminIDVal.(uuid.UUID)
+	if !ok {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	var req updateAccountRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
+		return
+	}
+
+	admin, _, err := h.authSvc.UpdateAccount(ctx, adminID, service.UpdateAccountInput{
+		Username:    req.Username,
+		Email:       req.Email,
+		NewPassword: req.NewPassword,
+	})
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidAccount) || errors.Is(err, service.ErrWeakPassword) {
+			c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, err.Error()))
+			return
+		}
+		if errors.Is(err, service.ErrAccountConflict) {
+			c.JSON(consts.StatusConflict, dto.Err(errcode.ErrConflict, "username or email already exists"))
+			return
+		}
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to update account"))
 		return
 	}
 

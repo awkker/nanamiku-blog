@@ -67,6 +67,7 @@ type Querier interface {
 	DeleteFriendLink(ctx context.Context, id uuid.UUID) error
 	DeleteGuestbookMessage(ctx context.Context, id uuid.UUID) error
 	DeleteGuestbookVote(ctx context.Context, arg DeleteGuestbookVoteParams) error
+	DeleteMoment(ctx context.Context, id uuid.UUID) error
 	DeleteMomentCommentLike(ctx context.Context, arg DeleteMomentCommentLikeParams) error
 	DeleteMomentLike(ctx context.Context, arg DeleteMomentLikeParams) error
 	DeleteMomentRepost(ctx context.Context, arg DeleteMomentRepostParams) error
@@ -74,6 +75,7 @@ type Querier interface {
 	DeletePostLike(ctx context.Context, arg DeletePostLikeParams) error
 	ExportBackupPayload(ctx context.Context) (json.RawMessage, error)
 	GetAdminByID(ctx context.Context, id uuid.UUID) (GetAdminByIDRow, error)
+	GetAdminByIdentifier(ctx context.Context, username string) (GetAdminByIdentifierRow, error)
 	GetAdminByUsername(ctx context.Context, username string) (GetAdminByUsernameRow, error)
 	GetAnalyticsAverageVisitDurationSeconds(ctx context.Context, arg GetAnalyticsAverageVisitDurationSecondsParams) (float64, error)
 	GetAnalyticsTrafficHeatmap(ctx context.Context, arg GetAnalyticsTrafficHeatmapParams) ([]GetAnalyticsTrafficHeatmapRow, error)
@@ -155,7 +157,9 @@ type Querier interface {
 	TouchVisitor(ctx context.Context, id uuid.UUID) error
 	UnpublishMoment(ctx context.Context, id uuid.UUID) error
 	UnpublishPost(ctx context.Context, arg UnpublishPostParams) error
+	UpdateAdminAccount(ctx context.Context, arg UpdateAdminAccountParams) error
 	UpdateAdminLastLogin(ctx context.Context, id uuid.UUID) error
+	UpdateAdminPasswordByID(ctx context.Context, arg UpdateAdminPasswordByIDParams) error
 	UpdateAdminPasswordByUsername(ctx context.Context, arg UpdateAdminPasswordByUsernameParams) (uuid.UUID, error)
 	UpdateAdminProfile(ctx context.Context, arg UpdateAdminProfileParams) error
 	UpdateFriendLink(ctx context.Context, arg UpdateFriendLinkParams) error

@@ -136,9 +136,9 @@ func (s *MomentsService) Create(ctx context.Context, in CreateMomentInput) (*Mom
 		in.AuthorAvatar = DefaultAdminAvatarURL
 	}
 
-	var scheduledAt interface{}
+	scheduledAt := time.Now()
 	if in.ScheduledAt != nil {
-		scheduledAt = pgtype.Timestamptz{Time: *in.ScheduledAt, Valid: true}
+		scheduledAt = *in.ScheduledAt
 	}
 
 	row, err := s.q.CreateMoment(ctx, query.CreateMomentParams{
@@ -196,6 +196,10 @@ func (s *MomentsService) Update(ctx context.Context, momentID uuid.UUID, authorN
 		PublishStatus:   query.MomentPublishStatus(publishStatus),
 		ScheduledAt:     scheduledAtValue,
 	})
+}
+
+func (s *MomentsService) Delete(ctx context.Context, momentID uuid.UUID) error {
+	return s.q.DeleteMoment(ctx, momentID)
 }
 
 func (s *MomentsService) ToggleLike(ctx context.Context, momentID, visitorID uuid.UUID) (bool, error) {

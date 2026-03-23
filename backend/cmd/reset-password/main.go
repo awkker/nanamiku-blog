@@ -82,8 +82,8 @@ func main() {
 
 func validatePassword(password string) error {
 	runes := []rune(password)
-	if len(runes) < 10 {
-		return fmt.Errorf("must be at least 10 characters")
+	if len(runes) < 6 {
+		return fmt.Errorf("must be at least 6 characters")
 	}
 
 	hasLetter := false

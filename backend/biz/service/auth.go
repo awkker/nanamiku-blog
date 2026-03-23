@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"nanamiku-blog/backend/query"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,6 +24,9 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrTokenExpired       = errors.New("token expired or revoked")
 	ErrTokenInvalid       = errors.New("invalid token")
+	ErrAccountConflict    = errors.New("account conflict")
+	ErrInvalidAccount     = errors.New("invalid account")
+	ErrWeakPassword       = errors.New("weak password")
 )
 
 const DefaultAdminAvatarURL = "/picture/author.jpg"
@@ -65,8 +70,14 @@ type AdminPublicProfile struct {
 	AvatarURL   string `json:"avatar_url"`
 }
 
-func (s *AuthService) Login(ctx context.Context, username, password string) (*TokenPair, error) {
-	admin, err := s.q.GetAdminByUsername(ctx, username)
+type UpdateAccountInput struct {
+	Username    string
+	Email       string
+	NewPassword string
+}
+
+func (s *AuthService) Login(ctx context.Context, identifier, password string) (*TokenPair, error) {
+	admin, err := s.q.GetAdminByIdentifier(ctx, strings.TrimSpace(identifier))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrInvalidCredentials
@@ -204,6 +215,87 @@ func (s *AuthService) UpdateProfile(ctx context.Context, adminID uuid.UUID, disp
 	return updated, nil
 }
 
+func (s *AuthService) UpdateAccount(ctx context.Context, adminID uuid.UUID, input UpdateAccountInput) (*query.GetAdminByIDRow, bool, error) {
+	current, err := s.GetAdminInfo(ctx, adminID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	nextUsername := strings.TrimSpace(input.Username)
+	if nextUsername == "" {
+		return nil, false, fmt.Errorf("%w: username cannot be empty", ErrInvalidAccount)
+	}
+
+	nextEmail := strings.ToLower(strings.TrimSpace(input.Email))
+	if nextEmail == "" || !strings.Contains(nextEmail, "@") {
+		return nil, false, fmt.Errorf("%w: email format invalid", ErrInvalidAccount)
+	}
+
+	nextPassword := strings.TrimSpace(input.NewPassword)
+	if nextPassword != "" {
+		if err := validateAdminPassword(nextPassword); err != nil {
+			return nil, false, fmt.Errorf("%w: %v", ErrWeakPassword, err)
+		}
+	}
+
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, false, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	qtx := s.q.WithTx(tx)
+	passwordChanged := false
+
+	if current.Username != nextUsername || current.Email != nextEmail {
+		if updateErr := qtx.UpdateAdminAccount(ctx, query.UpdateAdminAccountParams{
+			ID:       adminID,
+			Username: nextUsername,
+			Email:    nextEmail,
+		}); updateErr != nil {
+			if isUniqueViolation(updateErr) {
+				return nil, false, ErrAccountConflict
+			}
+			return nil, false, fmt.Errorf("update admin account: %w", updateErr)
+		}
+	}
+
+	if nextPassword != "" {
+		hash, hashErr := HashPassword(nextPassword)
+		if hashErr != nil {
+			return nil, false, fmt.Errorf("hash password: %w", hashErr)
+		}
+		if updateErr := qtx.UpdateAdminPasswordByID(ctx, query.UpdateAdminPasswordByIDParams{
+			ID:           adminID,
+			PasswordHash: hash,
+		}); updateErr != nil {
+			return nil, false, fmt.Errorf("update admin password: %w", updateErr)
+		}
+		passwordChanged = true
+	}
+
+	if passwordChanged || current.Username != nextUsername || current.Email != nextEmail {
+		if revokeErr := qtx.RevokeAllUserTokens(ctx, adminID); revokeErr != nil {
+			return nil, false, fmt.Errorf("revoke old sessions: %w", revokeErr)
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, false, fmt.Errorf("commit tx: %w", err)
+	}
+
+	updated, err := s.GetAdminInfo(ctx, adminID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return updated, passwordChanged, nil
+}
+
 func (s *AuthService) ValidateAccessToken(tokenStr string) (*AdminClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &AdminClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -274,4 +366,36 @@ func HashPassword(password string) (string, error) {
 func hashToken(raw string) string {
 	h := sha256.Sum256([]byte(raw))
 	return hex.EncodeToString(h[:])
+}
+
+func validateAdminPassword(password string) error {
+	runes := []rune(password)
+	if len(runes) < 6 {
+		return fmt.Errorf("must be at least 6 characters")
+	}
+
+	hasLetter := false
+	hasDigit := false
+	for _, r := range runes {
+		if unicode.IsLetter(r) {
+			hasLetter = true
+		}
+		if unicode.IsDigit(r) {
+			hasDigit = true
+		}
+	}
+
+	if !hasLetter || !hasDigit {
+		return fmt.Errorf("must include both letters and numbers")
+	}
+
+	return nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return false
+	}
+	return pgErr.Code == "23505"
 }

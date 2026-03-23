@@ -11,40 +11,6 @@
       </div>
     </AdminPlainCard>
 
-    <AdminPlainCard padding="20px">
-      <div class="grid gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-center">
-        <img
-          :src="profileAvatarPreview"
-          :alt="copy.profile.avatarAlt"
-          class="h-16 w-16 rounded-full border border-slate-200 object-cover"
-        />
-        <div>
-          <p class="text-sm font-semibold text-slate-900">{{ copy.profile.title }}</p>
-          <p class="mt-1 text-xs text-slate-500">{{ copy.profile.subtitle }}</p>
-        </div>
-      </div>
-
-      <div class="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
-        <input
-          v-model="profileDisplayName"
-          type="text"
-          :placeholder="copy.profile.displayNamePlaceholder"
-          class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-miku/50"
-          :aria-label="copy.profile.displayNameLabel"
-        />
-        <input
-          v-model="profileAvatarURL"
-          type="text"
-          :placeholder="copy.profile.avatarPlaceholder"
-          class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-miku/50"
-          :aria-label="copy.profile.avatarLabel"
-        />
-        <MikuButton type="button" variant="solid" :disabled="profileSaving" @click="saveProfile">
-          {{ profileSaving ? copy.profile.savingButton : copy.profile.saveButton }}
-        </MikuButton>
-      </div>
-    </AdminPlainCard>
-
     <!-- ===== Compose Card (Create) ===== -->
     <AdminPlainCard v-if="showCreateForm" padding="0px">
       <form @submit.prevent="createMoment">
@@ -268,6 +234,14 @@
                 >
                   转草稿
                 </button>
+                <button
+                  type="button"
+                  class="rounded-xl border border-red-200/85 bg-white/50 px-2.5 py-1 text-xs text-red-600 transition hover:bg-red-50"
+                  :aria-label="copy.actions.deleteAria"
+                  @click="deleteMoment(item.id)"
+                >
+                  {{ copy.actions.deleteButton }}
+                </button>
               </div>
             </div>
           </div>
@@ -278,12 +252,10 @@
 </template>
 
 <script setup lang="ts">
-import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref } from 'vue'
 
 import { api, ApiError, type PagedData } from '../../lib/api'
 import { adminCopy } from '../../content/copy'
-import { authState, hydrateAuth, updateMyProfile } from '../../stores/auth'
 import { showToast } from '../../stores/ui'
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
@@ -325,12 +297,6 @@ interface MomentForm {
   image_urls: string
   publish_status: 'draft' | 'published' | 'scheduled'
   scheduled_at: string
-}
-
-interface AdminProfilePayload {
-  username: string
-  display_name?: string
-  avatar_url?: string
 }
 
 function formatDate(iso: string): string {
@@ -400,15 +366,6 @@ const showCreateMeta = ref(false)
 const showEditMeta = ref(false)
 const copy = adminCopy.momentsManager
 
-const auth = useStore(authState)
-const profileDisplayName = ref('')
-const profileAvatarURL = ref('/picture/author.jpg')
-const profileSaving = ref(false)
-
-const profileAvatarPreview = computed(() => {
-  return (profileAvatarURL.value || '').trim() || '/picture/author.jpg'
-})
-
 const createImagePreviews = computed(() => {
   return newMoment.value.image_urls.split(',').map((u: string) => u.trim()).filter(Boolean).slice(0, 4)
 })
@@ -453,43 +410,6 @@ async function loadMoments() {
     momentsList.value = []
   } finally {
     loading.value = false
-  }
-}
-
-async function loadProfile() {
-  hydrateAuth()
-  const current = auth.value.user
-  if (current) {
-    profileDisplayName.value = current.name || current.username || ''
-    profileAvatarURL.value = current.avatar || '/picture/author.jpg'
-  }
-
-  try {
-    const me = await api.get<AdminProfilePayload>('/auth/me')
-    profileDisplayName.value = (me.display_name || '').trim() || me.username
-    profileAvatarURL.value = (me.avatar_url || '').trim() || '/picture/author.jpg'
-  } catch {
-    // keep store fallback
-  }
-}
-
-async function saveProfile() {
-  const displayName = profileDisplayName.value.trim()
-  if (!displayName) {
-    showToast(copy.profile.emptyNameError, 'error')
-    return
-  }
-
-  profileSaving.value = true
-  try {
-    await updateMyProfile(displayName, profileAvatarURL.value.trim())
-    await loadProfile()
-    showToast(copy.profile.saveSuccess, 'success')
-  } catch (err) {
-    const msg = err instanceof ApiError ? err.message : copy.profile.saveFailed
-    showToast(msg, 'error')
-  } finally {
-    profileSaving.value = false
   }
 }
 
@@ -604,8 +524,25 @@ async function unpublishMoment(id: string) {
   }
 }
 
+async function deleteMoment(id: string) {
+  if (!window.confirm(copy.actions.deleteConfirm)) {
+    return
+  }
+
+  try {
+    await api.delete(`/admin/moments/${id}`)
+    await loadMoments()
+    showToast(copy.actions.deleteSuccess, 'success')
+    if (editingMomentID.value === id) {
+      closeEditForm()
+    }
+  } catch (err) {
+    const msg = err instanceof ApiError ? err.message : copy.actions.deleteFailed
+    showToast(msg, 'error')
+  }
+}
+
 onMounted(() => {
-  loadProfile()
   loadMoments()
 })
 
