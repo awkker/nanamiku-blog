@@ -46,12 +46,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { api, type PagedData } from '../../lib/api'
+import { api } from '../../lib/api'
 
-interface PostItem {
-  published_at?: string
-  created_at: string
-  view_count: number
+interface SiteTrendPoint {
+  day: string
+  views: number
 }
 
 const W = 280
@@ -101,38 +100,29 @@ const areaPath = computed(() => {
 
 async function loadTrend() {
   try {
-    const data = await api.get<PagedData<PostItem>>('/posts?page=1&size=200')
-    const items = data.items || []
-
-    const now = new Date()
-    const buckets: Record<string, number> = {}
-    const labels: string[] = []
-
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now)
-      d.setDate(d.getDate() - i)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      buckets[key] = 0
-      labels.push(`${d.getMonth() + 1}/${d.getDate()}`)
-    }
-
-    for (const item of items) {
-      const dateStr = item.published_at || item.created_at
-      if (!dateStr) continue
-      const key = dateStr.slice(0, 10)
-      if (key in buckets) {
-        buckets[key] += Number(item.view_count) || 0
-      }
-    }
-
-    dayLabels.value = labels
-    dailyViews.value = Object.values(buckets)
+    const points = await api.get<SiteTrendPoint[]>('/analytics/trend?days=7')
+    dayLabels.value = (points || []).map((item) => formatDayLabel(item.day))
+    dailyViews.value = (points || []).map((item) => Number(item.views) || 0)
   } catch {
     dailyViews.value = []
     dayLabels.value = []
   } finally {
     loaded.value = true
   }
+}
+
+function formatDayLabel(day: string): string {
+  const safe = String(day || '').slice(0, 10)
+  const parts = safe.split('-')
+  if (parts.length !== 3) {
+    return safe || day
+  }
+  const month = Number(parts[1])
+  const date = Number(parts[2])
+  if (!Number.isFinite(month) || !Number.isFinite(date)) {
+    return safe || day
+  }
+  return `${month}/${date}`
 }
 
 onMounted(() => {

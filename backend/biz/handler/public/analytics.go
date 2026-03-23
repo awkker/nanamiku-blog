@@ -79,6 +79,16 @@ func (h *AnalyticsHandler) Collect(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, dto.OK(nil))
 }
 
+func (h *AnalyticsHandler) Trend(ctx context.Context, c *app.RequestContext) {
+	days := queryPositiveInt(c.DefaultQuery("days", "7"), 7)
+	points, err := h.svc.GetPublicSiteTrend(ctx, days)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "analytics trend failed"))
+		return
+	}
+	c.JSON(consts.StatusOK, dto.OK(points))
+}
+
 func pickHeader(c *app.RequestContext, keys ...string) string {
 	for _, key := range keys {
 		v := strings.TrimSpace(string(c.GetHeader(key)))
@@ -114,4 +124,21 @@ func isBotUserAgent(ua string) bool {
 		}
 	}
 	return false
+}
+
+func queryPositiveInt(raw string, def int) int {
+	if raw == "" {
+		return def
+	}
+	n := 0
+	for _, ch := range raw {
+		if ch < '0' || ch > '9' {
+			return def
+		}
+		n = n*10 + int(ch-'0')
+	}
+	if n <= 0 {
+		return def
+	}
+	return n
 }

@@ -112,6 +112,12 @@ type DashboardAnalyticsOverview struct {
 	Traffic     []DashboardTrafficPoint   `json:"traffic"`
 }
 
+type PublicSiteTrendPoint struct {
+	Day      string `json:"day"`
+	Visitors int64  `json:"visitors"`
+	Views    int64  `json:"views"`
+}
+
 type analyticsWindow struct {
 	rangeKey     string
 	label        string
@@ -353,6 +359,43 @@ func (s *DashboardService) GetAnalyticsOverview(ctx context.Context, rangeKey st
 		Traffic: mapTraffic(heatRows),
 	}
 
+	return result, nil
+}
+
+func (s *DashboardService) GetPublicSiteTrend(ctx context.Context, days int) ([]PublicSiteTrendPoint, error) {
+	if days <= 0 {
+		days = 7
+	}
+	if days > 30 {
+		days = 30
+	}
+
+	end := startOfDay(time.Now()).Add(24 * time.Hour)
+	start := end.AddDate(0, 0, -days)
+
+	rows, err := s.q.GetAnalyticsTrend(ctx, query.GetAnalyticsTrendParams{
+		OccurredAt:   start,
+		OccurredAt_2: end,
+		Column3:      "day",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	series := fillTrendBuckets(analyticsWindow{
+		start:       start,
+		end:         end,
+		granularity: "day",
+	}, rows)
+
+	result := make([]PublicSiteTrendPoint, 0, len(series))
+	for _, item := range series {
+		result = append(result, PublicSiteTrendPoint{
+			Day:      item.Bucket,
+			Visitors: item.Visitors,
+			Views:    item.Views,
+		})
+	}
 	return result, nil
 }
 

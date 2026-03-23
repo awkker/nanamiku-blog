@@ -126,6 +126,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 		// Friends
 		api.GET("/friends", friendsH.List)
 		api.POST("/analytics/collect", middleware.RateLimit(rdb, "analytics:collect", 240, 1*time.Minute), analyticsH.Collect)
+		api.GET("/analytics/trend", analyticsH.Trend)
 
 		// Posts (public)
 		posts := api.Group("/posts")

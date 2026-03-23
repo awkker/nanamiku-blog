@@ -195,13 +195,15 @@ const heroActionClasses = [
           </div>
 
 
-          <div class="relative z-10 mb-4 overflow-hidden rounded-2xl border border-white/35 bg-white/20 p-4 shadow-md backdrop-blur-xl">
+          <div class="relative z-0 mb-8 overflow-hidden rounded-2xl border border-white/35 bg-white/20 p-4 shadow-md backdrop-blur-xl">
             <SiteTrend client:load />
           </div>
 
-          <LiquidGlassCard client:load padding="20px">
-            <LatestMoments client:load />
-          </LiquidGlassCard>
+          <div class="relative z-0">
+            <LiquidGlassCard client:load padding="20px">
+              <LatestMoments client:load />
+            </LiquidGlassCard>
+          </div>
         </aside>
       </main>
 
