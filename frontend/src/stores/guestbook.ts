@@ -12,6 +12,7 @@ export interface GuestbookMessage {
   message: string
   createdAt: string
   avatar: string
+  isAuthor: boolean
   votes: number
   myVote: -1 | 0 | 1
   replies: readonly GuestbookMessage[]
@@ -32,6 +33,8 @@ interface ApiGuestbookMessage {
   parent_id?: string
   author_name: string
   author_website?: string
+  is_author?: boolean
+  author_avatar_url?: string
   content: string
   vote_score: number
   created_at: string
@@ -65,13 +68,15 @@ function mapVote(v?: string | null): -1 | 0 | 1 {
 }
 
 function mapMessage(item: ApiGuestbookMessage): GuestbookMessage {
+  const avatar = (item.author_avatar_url || '').trim() || `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(item.author_name)}`
   return {
     id: item.id,
     nickname: item.author_name,
     website: item.author_website || undefined,
     message: item.content,
     createdAt: formatDate(item.created_at),
-    avatar: `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(item.author_name)}`,
+    avatar,
+    isAuthor: Boolean(item.is_author),
     votes: item.vote_score,
     myVote: mapVote(item.my_vote),
     replies: (item.replies || []).map(mapMessage),

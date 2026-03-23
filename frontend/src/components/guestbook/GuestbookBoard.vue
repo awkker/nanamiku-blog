@@ -12,7 +12,15 @@
       </div>
       <form class="space-y-4" @submit.prevent="handleSubmit">
         <div class="grid gap-4 md:grid-cols-2">
-          <MikuInput v-model="form.nickname" :label="copy.nicknameLabel" :placeholder="copy.nicknamePlaceholder" :error="errors.nickname" :aria-label="copy.nicknameAria" required />
+          <MikuInput
+            v-model="form.nickname"
+            :label="copy.nicknameLabel"
+            :placeholder="isAuthorMode ? copy.nicknameAuthorPlaceholder : copy.nicknamePlaceholder"
+            :error="errors.nickname"
+            :aria-label="copy.nicknameAria"
+            :disabled="isAuthorMode"
+            :required="!isAuthorMode"
+          />
           <MikuInput v-model="form.website" :label="copy.websiteLabel" :placeholder="copy.websitePlaceholder" :error="errors.website" :aria-label="copy.websiteAria" />
         </div>
         <MikuTextarea v-model="form.message" :label="copy.messageLabel" :placeholder="copy.messagePlaceholder" :error="errors.message" :rows="4" :aria-label="copy.messageAria" required />
@@ -67,7 +75,7 @@
 
 <script setup lang="ts">
 import { useStore } from '@nanostores/vue'
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, watchEffect } from 'vue'
 
 import {
   type SortMode,
@@ -82,6 +90,7 @@ import {
   submitGuestbookMessage,
 } from '../../stores/guestbook'
 import { showToast } from '../../stores/ui'
+import { authState } from '../../stores/auth'
 import EmptyState from '../ui/EmptyState.vue'
 import ErrorState from '../ui/ErrorState.vue'
 import GuestbookMessageCard from './GuestbookMessageCard.vue'
@@ -104,8 +113,11 @@ const fetchStatus = useStore(guestbookFetchStatus)
 const submitStatus = useStore(guestbookSubmitStatus)
 const fetchError = useStore(guestbookError)
 const currentSort = useStore(guestbookSortMode)
+const auth = useStore(authState)
 
 const submitting = computed(() => submitStatus.value === 'loading')
+const isAuthorMode = computed(() => auth.value.status === 'authenticated' && auth.value.user?.role === 'admin')
+const authorDisplayName = computed(() => (auth.value.user?.name || auth.value.user?.username || '').trim())
 
 function changeSort(mode: SortMode) {
   setSortMode(mode)
@@ -122,7 +134,7 @@ function isValidUrl(url: string) {
 }
 
 function validate() {
-  errors.nickname = form.nickname.trim() ? '' : copy.validation.nicknameRequired
+  errors.nickname = (isAuthorMode.value || form.nickname.trim()) ? '' : copy.validation.nicknameRequired
   errors.message = form.message.trim() ? '' : copy.validation.messageRequired
   errors.website = isValidUrl(form.website) ? '' : copy.validation.websiteInvalid
   return !errors.nickname && !errors.message && !errors.website
@@ -134,10 +146,11 @@ async function loadMessages() {
 
 async function handleSubmit() {
   if (!validate()) return
+  const nickname = isAuthorMode.value ? (authorDisplayName.value || form.nickname) : form.nickname
   try {
-    await submitGuestbookMessage({ nickname: form.nickname, website: form.website, message: form.message })
+    await submitGuestbookMessage({ nickname, website: form.website, message: form.message })
     form.message = ''
-    showToast(copy.toasts.submitSuccess, 'success')
+    showToast(isAuthorMode.value ? copy.toasts.authorSubmitSuccess : copy.toasts.submitSuccess, 'success')
   } catch {
     showToast(copy.toasts.submitFailed, 'error')
   }
@@ -146,7 +159,7 @@ async function handleSubmit() {
 async function handleReply(payload: { parentId: string; nickname: string; message: string }) {
   try {
     await submitGuestbookMessage({ nickname: payload.nickname, message: payload.message, parentId: payload.parentId })
-    showToast(copy.toasts.replySuccess, 'success')
+    showToast(isAuthorMode.value ? copy.toasts.authorReplySuccess : copy.toasts.replySuccess, 'success')
   } catch {
     showToast(copy.toasts.replyFailed, 'error')
   }
@@ -154,6 +167,12 @@ async function handleReply(payload: { parentId: string; nickname: string; messag
 
 onMounted(async () => {
   await loadMessages()
+})
+
+watchEffect(() => {
+  if (isAuthorMode.value) {
+    form.nickname = authorDisplayName.value
+  }
 })
 </script>
 

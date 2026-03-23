@@ -29,6 +29,12 @@
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
           <img :src="message.avatar" :alt="message.nickname" class="h-5 w-5 rounded-full object-cover" loading="lazy" />
           <span class="text-sm font-semibold text-slate-700">{{ message.nickname }}</span>
+          <span
+            v-if="message.isAuthor"
+            class="inline-flex items-center rounded-full border border-miku/35 bg-miku-soft px-1.5 py-0.5 text-[10px] font-semibold text-miku"
+          >
+            {{ copy.authorBadge }}
+          </span>
           <a
             v-if="message.website"
             :href="message.website"
@@ -70,7 +76,8 @@
             <input
               v-model="replyNickname"
               type="text"
-              :placeholder="copy.nicknamePlaceholder"
+              :placeholder="isAuthorMode ? copy.nicknameAuthorPlaceholder : copy.nicknamePlaceholder"
+              :disabled="isAuthorMode"
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-miku/50 focus:ring-1 focus:ring-miku/30"
             />
           </div>
@@ -91,7 +98,7 @@
             <button
               type="button"
               class="rounded-lg bg-miku px-3 py-1.5 text-xs font-medium text-white transition hover:bg-miku/85 disabled:opacity-50"
-              :disabled="!replyNickname.trim() || !replyContent.trim()"
+              :disabled="!effectiveReplyNickname || !replyContent.trim()"
               @click="submitReply"
             >
               {{ copy.submitReply }}
@@ -105,6 +112,12 @@
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
               <img :src="reply.avatar" :alt="reply.nickname" class="h-4 w-4 rounded-full object-cover" loading="lazy" />
               <span class="text-xs font-semibold text-slate-600">{{ reply.nickname }}</span>
+              <span
+                v-if="reply.isAuthor"
+                class="inline-flex items-center rounded-full border border-miku/35 bg-miku-soft px-1.5 py-0.5 text-[10px] font-semibold text-miku"
+              >
+                {{ copy.authorBadge }}
+              </span>
               <span class="h-0.5 w-0.5 rounded-full bg-slate-300" aria-hidden="true" />
               <span class="text-[11px] text-slate-400">{{ reply.createdAt }}</span>
             </div>
@@ -136,9 +149,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useStore } from '@nanostores/vue'
+import { computed, ref, watchEffect } from 'vue'
 import type { GuestbookMessage } from '../../stores/guestbook'
 import { voteMessage } from '../../stores/guestbook'
+import { authState } from '../../stores/auth'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
 import { siteCopy } from '../../content/copy'
 
@@ -153,11 +168,22 @@ const showReplyForm = ref(false)
 const replyNickname = ref('')
 const replyContent = ref('')
 const copy = siteCopy.components.guestbookMessageCard
+const auth = useStore(authState)
 
 const voteColor = computed(() => {
   if (props.message.myVote === 1) return 'text-miku'
   if (props.message.myVote === -1) return 'text-red-500'
   return 'text-slate-500'
+})
+
+const isAuthorMode = computed(() => auth.value.status === 'authenticated' && auth.value.user?.role === 'admin')
+const authorDisplayName = computed(() => (auth.value.user?.name || auth.value.user?.username || '').trim())
+const effectiveReplyNickname = computed(() => (isAuthorMode.value ? authorDisplayName.value : replyNickname.value).trim())
+
+watchEffect(() => {
+  if (isAuthorMode.value) {
+    replyNickname.value = authorDisplayName.value
+  }
 })
 
 function vote(direction: 1 | -1) {
@@ -169,8 +195,9 @@ function voteReply(replyId: string, direction: 1 | -1) {
 }
 
 function submitReply() {
-  if (!replyNickname.value.trim() || !replyContent.value.trim()) return
-  emit('reply', { parentId: props.message.id, nickname: replyNickname.value, message: replyContent.value })
+  const nickname = effectiveReplyNickname.value
+  if (!nickname || !replyContent.value.trim()) return
+  emit('reply', { parentId: props.message.id, nickname, message: replyContent.value })
   replyContent.value = ''
   showReplyForm.value = false
 }

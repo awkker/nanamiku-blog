@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
 
 	"nanamiku-blog/backend/biz/dto"
 	"nanamiku-blog/backend/biz/errcode"
@@ -17,10 +18,11 @@ import (
 type GuestbookHandler struct {
 	svc    *service.GuestbookService
 	modSvc *service.ModerationService
+	auth   *service.AuthService
 }
 
-func NewGuestbookHandler(svc *service.GuestbookService, modSvc *service.ModerationService) *GuestbookHandler {
-	return &GuestbookHandler{svc: svc, modSvc: modSvc}
+func NewGuestbookHandler(svc *service.GuestbookService, modSvc *service.ModerationService, authSvc *service.AuthService) *GuestbookHandler {
+	return &GuestbookHandler{svc: svc, modSvc: modSvc, auth: authSvc}
 }
 
 func (h *GuestbookHandler) List(ctx context.Context, c *app.RequestContext) {
@@ -51,13 +53,20 @@ func (h *GuestbookHandler) Create(ctx context.Context, c *app.RequestContext) {
 		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
 		return
 	}
-	if req.AuthorName == "" || req.Content == "" {
-		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "author_name and content required"))
+	authorIdentity := h.resolveAuthorIdentity(ctx, c)
+	authorName := strings.TrimSpace(req.AuthorName)
+	content := strings.TrimSpace(req.Content)
+	if content == "" || (authorIdentity == nil && authorName == "") {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "content required, and author_name is required for visitors"))
 		return
 	}
 
 	if h.modSvc != nil {
-		word, err := h.modSvc.FindSensitiveWord(ctx, req.AuthorName, req.Content)
+		checkName := authorName
+		if authorIdentity != nil {
+			checkName = authorIdentity.DisplayName
+		}
+		word, err := h.modSvc.FindSensitiveWord(ctx, checkName, content)
 		if err != nil {
 			c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "sensitive-word check failed"))
 			return
@@ -71,7 +80,16 @@ func (h *GuestbookHandler) Create(ctx context.Context, c *app.RequestContext) {
 	ipHash := hashStr(c.ClientIP())
 	uaHash := hashStr(string(c.UserAgent()))
 
-	msg, err := h.svc.CreateMessage(ctx, req.ParentID, req.AuthorName, req.AuthorWebsite, req.Content, ipHash, uaHash)
+	msg, err := h.svc.CreateMessage(
+		ctx,
+		req.ParentID,
+		authorName,
+		strings.TrimSpace(req.AuthorWebsite),
+		content,
+		ipHash,
+		uaHash,
+		authorIdentity,
+	)
 	if err != nil {
 		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to create message"))
 		return
@@ -148,4 +166,57 @@ func queryInt(c *app.RequestContext, key string, def int) int {
 func hashStr(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
+}
+
+func (h *GuestbookHandler) resolveAuthorIdentity(ctx context.Context, c *app.RequestContext) *service.GuestbookAuthorIdentity {
+	if h.auth == nil {
+		return nil
+	}
+
+	header := strings.TrimSpace(string(c.GetHeader("Authorization")))
+	if !strings.HasPrefix(header, "Bearer ") {
+		return nil
+	}
+
+	token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+	if token == "" {
+		return nil
+	}
+
+	claims, err := h.auth.ValidateAccessToken(token)
+	if err != nil {
+		return nil
+	}
+
+	admin, err := h.auth.GetAdminInfo(ctx, claims.AdminID)
+	if err != nil {
+		name := strings.TrimSpace(claims.Username)
+		if name == "" {
+			name = "Admin"
+		}
+		return &service.GuestbookAuthorIdentity{
+			AdminID:     claims.AdminID,
+			DisplayName: name,
+			AvatarURL:   service.DefaultAdminAvatarURL,
+		}
+	}
+
+	name := strings.TrimSpace(admin.DisplayName)
+	if name == "" {
+		name = strings.TrimSpace(admin.Username)
+	}
+	if name == "" {
+		name = "Admin"
+	}
+
+	avatar := strings.TrimSpace(admin.AvatarUrl)
+	if avatar == "" {
+		avatar = service.DefaultAdminAvatarURL
+	}
+
+	return &service.GuestbookAuthorIdentity{
+		AdminID:     admin.ID,
+		DisplayName: name,
+		AvatarURL:   avatar,
+	}
 }

@@ -65,7 +65,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 
 	healthH := public.NewHealthHandler(db, rdb)
 	authH := admin.NewAuthHandler(authSvc)
-	guestbookH := public.NewGuestbookHandler(guestbookSvc, moderationSvc)
+	guestbookH := public.NewGuestbookHandler(guestbookSvc, moderationSvc, authSvc)
 	momentsH := public.NewMomentsHandler(momentsSvc, moderationSvc)
 	friendsH := public.NewFriendsHandler(friendsSvc)
 	analyticsH := public.NewAnalyticsHandler(dashboardSvc)
