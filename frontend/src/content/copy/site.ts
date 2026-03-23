@@ -2,7 +2,7 @@
  * DIY 文案入口（站点级）
  *
  * 用法：
- * 1. 修改本文件即可调整首页 Dock、博客/说说/留言板/关于我页面与其核心组件文案。
+ * 1. 修改本文件即可调整首页 Dock、博客/说说/留言板/关于我/404 页面与其核心组件文案。
  * 2. 新页面需要可配置文案时，优先在本文件新增字段，再由页面读取，不要直接写死在组件模板里。
  */
 
@@ -15,6 +15,12 @@ export interface SiteNavItem {
 export interface HomeDockItem extends SiteNavItem {
   icon: string
   name: string
+}
+
+export interface SiteActionItem {
+  href: string
+  label: string
+  ariaLabel: string
 }
 
 export const siteCopy = {
@@ -309,6 +315,35 @@ export const siteCopy = {
       { label: '小红书', href: 'https://www.xiaohongshu.com/user/profile/6427cf87000000002901166e' },
     ],
     backToTopAria: '返回顶部',
+  },
+  notFoundPage: {
+    metaTitle: '404 | Miku Blog',
+    metaDescription: '页面不存在或已迁移',
+    badge: 'ROUTE MISS',
+    codeLabel: 'Error Code',
+    codeValue: '404',
+    title: '页面暂时走丢了',
+    description: '你访问的地址可能已经迁移、输入有误，或该内容暂未发布。可以从下方入口继续浏览。',
+    hintsTitle: '建议操作',
+    hints: [
+      '检查地址是否完整',
+      '返回首页，从导航继续访问',
+      '直接进入博客或留言板',
+    ],
+    actions: [
+      { href: '/', label: '返回首页', ariaLabel: '返回站点首页' },
+      { href: '/blog', label: '进入博客', ariaLabel: '前往博客页面' },
+      { href: '/guestbook', label: '前往留言板', ariaLabel: '前往留言板页面' },
+    ] as SiteActionItem[],
+    backActionLabel: '返回上一页',
+    backActionAria: '返回上一页',
+    quickLinksTitle: '快速入口',
+    quickLinks: [
+      { href: '/about', label: '关于我' },
+      { href: '/moments', label: '说说' },
+      { href: '/friends', label: '友情链接' },
+    ] as SiteNavItem[],
+    panelFootnote: 'NANAMIKU BLOG',
   },
   components: {
     blogFeed: {
