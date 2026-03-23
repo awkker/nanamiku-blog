@@ -131,7 +131,7 @@ import { siteCopy } from '../../content/copy'
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
 
 const MIKU = '#39c5bb'
-const CACHE_KEY = computed(() => `miku-blog-github-cache-${props.githubUsername}`)
+const CACHE_KEY = computed(() => `miku-blog-github-cache-v2-${props.githubUsername}`)
 const CACHE_TTL = 3600000
 
 interface Props {
@@ -255,13 +255,88 @@ async function fetchWithTimeout(url: string, timeout = 8000): Promise<Response> 
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), timeout)
   try {
-    const res = await fetch(url, { signal: controller.signal })
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/vnd.github+json',
+      },
+    })
     clearTimeout(id)
     return res
   } catch (err) {
     clearTimeout(id)
     throw err
   }
+}
+
+async function fetchAllPublicRepos(username: string): Promise<any[]> {
+  const repos: any[] = []
+  const perPage = 100
+
+  for (let page = 1; page <= 10; page++) {
+    const res = await fetchWithTimeout(
+      `https://api.github.com/users/${username}/repos?sort=pushed&per_page=${perPage}&page=${page}`,
+    )
+    if (!res.ok) {
+      throw new Error('repos api error')
+    }
+
+    const items: any[] = await res.json()
+    repos.push(...items)
+
+    if (items.length < perPage) {
+      break
+    }
+  }
+
+  return repos
+}
+
+async function fetchCommitActivityByMonth(username: string): Promise<number[]> {
+  const counts = new Array(12).fill(0)
+  const now = new Date()
+  const perPage = 100
+
+  for (let page = 1; page <= 3; page++) {
+    const res = await fetchWithTimeout(
+      `https://api.github.com/users/${username}/events/public?per_page=${perPage}&page=${page}`,
+    )
+    if (!res.ok) {
+      break
+    }
+
+    const events: any[] = await res.json()
+    if (!Array.isArray(events) || events.length === 0) {
+      break
+    }
+
+    for (const ev of events) {
+      if (ev?.type !== 'PushEvent') {
+        continue
+      }
+
+      const d = new Date(ev?.created_at || '')
+      if (Number.isNaN(d.getTime())) {
+        continue
+      }
+
+      const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
+      if (diff < 0 || diff >= 12) {
+        continue
+      }
+
+      const payloadSize = Number(ev?.payload?.size)
+      const commitsLen = Array.isArray(ev?.payload?.commits) ? ev.payload.commits.length : 0
+      const increment = Number.isFinite(payloadSize) && payloadSize > 0 ? payloadSize : (commitsLen > 0 ? commitsLen : 1)
+      counts[11 - diff] += increment
+    }
+
+    if (events.length < perPage) {
+      break
+    }
+  }
+
+  return counts
 }
 
 async function fetchGitHubData() {
@@ -288,15 +363,17 @@ async function fetchGitHubData() {
   } catch { /* cache miss */ }
 
   try {
-    const [userRes, reposRes] = await Promise.all([
-      fetchWithTimeout(`https://api.github.com/users/${username}`),
-      fetchWithTimeout(`https://api.github.com/users/${username}/repos?sort=pushed&per_page=100`),
-    ])
+    const userRes = await fetchWithTimeout(`https://api.github.com/users/${username}`)
+    if (!userRes.ok) throw new Error('user api error')
 
-    if (!userRes.ok || !reposRes.ok) throw new Error('API error')
+    const reposData: any[] = await fetchAllPublicRepos(username)
 
     const userData = await userRes.json()
-    const reposData: any[] = await reposRes.json()
+    const sortedRepos = [...reposData].sort((a, b) => {
+      const aTime = Date.parse(a?.pushed_at || '') || 0
+      const bTime = Date.parse(b?.pushed_at || '') || 0
+      return bTime - aTime
+    })
 
     const totalStars = reposData.reduce(
       (sum: number, r: any) => sum + (r.stargazers_count || 0), 0,
@@ -307,7 +384,7 @@ async function fetchGitHubData() {
       name: userData.name || username,
       bio: userData.bio || '',
       htmlUrl: userData.html_url || `https://github.com/${username}`,
-      totalRepos: reposData.length,
+      totalRepos: Number(userData.public_repos) || reposData.length,
       totalStars,
       followers: userData.followers || 0,
     }
@@ -321,7 +398,7 @@ async function fetchGitHubData() {
       .slice(0, 10)
       .map(([name, count]) => ({ name, count }))
 
-    recentRepos.value = reposData.slice(0, 6).map((r: any) => ({
+    recentRepos.value = sortedRepos.slice(0, 6).map((r: any) => ({
       name: r.name,
       description: r.description || '',
       htmlUrl: r.html_url,
@@ -331,22 +408,7 @@ async function fetchGitHubData() {
     }))
 
     try {
-      const eventsRes = await fetchWithTimeout(
-        `https://api.github.com/users/${username}/events?per_page=100`,
-      )
-      if (eventsRes.ok) {
-        const events: any[] = await eventsRes.json()
-        const now = new Date()
-        const counts = new Array(12).fill(0)
-        for (const ev of events) {
-          if (ev.type === 'PushEvent') {
-            const d = new Date(ev.created_at)
-            const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
-            if (diff >= 0 && diff < 12) counts[11 - diff] += 1
-          }
-        }
-        activityData.value = counts
-      }
+      activityData.value = await fetchCommitActivityByMonth(username)
     } catch { /* activity fetch failed, keep zeros */ }
 
     try {
