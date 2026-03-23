@@ -68,7 +68,7 @@ export const siteCopy = {
     metaDescription: '博客主页',
     heroBadge: 'CREATOR SPACE',
     heroTitle: 'NanaMiku Blog',
-    heroDescription: '我是 Nana Miku，专注写 Astro、Vue Islands 与 Go 全栈实践。这里不是纯文章流，而是我持续构建的技术创作空间。',
+    heroDescription: '我是 Xunyi，专注写 Astro、Vue Islands 与 Go 全栈实践。这里不是纯文章流，而是我持续构建的技术创作空间。',
     heroActions: [
       { href: '#latest-posts', label: '看最新文章' },
       { href: '#archive', label: '进入归档' },
@@ -91,7 +91,7 @@ export const siteCopy = {
     },
     authorCard: {
       avatarAlt: '博主头像',
-      name: 'Nana Miku',
+      name: 'Xunyi',
       role: 'Front-end Developer / Writer',
       bio: '写前端、写系统、写日常。希望每篇都能让人少走一点弯路。',
       location: 'China',
@@ -151,7 +151,7 @@ export const siteCopy = {
     metaTitle: '关于我 | Miku Blog',
     metaDescription: 'Nana Miku 的个人介绍与创作地图',
     heroBadge: 'ABOUT CREATOR',
-    heroTitle: '我是 Nana Miku',
+    heroTitle: '我是 Xunyi',
     heroDescription: '我把这个博客当作长期创作者空间来做。关注 Astro、Vue Islands 与 Go 全栈实践，持续写可复用、可落地、可维护的经验总结。',
     identityTags: ['Astro', 'Vue Islands', 'Go', 'Tailwind', 'Nano Stores'],
     heroActions: [
@@ -167,8 +167,8 @@ export const siteCopy = {
       statusValue: '持续迭代中',
     },
     profileCard: {
-      avatarAlt: 'Nana Miku 头像',
-      name: 'Nana Miku',
+      avatarAlt: 'Xunyi 头像',
+      name: 'Xunyi',
       role: 'Front-end Developer / Writer',
       nowTitle: 'NOW / 近况',
       quote: '让每篇文章都成为下一次开发可以直接复用的经验块。',
@@ -199,19 +199,19 @@ export const siteCopy = {
     },
     milestones: [
       {
-        year: '2022',
+        year: '2024',
         title: '开始系统写作',
         summary: '从零散笔记转向结构化输出，建立个人技术写作节奏。',
         result: '累计产出 20+ 篇可复用实践文章',
       },
       {
-        year: '2023',
+        year: '2025',
         title: '聚焦前端工程化',
         summary: '主攻组件复用、样式规范与协作流程，减少重复开发。',
         result: '沉淀多套前端页面模板与规范',
       },
       {
-        year: '2024',
+        year: '2025',
         title: '全栈化推进',
         summary: '将前端体验与 Go 后端能力联动，关注性能与可维护性。',
         result: '形成 Astro + Go 的完整博客技术路线',
