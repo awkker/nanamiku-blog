@@ -74,7 +74,7 @@ type Querier interface {
 	DeletePostLike(ctx context.Context, arg DeletePostLikeParams) error
 	ExportBackupPayload(ctx context.Context) (json.RawMessage, error)
 	GetAdminByID(ctx context.Context, id uuid.UUID) (GetAdminByIDRow, error)
-	GetAdminByUsername(ctx context.Context, username string) (AdminUser, error)
+	GetAdminByUsername(ctx context.Context, username string) (GetAdminByUsernameRow, error)
 	GetAnalyticsAverageVisitDurationSeconds(ctx context.Context, arg GetAnalyticsAverageVisitDurationSecondsParams) (float64, error)
 	GetAnalyticsTrafficHeatmap(ctx context.Context, arg GetAnalyticsTrafficHeatmapParams) ([]GetAnalyticsTrafficHeatmapRow, error)
 	GetAnalyticsTrend(ctx context.Context, arg GetAnalyticsTrendParams) ([]GetAnalyticsTrendRow, error)
@@ -88,6 +88,7 @@ type Querier interface {
 	GetPostBySlug(ctx context.Context, slug string) (GetPostBySlugRow, error)
 	GetPostRevision(ctx context.Context, id uuid.UUID) (PostRevision, error)
 	GetPostTagNames(ctx context.Context, postID uuid.UUID) ([]GetPostTagNamesRow, error)
+	GetPrimaryAdminPublicProfile(ctx context.Context) (GetPrimaryAdminPublicProfileRow, error)
 	GetRefreshTokenByHash(ctx context.Context, tokenHash string) (AdminRefreshToken, error)
 	GetTotalLikeCount(ctx context.Context) (int64, error)
 	GetTotalPostCount(ctx context.Context) (int64, error)
@@ -155,6 +156,8 @@ type Querier interface {
 	UnpublishMoment(ctx context.Context, id uuid.UUID) error
 	UnpublishPost(ctx context.Context, arg UnpublishPostParams) error
 	UpdateAdminLastLogin(ctx context.Context, id uuid.UUID) error
+	UpdateAdminPasswordByUsername(ctx context.Context, arg UpdateAdminPasswordByUsernameParams) (uuid.UUID, error)
+	UpdateAdminProfile(ctx context.Context, arg UpdateAdminProfileParams) error
 	UpdateFriendLink(ctx context.Context, arg UpdateFriendLinkParams) error
 	UpdateFriendLinkHealth(ctx context.Context, arg UpdateFriendLinkHealthParams) error
 	UpdateMoment(ctx context.Context, arg UpdateMomentParams) error

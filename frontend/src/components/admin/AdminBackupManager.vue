@@ -1,16 +1,16 @@
 <template>
   <section class="space-y-5">
-    <LiquidGlassCard padding="24px">
+    <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">{{ copy.title }}</h1>
           <p class="mt-1 text-sm text-slate-600">{{ copy.subtitle }}</p>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <div class="grid gap-4 md:grid-cols-2">
-      <LiquidGlassCard padding="20px">
+      <AdminPlainCard padding="20px">
         <h2 class="text-lg font-semibold text-slate-900">{{ copy.jsonCardTitle }}</h2>
         <p class="mt-1 text-sm text-slate-600">{{ copy.jsonCardDescription }}</p>
         <div class="mt-4">
@@ -18,9 +18,9 @@
             {{ loadingFormat === 'json' ? copy.exporting : copy.jsonButton }}
           </MikuButton>
         </div>
-      </LiquidGlassCard>
+      </AdminPlainCard>
 
-      <LiquidGlassCard padding="20px">
+      <AdminPlainCard padding="20px">
         <h2 class="text-lg font-semibold text-slate-900">{{ copy.sqlCardTitle }}</h2>
         <p class="mt-1 text-sm text-slate-600">{{ copy.sqlCardDescription }}</p>
         <div class="mt-4">
@@ -28,7 +28,7 @@
             {{ loadingFormat === 'sql' ? copy.exporting : copy.sqlButton }}
           </MikuButton>
         </div>
-      </LiquidGlassCard>
+      </AdminPlainCard>
     </div>
   </section>
 </template>
@@ -39,7 +39,7 @@ import { ref } from 'vue'
 import { ApiError } from '../../lib/api'
 import { adminCopy } from '../../content/copy'
 import { showToast } from '../../stores/ui'
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
 
 type BackupFormat = 'json' | 'sql'

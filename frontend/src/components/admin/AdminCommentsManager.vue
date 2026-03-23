@@ -1,6 +1,6 @@
 <template>
   <section class="space-y-5">
-    <LiquidGlassCard padding="24px">
+    <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">评论审核</h1>
@@ -22,9 +22,9 @@
           <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">{{ pendingCount }} 条待审核</span>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
-    <LiquidGlassCard padding="20px">
+    <AdminPlainCard padding="20px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-lg font-semibold text-slate-900">{{ rateCopy.title }}</h2>
@@ -86,9 +86,9 @@
           </div>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
-    <LiquidGlassCard padding="0px">
+    <AdminPlainCard padding="0px">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead>
@@ -186,7 +186,7 @@
           </button>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
   </section>
 </template>
 
@@ -201,7 +201,7 @@ import VChart from 'vue-echarts'
 import { api, ApiError, type PagedData } from '../../lib/api'
 import { adminCopy } from '../../content/copy'
 import { showToast } from '../../stores/ui'
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 

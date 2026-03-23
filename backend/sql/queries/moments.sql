@@ -1,5 +1,5 @@
 -- name: ListMoments :many
-SELECT id, author_name, content, image_urls, like_count, repost_count,
+SELECT id, author_name, author_avatar_url, content, image_urls, like_count, repost_count,
        comment_count, publish_status, published_at, scheduled_at, created_at
 FROM moments
 WHERE status = 'approved'
@@ -18,7 +18,7 @@ WHERE status = 'approved'
   AND published_at <= now();
 
 -- name: ListLatestMoments :many
-SELECT id, author_name, content, image_urls, created_at
+SELECT id, author_name, author_avatar_url, content, image_urls, created_at
 FROM moments
 WHERE status = 'approved'
   AND publish_status = 'published'
@@ -28,25 +28,25 @@ ORDER BY published_at DESC, created_at DESC
 LIMIT $1;
 
 -- name: GetMomentByID :one
-SELECT id, author_name, content, image_urls, status, like_count,
+SELECT id, author_name, author_avatar_url, content, image_urls, status, like_count,
        repost_count, comment_count, publish_status, published_at, scheduled_at, created_at
 FROM moments
 WHERE id = $1;
 
 -- name: CreateMoment :one
-INSERT INTO moments (author_name, content, image_urls, ip_hash, ua_hash, publish_status, published_at, scheduled_at)
+INSERT INTO moments (author_name, author_avatar_url, content, image_urls, ip_hash, ua_hash, publish_status, published_at, scheduled_at)
 VALUES (
-    $1, $2, $3, $4, $5, $6,
-    CASE WHEN $6 = 'published'::moment_publish_status THEN now() ELSE NULL END,
-    CASE WHEN $6 = 'scheduled'::moment_publish_status THEN $7 ELSE NULL END
+    $1, $2, $3, $4, $5, $6, $7,
+    CASE WHEN $7 = 'published'::moment_publish_status THEN now() ELSE NULL END,
+    CASE WHEN $7 = 'scheduled'::moment_publish_status THEN $8 ELSE NULL END
 )
 RETURNING id, created_at;
 
 -- name: UpdateMoment :exec
 UPDATE moments
-SET author_name = $2, content = $3, image_urls = $4, publish_status = $5,
-    published_at = CASE WHEN $5 = 'published'::moment_publish_status THEN COALESCE(published_at, now()) ELSE NULL END,
-    scheduled_at = CASE WHEN $5 = 'scheduled'::moment_publish_status THEN $6 ELSE NULL END
+SET author_name = $2, author_avatar_url = $3, content = $4, image_urls = $5, publish_status = $6,
+    published_at = CASE WHEN $6 = 'published'::moment_publish_status THEN COALESCE(published_at, now()) ELSE NULL END,
+    scheduled_at = CASE WHEN $6 = 'scheduled'::moment_publish_status THEN $7 ELSE NULL END
 WHERE id = $1;
 
 -- name: CheckMomentLike :one
@@ -113,7 +113,7 @@ UPDATE moment_comments SET like_count = like_count + 1 WHERE id = $1;
 UPDATE moment_comments SET like_count = GREATEST(like_count - 1, 0) WHERE id = $1;
 
 -- name: ListAdminMoments :many
-SELECT id, author_name, content, image_urls, status, like_count,
+SELECT id, author_name, author_avatar_url, content, image_urls, status, like_count,
        repost_count, comment_count, publish_status, published_at, scheduled_at, created_at
 FROM moments
 ORDER BY created_at DESC

@@ -294,6 +294,8 @@ type AdminUser struct {
 	LastLoginAt  pgtype.Timestamptz `json:"last_login_at"`
 	CreatedAt    time.Time          `json:"created_at"`
 	UpdatedAt    time.Time          `json:"updated_at"`
+	DisplayName  string             `json:"display_name"`
+	AvatarUrl    string             `json:"avatar_url"`
 }
 
 type AnalyticsPageview struct {
@@ -408,21 +410,22 @@ type GuestbookVote struct {
 }
 
 type Moment struct {
-	ID            uuid.UUID           `json:"id"`
-	AuthorName    string              `json:"author_name"`
-	Content       string              `json:"content"`
-	ImageUrls     json.RawMessage     `json:"image_urls"`
-	Status        ModerationStatus    `json:"status"`
-	LikeCount     int64               `json:"like_count"`
-	RepostCount   int64               `json:"repost_count"`
-	CommentCount  int64               `json:"comment_count"`
-	IpHash        string              `json:"ip_hash"`
-	UaHash        string              `json:"ua_hash"`
-	CreatedAt     time.Time           `json:"created_at"`
-	ReviewedBy    pgtype.UUID         `json:"reviewed_by"`
-	PublishStatus MomentPublishStatus `json:"publish_status"`
-	PublishedAt   pgtype.Timestamptz  `json:"published_at"`
-	ScheduledAt   pgtype.Timestamptz  `json:"scheduled_at"`
+	ID              uuid.UUID           `json:"id"`
+	AuthorName      string              `json:"author_name"`
+	Content         string              `json:"content"`
+	ImageUrls       json.RawMessage     `json:"image_urls"`
+	Status          ModerationStatus    `json:"status"`
+	LikeCount       int64               `json:"like_count"`
+	RepostCount     int64               `json:"repost_count"`
+	CommentCount    int64               `json:"comment_count"`
+	IpHash          string              `json:"ip_hash"`
+	UaHash          string              `json:"ua_hash"`
+	CreatedAt       time.Time           `json:"created_at"`
+	ReviewedBy      pgtype.UUID         `json:"reviewed_by"`
+	PublishStatus   MomentPublishStatus `json:"publish_status"`
+	PublishedAt     pgtype.Timestamptz  `json:"published_at"`
+	ScheduledAt     pgtype.Timestamptz  `json:"scheduled_at"`
+	AuthorAvatarUrl string              `json:"author_avatar_url"`
 }
 
 type MomentComment struct {

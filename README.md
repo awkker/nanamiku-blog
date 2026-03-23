@@ -33,7 +33,7 @@ nanamiku-blog/
 │   └── package.json
 ├── backend/                # Go + Hertz 后端
 │   ├── main.go             # 入口
-│   ├── cmd/                # CLI 工具（migrate / seed）
+│   ├── cmd/                # CLI 工具（migrate / seed / reset-password）
 │   ├── biz/
 │   │   ├── bootstrap/      # 配置、DB、Redis、路由注册
 │   │   ├── handler/        # HTTP 处理器（admin / public）
@@ -76,8 +76,15 @@ nanamiku-blog/
 cd backend
 docker-compose up -d          # PostgreSQL + Redis
 go run cmd/migrate/main.go    # 执行数据库迁移（可重复执行，已应用版本会自动跳过）
-go run cmd/seed/main.go       # 创建管理员账号（默认 admin / admin123）
+go run cmd/seed/main.go 'YourStrongPassword123'  # 创建管理员账号（请传入强密码）
 go run main.go                # 启动 API 服务 :8080
+```
+
+管理员密码重置（推荐线上使用）：
+
+```bash
+cd backend
+ADMIN_NEW_PASSWORD='YourNewStrongPassword123' go run cmd/reset-password/main.go -username admin
 ```
 
 可选：如需本地也显示国家分布，可在 `backend/.env` 配置 `GEOIP_DB_PATH=/绝对路径/GeoLite2-City.mmdb`，重启后端后生效。
@@ -132,6 +139,7 @@ npm run dev                   # 启动开发服务器 :4321
 - **草稿 / 定时发布**：文章与说说均支持 `draft` / `published` / `scheduled` 生命周期，并由后端定时任务自动发布到点内容。
 - **反垃圾增强**：留言与评论提交新增敏感词拦截；Redis 限流命中数据可在后台评论页可视化查看（总量 + 趋势 + 规则拆分）。
 - **数据导出与备份**：新增后台一键导出 `JSON` / `SQL`，用于迁移和灾备。
+- **管理员身份统一**：后台可配置管理员说说昵称与头像；发布/编辑说说时自动使用管理员身份，无需手动填写作者信息。
 
 ## Analytics 仪表盘
 

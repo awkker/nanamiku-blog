@@ -1,7 +1,7 @@
 <template>
   <section class="space-y-5">
     <!-- Header -->
-    <LiquidGlassCard padding="24px">
+    <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">文章管理</h1>
@@ -9,10 +9,10 @@
         </div>
         <MikuButton variant="solid" aria-label="新建文章" @click="toggleCreateForm">+ 新建文章</MikuButton>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <!-- ===== Writing Studio (Create) ===== -->
-    <LiquidGlassCard v-if="showCreateForm" padding="0px">
+    <AdminPlainCard v-if="showCreateForm" padding="0px">
       <form @submit.prevent="createPost">
         <!-- Title zone -->
         <div class="writing-title-zone">
@@ -93,10 +93,10 @@
           </div>
         </div>
       </form>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <!-- ===== Writing Studio (Edit) ===== -->
-    <LiquidGlassCard v-if="showEditForm" padding="0px">
+    <AdminPlainCard v-if="showEditForm" padding="0px">
       <form @submit.prevent="updatePost">
         <div class="writing-title-zone">
           <input
@@ -162,10 +162,10 @@
           </div>
         </div>
       </form>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <!-- ===== Posts Table ===== -->
-    <LiquidGlassCard padding="0px">
+    <AdminPlainCard padding="0px">
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="loading-dot" /><div class="loading-dot delay-1" /><div class="loading-dot delay-2" />
       </div>
@@ -253,7 +253,7 @@
           </tbody>
         </table>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
   </section>
 </template>
 
@@ -262,7 +262,7 @@ import { onMounted, ref } from 'vue'
 
 import { api, ApiError, type PagedData } from '../../lib/api'
 import { showToast } from '../../stores/ui'
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
 
 interface ApiPost {

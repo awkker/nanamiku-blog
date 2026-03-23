@@ -1,6 +1,6 @@
 <template>
   <section class="space-y-5">
-    <LiquidGlassCard max-width="100%" padding="16px">
+    <AdminPlainCard max-width="100%" padding="16px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
@@ -60,25 +60,25 @@
           <p>{{ formattedWindowRange }}</p>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <template v-if="status === 'loading' && !analytics">
         <SkeletonCard v-for="i in 5" :key="i" />
       </template>
       <template v-else>
-        <LiquidGlassCard v-for="item in statCards" :key="item.label" max-width="100%" padding="18px">
+        <AdminPlainCard v-for="item in statCards" :key="item.label" max-width="100%" padding="18px">
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ item.label }}</p>
           <p class="mt-2 font-mono text-4xl font-semibold text-slate-900">{{ item.value }}</p>
           <div class="mt-3 inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-semibold" :class="deltaClass(item.change, item.inverse)">
             <span>{{ trendArrow(item.change, item.inverse) }}</span>
             <span>{{ formatChange(item.change) }}</span>
           </div>
-        </LiquidGlassCard>
+        </AdminPlainCard>
       </template>
     </div>
 
-    <LiquidGlassCard max-width="100%" padding="20px">
+    <AdminPlainCard max-width="100%" padding="20px">
       <div class="flex items-center justify-between gap-3">
         <div>
           <h2 class="text-lg font-semibold text-slate-900">{{ copy.sections.trafficOverviewTitle }}</h2>
@@ -93,9 +93,9 @@
       <div v-else class="mt-4 h-[360px]">
         <v-chart :option="trendOption" autoresize />
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
-    <LiquidGlassCard max-width="100%" padding="20px">
+    <AdminPlainCard max-width="100%" padding="20px">
       <div class="flex items-center justify-between gap-3">
         <div>
           <h3 class="text-lg font-semibold text-slate-900">{{ copy.sections.recentActivitiesTitle }}</h3>
@@ -136,17 +136,17 @@
           <p v-if="item.admin_username" class="mt-1 text-xs text-slate-500">{{ copy.common.operatorPrefix }}{{ item.admin_username }}</p>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
-    <LiquidGlassCard v-if="degradedMode" max-width="100%" padding="14px">
+    <AdminPlainCard v-if="degradedMode" max-width="100%" padding="14px">
       <p class="text-sm text-amber-700">
         {{ copy.degradedMessage }}
       </p>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <template v-if="analytics">
       <div class="grid gap-4 xl:grid-cols-2">
-        <LiquidGlassCard max-width="100%" padding="20px">
+        <AdminPlainCard max-width="100%" padding="20px">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-slate-900">{{ copy.sections.pages }}</h3>
             <div class="inline-flex gap-1 rounded-xl border border-slate-200/80 bg-white/70 p-1 text-xs">
@@ -184,9 +184,9 @@
           >
             <span>{{ showAllPages ? copy.common.less : copy.common.more }}</span>
           </button>
-        </LiquidGlassCard>
+        </AdminPlainCard>
 
-        <LiquidGlassCard max-width="100%" padding="20px">
+        <AdminPlainCard max-width="100%" padding="20px">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-slate-900">{{ copy.sections.sources }}</h3>
             <div class="inline-flex gap-1 rounded-xl border border-slate-200/80 bg-white/70 p-1 text-xs">
@@ -230,9 +230,9 @@
           >
             <span>{{ showAllSources ? copy.common.less : copy.common.more }}</span>
           </button>
-        </LiquidGlassCard>
+        </AdminPlainCard>
 
-        <LiquidGlassCard max-width="100%" padding="20px">
+        <AdminPlainCard max-width="100%" padding="20px">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-slate-900">{{ copy.sections.environment }}</h3>
             <div class="inline-flex gap-1 rounded-xl border border-slate-200/80 bg-white/70 p-1 text-xs">
@@ -270,9 +270,9 @@
           >
             <span>{{ showAllEnvironment ? copy.common.less : copy.common.more }}</span>
           </button>
-        </LiquidGlassCard>
+        </AdminPlainCard>
 
-        <LiquidGlassCard max-width="100%" padding="20px">
+        <AdminPlainCard max-width="100%" padding="20px">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-slate-900">{{ copy.sections.location }}</h3>
             <div class="inline-flex gap-1 rounded-xl border border-slate-200/80 bg-white/70 p-1 text-xs">
@@ -310,11 +310,11 @@
           >
             <span>{{ showAllLocation ? copy.common.less : copy.common.more }}</span>
           </button>
-        </LiquidGlassCard>
+        </AdminPlainCard>
       </div>
 
       <div class="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <LiquidGlassCard max-width="100%" padding="20px">
+        <AdminPlainCard max-width="100%" padding="20px">
           <div class="flex items-center justify-between gap-3">
             <h3 class="text-lg font-semibold text-slate-900">{{ copy.sections.geoDistribution }}</h3>
             <span class="text-xs text-slate-500">{{ copy.sections.byCountry }}</span>
@@ -333,9 +333,9 @@
               <span class="font-semibold text-slate-900">{{ formatInteger(item.visitors) }}</span>
             </div>
           </div>
-        </LiquidGlassCard>
+        </AdminPlainCard>
 
-        <LiquidGlassCard max-width="100%" padding="20px">
+        <AdminPlainCard max-width="100%" padding="20px">
           <h3 class="text-lg font-semibold text-slate-900">{{ copy.sections.traffic }}</h3>
           <div class="mt-4 grid grid-cols-[42px_repeat(7,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1 text-xs text-slate-600">
             <div />
@@ -348,7 +348,7 @@
               </div>
             </template>
           </div>
-        </LiquidGlassCard>
+        </AdminPlainCard>
       </div>
     </template>
   </section>
@@ -368,7 +368,7 @@ import { api } from '../../lib/api'
 import { authState, hydrateAuth } from '../../stores/auth'
 import { setScopeStatus } from '../../stores/loading'
 import { adminCopy } from '../../content/copy'
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import SkeletonCard from '../ui/SkeletonCard.vue'
 
 echarts.use([CanvasRenderer, BarChart, MapChart, GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, GeoComponent, LegacyGridContainLabel])

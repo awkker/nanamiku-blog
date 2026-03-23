@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"nanamiku-blog/backend/biz/dto"
@@ -16,10 +17,11 @@ import (
 type MomentsAdminHandler struct {
 	svc    *service.MomentsService
 	modSvc *service.ModerationService
+	auth   *service.AuthService
 }
 
-func NewMomentsAdminHandler(svc *service.MomentsService, modSvc *service.ModerationService) *MomentsAdminHandler {
-	return &MomentsAdminHandler{svc: svc, modSvc: modSvc}
+func NewMomentsAdminHandler(svc *service.MomentsService, modSvc *service.ModerationService, authSvc *service.AuthService) *MomentsAdminHandler {
+	return &MomentsAdminHandler{svc: svc, modSvc: modSvc, auth: authSvc}
 }
 
 func (h *MomentsAdminHandler) List(ctx context.Context, c *app.RequestContext) {
@@ -35,7 +37,6 @@ func (h *MomentsAdminHandler) List(ctx context.Context, c *app.RequestContext) {
 }
 
 type createMomentReq struct {
-	AuthorName    string   `json:"author_name"`
 	Content       string   `json:"content"`
 	ImageURLs     []string `json:"image_urls"`
 	PublishStatus string   `json:"publish_status"`
@@ -48,8 +49,8 @@ func (h *MomentsAdminHandler) Create(ctx context.Context, c *app.RequestContext)
 		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
 		return
 	}
-	if req.AuthorName == "" || req.Content == "" {
-		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "author_name and content required"))
+	if req.Content == "" {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "content required"))
 		return
 	}
 	if len(req.ImageURLs) > 4 {
@@ -63,8 +64,14 @@ func (h *MomentsAdminHandler) Create(ctx context.Context, c *app.RequestContext)
 		return
 	}
 
+	admin, ok := h.currentAdminProfile(ctx, c)
+	if !ok {
+		return
+	}
+
 	item, err := h.svc.Create(ctx, service.CreateMomentInput{
-		AuthorName:    req.AuthorName,
+		AuthorName:    admin.name,
+		AuthorAvatar:  admin.avatarURL,
 		Content:       req.Content,
 		ImageURLs:     req.ImageURLs,
 		IPHash:        "",
@@ -81,7 +88,6 @@ func (h *MomentsAdminHandler) Create(ctx context.Context, c *app.RequestContext)
 }
 
 type updateMomentReq struct {
-	AuthorName    string   `json:"author_name"`
 	Content       string   `json:"content"`
 	ImageURLs     []string `json:"image_urls"`
 	PublishStatus string   `json:"publish_status"`
@@ -100,8 +106,8 @@ func (h *MomentsAdminHandler) Update(ctx context.Context, c *app.RequestContext)
 		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
 		return
 	}
-	if req.AuthorName == "" || req.Content == "" {
-		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "author_name and content required"))
+	if req.Content == "" {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "content required"))
 		return
 	}
 	if len(req.ImageURLs) > 4 {
@@ -115,7 +121,12 @@ func (h *MomentsAdminHandler) Update(ctx context.Context, c *app.RequestContext)
 		return
 	}
 
-	if err := h.svc.Update(ctx, id, req.AuthorName, req.Content, req.ImageURLs, publishStatus, scheduledAt); err != nil {
+	admin, ok := h.currentAdminProfile(ctx, c)
+	if !ok {
+		return
+	}
+
+	if err := h.svc.Update(ctx, id, admin.name, admin.avatarURL, req.Content, req.ImageURLs, publishStatus, scheduledAt); err != nil {
 		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "update moment failed"))
 		return
 	}
@@ -200,4 +211,35 @@ func parseMomentPublish(status, scheduledAt string) (string, *time.Time, bool) {
 		return "", nil, false
 	}
 	return status, &at, true
+}
+
+type momentAuthorProfile struct {
+	name      string
+	avatarURL string
+}
+
+func (h *MomentsAdminHandler) currentAdminProfile(ctx context.Context, c *app.RequestContext) (*momentAuthorProfile, bool) {
+	adminID := getAdminID(c)
+	if adminID == uuid.Nil {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return nil, false
+	}
+
+	admin, err := h.auth.GetAdminInfo(ctx, adminID)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to load admin profile"))
+		return nil, false
+	}
+
+	name := strings.TrimSpace(admin.DisplayName)
+	if name == "" {
+		name = admin.Username
+	}
+
+	avatarURL := strings.TrimSpace(admin.AvatarUrl)
+	if avatarURL == "" {
+		avatarURL = service.DefaultAdminAvatarURL
+	}
+
+	return &momentAuthorProfile{name: name, avatarURL: avatarURL}, true
 }

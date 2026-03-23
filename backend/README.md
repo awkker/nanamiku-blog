@@ -113,6 +113,21 @@ go run cmd/seed/main.go [password]
 # Default: username=admin, password=admin123
 ```
 
+### Reset admin password (production recommended)
+
+```bash
+# Option A: pass by flag
+go run cmd/reset-password/main.go -username admin -password 'YourNewStrongPassword123'
+
+# Option B: pass by env (avoid command history leakage)
+ADMIN_NEW_PASSWORD='YourNewStrongPassword123' go run cmd/reset-password/main.go -username admin
+```
+
+The reset command will:
+- bcrypt-hash the new password
+- update `admin_users.password_hash`
+- revoke all existing refresh-token sessions for that admin
+
 ### 5. Start server
 
 ```bash

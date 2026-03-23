@@ -1,5 +1,5 @@
 <template>
-  <LiquidGlassCard padding="20px">
+  <AdminPlainCard padding="20px">
     <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
     <div v-if="loading" class="mt-4 flex items-center justify-center" style="height: 320px">
       <p class="text-sm text-slate-400">加载中...</p>
@@ -7,7 +7,7 @@
     <div v-else class="mt-4" style="height: 320px">
       <v-chart :option="chartOption" autoresize />
     </div>
-  </LiquidGlassCard>
+  </AdminPlainCard>
 </template>
 
 <script setup lang="ts">
@@ -22,7 +22,7 @@ import {
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 

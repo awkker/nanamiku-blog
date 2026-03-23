@@ -1,7 +1,7 @@
 <template>
   <section class="space-y-5">
     <!-- Header -->
-    <LiquidGlassCard padding="24px">
+    <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">说说管理</h1>
@@ -9,10 +9,44 @@
         </div>
         <MikuButton variant="solid" aria-label="发布说说" @click="toggleCreateForm">+ 发布说说</MikuButton>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
+
+    <AdminPlainCard padding="20px">
+      <div class="grid gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+        <img
+          :src="profileAvatarPreview"
+          :alt="copy.profile.avatarAlt"
+          class="h-16 w-16 rounded-full border border-slate-200 object-cover"
+        />
+        <div>
+          <p class="text-sm font-semibold text-slate-900">{{ copy.profile.title }}</p>
+          <p class="mt-1 text-xs text-slate-500">{{ copy.profile.subtitle }}</p>
+        </div>
+      </div>
+
+      <div class="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
+        <input
+          v-model="profileDisplayName"
+          type="text"
+          :placeholder="copy.profile.displayNamePlaceholder"
+          class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-miku/50"
+          :aria-label="copy.profile.displayNameLabel"
+        />
+        <input
+          v-model="profileAvatarURL"
+          type="text"
+          :placeholder="copy.profile.avatarPlaceholder"
+          class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-miku/50"
+          :aria-label="copy.profile.avatarLabel"
+        />
+        <MikuButton type="button" variant="solid" :disabled="profileSaving" @click="saveProfile">
+          {{ profileSaving ? copy.profile.savingButton : copy.profile.saveButton }}
+        </MikuButton>
+      </div>
+    </AdminPlainCard>
 
     <!-- ===== Compose Card (Create) ===== -->
-    <LiquidGlassCard v-if="showCreateForm" padding="0px">
+    <AdminPlainCard v-if="showCreateForm" padding="0px">
       <form @submit.prevent="createMoment">
         <!-- Content zone -->
         <div class="compose-content-zone">
@@ -41,10 +75,9 @@
             发布设置
           </button>
           <div v-show="showCreateMeta" class="compose-meta-drawer">
-            <div class="compose-meta-row">
-              <label class="compose-meta-label">署名</label>
-              <input v-model="newMoment.author_name" type="text" placeholder="你的昵称" class="compose-meta-input" />
-            </div>
+            <p class="rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-xs text-slate-500">
+              {{ copy.profile.autoHint }}
+            </p>
             <div class="compose-meta-row">
               <label class="compose-meta-label">发布状态</label>
               <select v-model="newMoment.publish_status" class="compose-meta-input">
@@ -76,10 +109,10 @@
           </div>
         </div>
       </form>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <!-- ===== Compose Card (Edit) ===== -->
-    <LiquidGlassCard v-if="showEditForm" padding="0px">
+    <AdminPlainCard v-if="showEditForm" padding="0px">
       <form @submit.prevent="updateMoment">
         <div class="compose-content-zone">
           <p class="mb-1 text-xs tracking-wide text-slate-400">编辑中</p>
@@ -106,10 +139,9 @@
             发布设置
           </button>
           <div v-show="showEditMeta" class="compose-meta-drawer">
-            <div class="compose-meta-row">
-              <label class="compose-meta-label">署名</label>
-              <input v-model="editMoment.author_name" type="text" placeholder="你的昵称" class="compose-meta-input" />
-            </div>
+            <p class="rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-xs text-slate-500">
+              {{ copy.profile.autoHint }}
+            </p>
             <div class="compose-meta-row">
               <label class="compose-meta-label">发布状态</label>
               <select v-model="editMoment.publish_status" class="compose-meta-input">
@@ -140,26 +172,26 @@
           </div>
         </div>
       </form>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <!-- Stats -->
     <div class="grid gap-4 sm:grid-cols-3">
-      <LiquidGlassCard padding="16px">
+      <AdminPlainCard padding="16px">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-600">说说总数</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-slate-900">{{ momentsList.length }}</p>
-      </LiquidGlassCard>
-      <LiquidGlassCard padding="16px">
+      </AdminPlainCard>
+      <AdminPlainCard padding="16px">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-600">总点赞</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-miku">{{ totalLikes }}</p>
-      </LiquidGlassCard>
-      <LiquidGlassCard padding="16px">
+      </AdminPlainCard>
+      <AdminPlainCard padding="16px">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-600">总评论</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-[#c084fc]">{{ totalComments }}</p>
-      </LiquidGlassCard>
+      </AdminPlainCard>
     </div>
 
     <!-- List -->
-    <LiquidGlassCard padding="0px">
+    <AdminPlainCard padding="0px">
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="loading-dot" /><div class="loading-dot delay-1" /><div class="loading-dot delay-2" />
       </div>
@@ -176,6 +208,7 @@
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
+                <img :src="item.authorAvatar" :alt="item.author" class="h-6 w-6 rounded-full border border-slate-200 object-cover" />
                 <span class="text-sm font-medium text-slate-900">{{ item.author }}</span>
                 <span class="rounded-full px-2 py-0.5 text-[11px] font-medium" :class="statusClass(item.publishStatus)">
                   {{ statusLabel(item.publishStatus) }}
@@ -240,21 +273,25 @@
           </div>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
   </section>
 </template>
 
 <script setup lang="ts">
+import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref } from 'vue'
 
 import { api, ApiError, type PagedData } from '../../lib/api'
+import { adminCopy } from '../../content/copy'
+import { authState, hydrateAuth, updateMyProfile } from '../../stores/auth'
 import { showToast } from '../../stores/ui'
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
 
 interface ApiMoment {
   id: string
   author_name: string
+  author_avatar_url?: string
   content: string
   image_urls: string[]
   like_count: number
@@ -269,6 +306,7 @@ interface ApiMoment {
 interface MomentItem {
   id: string
   author: string
+  authorAvatar: string
   content: string
   images: string[]
   likes: number
@@ -283,11 +321,16 @@ interface MomentItem {
 }
 
 interface MomentForm {
-  author_name: string
   content: string
   image_urls: string
   publish_status: 'draft' | 'published' | 'scheduled'
   scheduled_at: string
+}
+
+interface AdminProfilePayload {
+  username: string
+  display_name?: string
+  avatar_url?: string
 }
 
 function formatDate(iso: string): string {
@@ -306,6 +349,7 @@ function mapMoment(item: ApiMoment): MomentItem {
   return {
     id: item.id,
     author: item.author_name,
+    authorAvatar: item.author_avatar_url || '/picture/author.jpg',
     content: item.content,
     images: item.image_urls || [],
     likes: Number(item.like_count) || 0,
@@ -322,7 +366,6 @@ function mapMoment(item: ApiMoment): MomentItem {
 
 function createEmptyMomentForm(): MomentForm {
   return {
-    author_name: '',
     content: '',
     image_urls: '',
     publish_status: 'draft',
@@ -355,6 +398,16 @@ const newMoment = ref<MomentForm>(createEmptyMomentForm())
 const editMoment = ref<MomentForm>(createEmptyMomentForm())
 const showCreateMeta = ref(false)
 const showEditMeta = ref(false)
+const copy = adminCopy.momentsManager
+
+const auth = useStore(authState)
+const profileDisplayName = ref('')
+const profileAvatarURL = ref('/picture/author.jpg')
+const profileSaving = ref(false)
+
+const profileAvatarPreview = computed(() => {
+  return (profileAvatarURL.value || '').trim() || '/picture/author.jpg'
+})
 
 const createImagePreviews = computed(() => {
   return newMoment.value.image_urls.split(',').map((u: string) => u.trim()).filter(Boolean).slice(0, 4)
@@ -403,8 +456,45 @@ async function loadMoments() {
   }
 }
 
+async function loadProfile() {
+  hydrateAuth()
+  const current = auth.value.user
+  if (current) {
+    profileDisplayName.value = current.name || current.username || ''
+    profileAvatarURL.value = current.avatar || '/picture/author.jpg'
+  }
+
+  try {
+    const me = await api.get<AdminProfilePayload>('/auth/me')
+    profileDisplayName.value = (me.display_name || '').trim() || me.username
+    profileAvatarURL.value = (me.avatar_url || '').trim() || '/picture/author.jpg'
+  } catch {
+    // keep store fallback
+  }
+}
+
+async function saveProfile() {
+  const displayName = profileDisplayName.value.trim()
+  if (!displayName) {
+    showToast(copy.profile.emptyNameError, 'error')
+    return
+  }
+
+  profileSaving.value = true
+  try {
+    await updateMyProfile(displayName, profileAvatarURL.value.trim())
+    await loadProfile()
+    showToast(copy.profile.saveSuccess, 'success')
+  } catch (err) {
+    const msg = err instanceof ApiError ? err.message : copy.profile.saveFailed
+    showToast(msg, 'error')
+  } finally {
+    profileSaving.value = false
+  }
+}
+
 async function createMoment() {
-  if (!newMoment.value.author_name.trim() || !newMoment.value.content.trim()) return
+  if (!newMoment.value.content.trim()) return
   if (newMoment.value.publish_status === 'scheduled' && !newMoment.value.scheduled_at) {
     showToast('请选择定时发布时间', 'error')
     return
@@ -412,7 +502,6 @@ async function createMoment() {
   creating.value = true
   try {
     await api.post('/admin/moments', {
-      author_name: newMoment.value.author_name.trim(),
       content: newMoment.value.content.trim(),
       image_urls: toImageURLs(newMoment.value.image_urls),
       publish_status: newMoment.value.publish_status,
@@ -436,7 +525,6 @@ async function createMoment() {
 function startEditMoment(item: MomentItem) {
   editingMomentID.value = item.id
   editMoment.value = {
-    author_name: item.author,
     content: item.content,
     image_urls: (item.images || []).join(', '),
     publish_status: item.publishStatus,
@@ -450,7 +538,7 @@ function startEditMoment(item: MomentItem) {
 
 async function updateMoment() {
   if (!editingMomentID.value) return
-  if (!editMoment.value.author_name.trim() || !editMoment.value.content.trim()) return
+  if (!editMoment.value.content.trim()) return
   if (editMoment.value.publish_status === 'scheduled' && !editMoment.value.scheduled_at) {
     showToast('请选择定时发布时间', 'error')
     return
@@ -458,7 +546,6 @@ async function updateMoment() {
   editing.value = true
   try {
     await api.put(`/admin/moments/${editingMomentID.value}`, {
-      author_name: editMoment.value.author_name.trim(),
       content: editMoment.value.content.trim(),
       image_urls: toImageURLs(editMoment.value.image_urls),
       publish_status: editMoment.value.publish_status,
@@ -518,6 +605,7 @@ async function unpublishMoment(id: string) {
 }
 
 onMounted(() => {
+  loadProfile()
   loadMoments()
 })
 

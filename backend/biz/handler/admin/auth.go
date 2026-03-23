@@ -82,6 +82,20 @@ func (h *AuthHandler) Logout(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, dto.OK(nil))
 }
 
+func (h *AuthHandler) PublicProfile(ctx context.Context, c *app.RequestContext) {
+	profile, err := h.authSvc.GetPublicProfile(ctx)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to get public profile"))
+		return
+	}
+
+	c.JSON(consts.StatusOK, dto.OK(map[string]string{
+		"username":     profile.Username,
+		"display_name": profile.DisplayName,
+		"avatar_url":   profile.AvatarURL,
+	}))
+}
+
 func (h *AuthHandler) Me(ctx context.Context, c *app.RequestContext) {
 	adminIDVal, exists := c.Get("admin_id")
 	if !exists {
@@ -104,6 +118,50 @@ func (h *AuthHandler) Me(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, dto.OK(map[string]interface{}{
 		"id":            admin.ID,
 		"username":      admin.Username,
+		"display_name":  admin.DisplayName,
+		"avatar_url":    admin.AvatarUrl,
+		"email":         admin.Email,
+		"role":          admin.Role,
+		"last_login_at": admin.LastLoginAt,
+		"created_at":    admin.CreatedAt,
+	}))
+}
+
+type updateMeRequest struct {
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+}
+
+func (h *AuthHandler) UpdateMe(ctx context.Context, c *app.RequestContext) {
+	adminIDVal, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	adminID, ok := adminIDVal.(uuid.UUID)
+	if !ok {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	var req updateMeRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
+		return
+	}
+
+	admin, err := h.authSvc.UpdateProfile(ctx, adminID, req.DisplayName, req.AvatarURL)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to update admin profile"))
+		return
+	}
+
+	c.JSON(consts.StatusOK, dto.OK(map[string]interface{}{
+		"id":            admin.ID,
+		"username":      admin.Username,
+		"display_name":  admin.DisplayName,
+		"avatar_url":    admin.AvatarUrl,
 		"email":         admin.Email,
 		"role":          admin.Role,
 		"last_login_at": admin.LastLoginAt,

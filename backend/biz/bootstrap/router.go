@@ -75,7 +75,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	postsH := public.NewPostsHandler(postsSvc)
 	postCommentsH := public.NewPostCommentsHandler(postCommentsSvc, moderationSvc)
 	postsAdminH := admin.NewPostsAdminHandler(postsSvc, moderationSvc)
-	momentsAdminH := admin.NewMomentsAdminHandler(momentsSvc, moderationSvc)
+	momentsAdminH := admin.NewMomentsAdminHandler(momentsSvc, moderationSvc, authSvc)
 	backupH := admin.NewBackupHandler(backupSvc)
 	weatherH := public.NewWeatherHandler(weatherSvc)
 
@@ -93,10 +93,12 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 			auth.POST("/refresh", authH.Refresh)
 			auth.POST("/logout", authH.Logout)
 		}
+		api.GET("/author-profile", authH.PublicProfile)
 		authed := api.Group("/auth")
 		authed.Use(middleware.AdminAuth(tokenValidator))
 		{
 			authed.GET("/me", authH.Me)
+			authed.PUT("/me", authH.UpdateMe)
 		}
 
 		// Guestbook

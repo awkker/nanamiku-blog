@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-3">
-    <LiquidGlassCard padding="12px">
+    <AdminPlainCard padding="12px">
       <div class="flex items-center gap-3">
         <button
           type="button"
@@ -44,7 +44,7 @@
           </MikuButton>
         </div>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
   </div>
 </template>
@@ -55,7 +55,7 @@ import { computed, onMounted, ref } from 'vue'
 import { authState, hydrateAuth, logout } from '../../stores/auth'
 import { useStore } from '@nanostores/vue'
 import { toggleSidebar } from '../../stores/ui'
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
 
 interface Props {

@@ -44,6 +44,7 @@ export interface CommentDraft {
 interface ApiMoment {
   id: string
   author_name: string
+  author_avatar_url?: string
   content: string
   image_urls: string[]
   like_count: number
@@ -95,10 +96,11 @@ function mapComment(c: ApiMomentComment): MomentComment {
 }
 
 function mapMoment(item: ApiMoment, comments: MomentComment[] = []): Moment {
+  const avatar = (item.author_avatar_url || '').trim() || `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(item.author_name)}`
   return {
     id: item.id,
     nickname: item.author_name,
-    avatar: `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(item.author_name)}`,
+    avatar,
     content: item.content,
     images: item.image_urls || [],
     createdAt: formatDate(item.created_at),

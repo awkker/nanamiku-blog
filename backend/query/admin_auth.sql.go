@@ -77,7 +77,7 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshToken
 }
 
 const getAdminByID = `-- name: GetAdminByID :one
-SELECT id, username, email, role, status, last_login_at, created_at, updated_at
+SELECT id, username, email, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
 FROM admin_users
 WHERE id = $1
 `
@@ -88,6 +88,8 @@ type GetAdminByIDRow struct {
 	Email       string             `json:"email"`
 	Role        string             `json:"role"`
 	Status      string             `json:"status"`
+	DisplayName string             `json:"display_name"`
+	AvatarUrl   string             `json:"avatar_url"`
 	LastLoginAt pgtype.Timestamptz `json:"last_login_at"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
@@ -102,6 +104,8 @@ func (q *Queries) GetAdminByID(ctx context.Context, id uuid.UUID) (GetAdminByIDR
 		&i.Email,
 		&i.Role,
 		&i.Status,
+		&i.DisplayName,
+		&i.AvatarUrl,
 		&i.LastLoginAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -110,14 +114,28 @@ func (q *Queries) GetAdminByID(ctx context.Context, id uuid.UUID) (GetAdminByIDR
 }
 
 const getAdminByUsername = `-- name: GetAdminByUsername :one
-SELECT id, username, email, password_hash, role, status, last_login_at, created_at, updated_at
+SELECT id, username, email, password_hash, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
 FROM admin_users
 WHERE username = $1 AND status = 'active'
 `
 
-func (q *Queries) GetAdminByUsername(ctx context.Context, username string) (AdminUser, error) {
+type GetAdminByUsernameRow struct {
+	ID           uuid.UUID          `json:"id"`
+	Username     string             `json:"username"`
+	Email        string             `json:"email"`
+	PasswordHash string             `json:"password_hash"`
+	Role         string             `json:"role"`
+	Status       string             `json:"status"`
+	DisplayName  string             `json:"display_name"`
+	AvatarUrl    string             `json:"avatar_url"`
+	LastLoginAt  pgtype.Timestamptz `json:"last_login_at"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+}
+
+func (q *Queries) GetAdminByUsername(ctx context.Context, username string) (GetAdminByUsernameRow, error) {
 	row := q.db.QueryRow(ctx, getAdminByUsername, username)
-	var i AdminUser
+	var i GetAdminByUsernameRow
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
@@ -125,10 +143,33 @@ func (q *Queries) GetAdminByUsername(ctx context.Context, username string) (Admi
 		&i.PasswordHash,
 		&i.Role,
 		&i.Status,
+		&i.DisplayName,
+		&i.AvatarUrl,
 		&i.LastLoginAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+	return i, err
+}
+
+const getPrimaryAdminPublicProfile = `-- name: GetPrimaryAdminPublicProfile :one
+SELECT username, display_name, avatar_url
+FROM admin_users
+WHERE status = 'active'
+ORDER BY created_at ASC
+LIMIT 1
+`
+
+type GetPrimaryAdminPublicProfileRow struct {
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	AvatarUrl   string `json:"avatar_url"`
+}
+
+func (q *Queries) GetPrimaryAdminPublicProfile(ctx context.Context) (GetPrimaryAdminPublicProfileRow, error) {
+	row := q.db.QueryRow(ctx, getPrimaryAdminPublicProfile)
+	var i GetPrimaryAdminPublicProfileRow
+	err := row.Scan(&i.Username, &i.DisplayName, &i.AvatarUrl)
 	return i, err
 }
 
@@ -187,5 +228,43 @@ UPDATE admin_users SET last_login_at = now() WHERE id = $1
 
 func (q *Queries) UpdateAdminLastLogin(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, updateAdminLastLogin, id)
+	return err
+}
+
+const updateAdminPasswordByUsername = `-- name: UpdateAdminPasswordByUsername :one
+UPDATE admin_users
+SET password_hash = $2, updated_at = now()
+WHERE username = $1
+RETURNING id
+`
+
+type UpdateAdminPasswordByUsernameParams struct {
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+}
+
+func (q *Queries) UpdateAdminPasswordByUsername(ctx context.Context, arg UpdateAdminPasswordByUsernameParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, updateAdminPasswordByUsername, arg.Username, arg.PasswordHash)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateAdminProfile = `-- name: UpdateAdminProfile :exec
+UPDATE admin_users
+SET display_name = $2,
+    avatar_url = $3,
+    updated_at = now()
+WHERE id = $1
+`
+
+type UpdateAdminProfileParams struct {
+	ID          uuid.UUID `json:"id"`
+	DisplayName string    `json:"display_name"`
+	AvatarUrl   string    `json:"avatar_url"`
+}
+
+func (q *Queries) UpdateAdminProfile(ctx context.Context, arg UpdateAdminProfileParams) error {
+	_, err := q.db.Exec(ctx, updateAdminProfile, arg.ID, arg.DisplayName, arg.AvatarUrl)
 	return err
 }

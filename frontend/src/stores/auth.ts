@@ -13,8 +13,10 @@ const USER_KEY = 'miku_blog_user'
 export interface AuthUser {
   id: string
   name: string
+  username: string
   email: string
   role: 'admin'
+  avatar: string
 }
 
 export interface AuthState {
@@ -32,8 +34,26 @@ interface TokenPair {
 interface MeResponse {
   id: string
   username: string
+  display_name?: string
+  avatar_url?: string
   email: string
   role: string
+}
+
+function normalizeAvatarURL(url?: string): string {
+  return (url || '').trim() || '/picture/author.jpg'
+}
+
+function toAuthUser(me: MeResponse): AuthUser {
+  const name = (me.display_name || '').trim() || me.username
+  return {
+    id: me.id,
+    name,
+    username: me.username,
+    email: me.email,
+    role: 'admin',
+    avatar: normalizeAvatarURL(me.avatar_url),
+  }
 }
 
 export const authState = atom<AuthState>({
@@ -94,7 +114,15 @@ export function hydrateAuth() {
   }
 
   try {
-    const user = JSON.parse(rawUser) as AuthUser
+    const parsed = JSON.parse(rawUser) as Partial<AuthUser> & { username?: string }
+    const user: AuthUser = {
+      id: parsed.id || '',
+      name: parsed.name || parsed.username || 'Admin',
+      username: parsed.username || parsed.name || 'admin',
+      email: parsed.email || '',
+      role: 'admin',
+      avatar: normalizeAvatarURL(parsed.avatar),
+    }
     authState.set({ status: 'authenticated', token, user })
   } catch {
     clearPersistedAuth()
@@ -111,12 +139,7 @@ export async function loginWithPassword(identifier: string, password: string) {
 
     const me = await fetchMe(pair.access_token)
 
-    const user: AuthUser = {
-      id: me.id,
-      name: me.username,
-      email: me.email,
-      role: 'admin',
-    }
+    const user = toAuthUser(me)
 
     persistAuth(pair.access_token, pair.refresh_token, user)
     authState.set({ status: 'authenticated', token: pair.access_token, user })
@@ -160,4 +183,29 @@ async function fetchMe(token: string): Promise<MeResponse> {
   const body = await res.json()
   if (!res.ok || body.code !== 0) throw new Error('fetch me failed')
   return body.data as MeResponse
+}
+
+export async function updateMyProfile(displayName: string, avatarURL: string) {
+  const me = await api.put<MeResponse>('/auth/me', {
+    display_name: displayName,
+    avatar_url: avatarURL,
+  })
+
+  const user = toAuthUser(me)
+  const current = authState.get()
+  authState.set({
+    status: current.status === 'authenticated' ? 'authenticated' : 'guest',
+    token: current.token,
+    user: current.status === 'authenticated' ? user : null,
+  })
+
+  if (isBrowser()) {
+    try {
+      window.localStorage.setItem(USER_KEY, JSON.stringify(user))
+    } catch {
+      // ignore storage write error
+    }
+  }
+
+  return user
 }

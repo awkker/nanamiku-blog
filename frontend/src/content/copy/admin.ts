@@ -143,4 +143,21 @@ export const adminCopy = {
     },
     degradedMessage: 'Analytics 数据暂不可用，当前显示占位数据。请先在 `backend` 目录执行 `go run cmd/migrate/main.go`。',
   },
+  momentsManager: {
+    profile: {
+      title: '管理员说说身份',
+      subtitle: '发布说说时会自动使用这里的昵称与头像。',
+      displayNameLabel: '昵称',
+      displayNamePlaceholder: '请输入展示昵称',
+      avatarLabel: '头像 URL',
+      avatarPlaceholder: '请输入头像链接，留空将使用默认头像',
+      saveButton: '保存身份',
+      savingButton: '保存中...',
+      saveSuccess: '管理员身份已更新',
+      saveFailed: '保存管理员身份失败，请稍后重试',
+      emptyNameError: '昵称不能为空',
+      avatarAlt: '管理员头像预览',
+      autoHint: '发布说说时自动带入管理员昵称与头像',
+    },
+  },
 }

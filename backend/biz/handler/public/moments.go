@@ -82,6 +82,7 @@ func (h *MomentsHandler) Create(ctx context.Context, c *app.RequestContext) {
 
 	item, err := h.svc.Create(ctx, service.CreateMomentInput{
 		AuthorName:    req.AuthorName,
+		AuthorAvatar:  "",
 		Content:       req.Content,
 		ImageURLs:     req.ImageURLs,
 		IPHash:        ipHash,

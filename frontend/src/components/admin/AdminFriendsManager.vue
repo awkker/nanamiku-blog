@@ -1,6 +1,6 @@
 <template>
   <section class="space-y-5">
-    <LiquidGlassCard padding="24px">
+    <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">友链管理</h1>
@@ -8,10 +8,10 @@
         </div>
         <MikuButton variant="solid" aria-label="添加友链" @click="toggleCreateForm">+ 添加友链</MikuButton>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <!-- Create Form -->
-    <LiquidGlassCard v-if="showCreateForm" padding="24px">
+    <AdminPlainCard v-if="showCreateForm" padding="24px">
       <h2 class="mb-4 text-lg font-semibold text-slate-900">添加友链</h2>
       <form class="space-y-3" @submit.prevent="createFriend">
         <div class="grid gap-3 md:grid-cols-2">
@@ -25,9 +25,9 @@
           <button type="button" class="text-sm text-slate-500 hover:text-slate-700" @click="closeCreateForm">取消</button>
         </div>
       </form>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
-    <LiquidGlassCard v-if="showEditForm" padding="24px">
+    <AdminPlainCard v-if="showEditForm" padding="24px">
       <h2 class="mb-4 text-lg font-semibold text-slate-900">编辑友链</h2>
       <form class="space-y-3" @submit.prevent="updateFriend">
         <div class="grid gap-3 md:grid-cols-2">
@@ -42,24 +42,24 @@
           <button type="button" class="text-sm text-slate-500 hover:text-slate-700" @click="closeEditForm">取消</button>
         </div>
       </form>
-    </LiquidGlassCard>
+    </AdminPlainCard>
 
     <div class="grid gap-4 sm:grid-cols-3">
-      <LiquidGlassCard padding="16px">
+      <AdminPlainCard padding="16px">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-600">已通过</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-slate-900">{{ approvedCount }}</p>
-      </LiquidGlassCard>
-      <LiquidGlassCard padding="16px">
+      </AdminPlainCard>
+      <AdminPlainCard padding="16px">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-600">待审核</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-amber-600">{{ pendingCount }}</p>
-      </LiquidGlassCard>
-      <LiquidGlassCard padding="16px">
+      </AdminPlainCard>
+      <AdminPlainCard padding="16px">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-600">异常 / 不可达</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-red-600">{{ downCount }}</p>
-      </LiquidGlassCard>
+      </AdminPlainCard>
     </div>
 
-    <LiquidGlassCard padding="0px">
+    <AdminPlainCard padding="0px">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead>
@@ -138,7 +138,7 @@
           </tbody>
         </table>
       </div>
-    </LiquidGlassCard>
+    </AdminPlainCard>
   </section>
 </template>
 
@@ -147,7 +147,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import { api, ApiError, type PagedData } from '../../lib/api'
 import { showToast } from '../../stores/ui'
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
 
 interface ApiFriendLink {

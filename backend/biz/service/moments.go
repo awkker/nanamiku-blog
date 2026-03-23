@@ -25,6 +25,7 @@ func NewMomentsService(db *pgxpool.Pool) *MomentsService {
 type MomentItem struct {
 	ID            uuid.UUID `json:"id"`
 	AuthorName    string    `json:"author_name"`
+	AuthorAvatar  string    `json:"author_avatar_url"`
 	Content       string    `json:"content"`
 	ImageURLs     []string  `json:"image_urls"`
 	LikeCount     int64     `json:"like_count"`
@@ -73,6 +74,7 @@ func (s *MomentsService) List(ctx context.Context, page, size int, visitorID uui
 		item := MomentItem{
 			ID:            r.ID,
 			AuthorName:    r.AuthorName,
+			AuthorAvatar:  normalizeMomentAvatar(r.AuthorAvatarUrl),
 			Content:       r.Content,
 			ImageURLs:     parseImageURLs(r.ImageUrls),
 			LikeCount:     r.LikeCount,
@@ -103,11 +105,12 @@ func (s *MomentsService) Latest(ctx context.Context, limit int) ([]MomentItem, e
 	items := make([]MomentItem, 0, len(rows))
 	for _, r := range rows {
 		items = append(items, MomentItem{
-			ID:         r.ID,
-			AuthorName: r.AuthorName,
-			Content:    r.Content,
-			ImageURLs:  parseImageURLs(r.ImageUrls),
-			CreatedAt:  r.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			ID:           r.ID,
+			AuthorName:   r.AuthorName,
+			AuthorAvatar: normalizeMomentAvatar(r.AuthorAvatarUrl),
+			Content:      r.Content,
+			ImageURLs:    parseImageURLs(r.ImageUrls),
+			CreatedAt:    r.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		})
 	}
 	return items, nil
@@ -115,6 +118,7 @@ func (s *MomentsService) Latest(ctx context.Context, limit int) ([]MomentItem, e
 
 type CreateMomentInput struct {
 	AuthorName    string
+	AuthorAvatar  string
 	Content       string
 	ImageURLs     []string
 	IPHash        string
@@ -128,6 +132,9 @@ func (s *MomentsService) Create(ctx context.Context, in CreateMomentInput) (*Mom
 	if in.PublishStatus == "" {
 		in.PublishStatus = string(query.MomentPublishStatusPublished)
 	}
+	if in.AuthorAvatar == "" {
+		in.AuthorAvatar = DefaultAdminAvatarURL
+	}
 
 	var scheduledAt interface{}
 	if in.ScheduledAt != nil {
@@ -135,13 +142,14 @@ func (s *MomentsService) Create(ctx context.Context, in CreateMomentInput) (*Mom
 	}
 
 	row, err := s.q.CreateMoment(ctx, query.CreateMomentParams{
-		AuthorName:    in.AuthorName,
-		Content:       in.Content,
-		ImageUrls:     imgs,
-		IpHash:        in.IPHash,
-		UaHash:        in.UAHash,
-		PublishStatus: query.MomentPublishStatus(in.PublishStatus),
-		Column7:       scheduledAt,
+		AuthorName:      in.AuthorName,
+		AuthorAvatarUrl: in.AuthorAvatar,
+		Content:         in.Content,
+		ImageUrls:       imgs,
+		IpHash:          in.IPHash,
+		UaHash:          in.UAHash,
+		PublishStatus:   query.MomentPublishStatus(in.PublishStatus),
+		Column8:         scheduledAt,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create moment: %w", err)
@@ -150,6 +158,7 @@ func (s *MomentsService) Create(ctx context.Context, in CreateMomentInput) (*Mom
 	item := &MomentItem{
 		ID:            row.ID,
 		AuthorName:    in.AuthorName,
+		AuthorAvatar:  in.AuthorAvatar,
 		Content:       in.Content,
 		ImageURLs:     in.ImageURLs,
 		PublishStatus: in.PublishStatus,
@@ -164,10 +173,13 @@ func (s *MomentsService) Create(ctx context.Context, in CreateMomentInput) (*Mom
 	return item, nil
 }
 
-func (s *MomentsService) Update(ctx context.Context, momentID uuid.UUID, authorName, content string, imageURLs []string, publishStatus string, scheduledAt *time.Time) error {
+func (s *MomentsService) Update(ctx context.Context, momentID uuid.UUID, authorName, authorAvatarURL, content string, imageURLs []string, publishStatus string, scheduledAt *time.Time) error {
 	imgs, _ := json.Marshal(imageURLs)
 	if publishStatus == "" {
 		publishStatus = string(query.MomentPublishStatusPublished)
+	}
+	if authorAvatarURL == "" {
+		authorAvatarURL = DefaultAdminAvatarURL
 	}
 
 	scheduledAtValue := pgtype.Timestamptz{}
@@ -176,12 +188,13 @@ func (s *MomentsService) Update(ctx context.Context, momentID uuid.UUID, authorN
 	}
 
 	return s.q.UpdateMoment(ctx, query.UpdateMomentParams{
-		ID:            momentID,
-		AuthorName:    authorName,
-		Content:       content,
-		ImageUrls:     imgs,
-		PublishStatus: query.MomentPublishStatus(publishStatus),
-		ScheduledAt:   scheduledAtValue,
+		ID:              momentID,
+		AuthorName:      authorName,
+		AuthorAvatarUrl: authorAvatarURL,
+		Content:         content,
+		ImageUrls:       imgs,
+		PublishStatus:   query.MomentPublishStatus(publishStatus),
+		ScheduledAt:     scheduledAtValue,
 	})
 }
 
@@ -316,6 +329,7 @@ func (s *MomentsService) ListAdmin(ctx context.Context, page, size int) ([]Momen
 		item := MomentItem{
 			ID:            r.ID,
 			AuthorName:    r.AuthorName,
+			AuthorAvatar:  normalizeMomentAvatar(r.AuthorAvatarUrl),
 			Content:       r.Content,
 			ImageURLs:     parseImageURLs(r.ImageUrls),
 			LikeCount:     r.LikeCount,
@@ -333,6 +347,13 @@ func (s *MomentsService) ListAdmin(ctx context.Context, page, size int) ([]Momen
 		items = append(items, item)
 	}
 	return items, total, nil
+}
+
+func normalizeMomentAvatar(url string) string {
+	if url == "" {
+		return DefaultAdminAvatarURL
+	}
+	return url
 }
 
 func (s *MomentsService) Publish(ctx context.Context, momentID uuid.UUID) error {

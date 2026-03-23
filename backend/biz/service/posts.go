@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -11,6 +12,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+const (
+	defaultPostHeroImageURL = "/picture/封面.avif"
+	autoExcerptRuneLimit    = 120
+)
+
+var (
+	markdownCodeFenceRE = regexp.MustCompile("(?s)```.*?```")
+	markdownImageRE     = regexp.MustCompile(`!\[(.*?)\]\((.*?)\)`)
+	markdownLinkRE      = regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
+	markdownHTMLTagRE   = regexp.MustCompile(`<[^>]+>`)
+	markdownLineStartRE = regexp.MustCompile(`(?m)^\s{0,3}(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)`)
 )
 
 type PostsService struct {
@@ -318,17 +332,18 @@ type CreatePostInput struct {
 }
 
 func (s *PostsService) Create(ctx context.Context, in CreatePostInput) (uuid.UUID, error) {
-	var scheduledAt interface{}
+	var scheduledAt time.Time
 	if in.ScheduledAt != nil {
-		scheduledAt = pgtype.Timestamptz{Time: *in.ScheduledAt, Valid: true}
+		scheduledAt = *in.ScheduledAt
 	}
+	excerpt, heroImageURL := normalizePostMetadata(in.Excerpt, in.HeroImageURL, in.ContentMarkdown)
 
 	row, err := s.q.CreatePost(ctx, query.CreatePostParams{
 		Slug:            in.Slug,
 		Title:           in.Title,
-		Excerpt:         in.Excerpt,
+		Excerpt:         excerpt,
 		ContentMarkdown: in.ContentMarkdown,
-		HeroImageUrl:    in.HeroImageURL,
+		HeroImageUrl:    heroImageURL,
 		Category:        in.Category,
 		Status:          query.PostStatus(in.Status),
 		CreatedBy:       pgtype.UUID{Bytes: in.AdminID, Valid: true},
@@ -385,9 +400,13 @@ func (s *PostsService) Update(ctx context.Context, in UpdatePostInput) error {
 }
 
 func (s *PostsService) Publish(ctx context.Context, postID, adminID uuid.UUID) error {
+	updatedBy := toPgUUID(adminID)
+	if err := s.ensurePublishMetadata(ctx, postID, updatedBy); err != nil {
+		return fmt.Errorf("ensure publish metadata: %w", err)
+	}
 	return s.q.PublishPost(ctx, query.PublishPostParams{
 		ID:        postID,
-		UpdatedBy: pgtype.UUID{Bytes: adminID, Valid: true},
+		UpdatedBy: updatedBy,
 	})
 }
 
@@ -460,6 +479,9 @@ func (s *PostsService) PublishDueScheduled(ctx context.Context) (int, error) {
 
 	published := 0
 	for _, row := range rows {
+		if err := s.ensurePublishMetadata(ctx, row.ID, pgtype.UUID{}); err != nil {
+			return published, fmt.Errorf("ensure scheduled post metadata %s: %w", row.ID, err)
+		}
 		if err := s.q.PublishPost(ctx, query.PublishPostParams{
 			ID:        row.ID,
 			UpdatedBy: pgtype.UUID{},
@@ -469,6 +491,81 @@ func (s *PostsService) PublishDueScheduled(ctx context.Context) (int, error) {
 		published++
 	}
 	return published, nil
+}
+
+func normalizePostMetadata(excerpt, heroImageURL, contentMarkdown string) (string, string) {
+	normalizedExcerpt := strings.TrimSpace(excerpt)
+	if normalizedExcerpt == "" {
+		normalizedExcerpt = buildAutoExcerpt(contentMarkdown)
+	}
+
+	normalizedHero := strings.TrimSpace(heroImageURL)
+	if normalizedHero == "" {
+		normalizedHero = defaultPostHeroImageURL
+	}
+
+	return normalizedExcerpt, normalizedHero
+}
+
+func buildAutoExcerpt(contentMarkdown string) string {
+	plain := strings.TrimSpace(contentMarkdown)
+	if plain == "" {
+		return ""
+	}
+
+	plain = markdownCodeFenceRE.ReplaceAllString(plain, " ")
+	plain = markdownImageRE.ReplaceAllString(plain, "$1")
+	plain = markdownLinkRE.ReplaceAllString(plain, "$1")
+	plain = strings.ReplaceAll(plain, "`", " ")
+	plain = markdownLineStartRE.ReplaceAllString(plain, "")
+	plain = markdownHTMLTagRE.ReplaceAllString(plain, " ")
+	plain = strings.Join(strings.Fields(plain), " ")
+
+	if plain == "" {
+		return ""
+	}
+
+	return truncateRunes(plain, autoExcerptRuneLimit)
+}
+
+func truncateRunes(text string, limit int) string {
+	if limit <= 0 {
+		return ""
+	}
+
+	rs := []rune(text)
+	if len(rs) <= limit {
+		return text
+	}
+
+	return string(rs[:limit]) + "..."
+}
+
+func (s *PostsService) ensurePublishMetadata(ctx context.Context, postID uuid.UUID, updatedBy pgtype.UUID) error {
+	post, err := s.q.GetPostByID(ctx, postID)
+	if err != nil {
+		return fmt.Errorf("load post: %w", err)
+	}
+
+	excerpt, heroImageURL := normalizePostMetadata(post.Excerpt, post.HeroImageUrl, post.ContentMarkdown)
+	if excerpt == post.Excerpt && heroImageURL == post.HeroImageUrl {
+		return nil
+	}
+
+	if err := s.q.UpdatePost(ctx, query.UpdatePostParams{
+		ID:              post.ID,
+		Slug:            post.Slug,
+		Title:           post.Title,
+		Excerpt:         excerpt,
+		ContentMarkdown: post.ContentMarkdown,
+		HeroImageUrl:    heroImageURL,
+		Category:        post.Category,
+		UpdatedBy:       updatedBy,
+	}); err != nil {
+		return fmt.Errorf("update post metadata: %w", err)
+	}
+
+	return nil
 }
 
 func (s *PostsService) syncTags(ctx context.Context, postID uuid.UUID, tagNames []string) error {

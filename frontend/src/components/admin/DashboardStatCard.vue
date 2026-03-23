@@ -1,5 +1,5 @@
 <template>
-  <LiquidGlassCard padding="20px">
+  <AdminPlainCard padding="20px">
     <div class="flex items-start justify-between gap-3">
       <div>
         <p class="text-xs uppercase tracking-[0.2em] text-slate-600">{{ label }}</p>
@@ -19,13 +19,13 @@
     >
       {{ trend }}
     </p>
-  </LiquidGlassCard>
+  </AdminPlainCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import AdminPlainCard from '../ui/AdminPlainCard.vue'
 
 interface Props {
   label: string

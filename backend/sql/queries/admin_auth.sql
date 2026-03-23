@@ -1,15 +1,35 @@
 -- name: GetAdminByUsername :one
-SELECT id, username, email, password_hash, role, status, last_login_at, created_at, updated_at
+SELECT id, username, email, password_hash, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
 FROM admin_users
 WHERE username = $1 AND status = 'active';
 
 -- name: GetAdminByID :one
-SELECT id, username, email, role, status, last_login_at, created_at, updated_at
+SELECT id, username, email, role, status, display_name, avatar_url, last_login_at, created_at, updated_at
 FROM admin_users
 WHERE id = $1;
 
+-- name: GetPrimaryAdminPublicProfile :one
+SELECT username, display_name, avatar_url
+FROM admin_users
+WHERE status = 'active'
+ORDER BY created_at ASC
+LIMIT 1;
+
 -- name: UpdateAdminLastLogin :exec
 UPDATE admin_users SET last_login_at = now() WHERE id = $1;
+
+-- name: UpdateAdminPasswordByUsername :one
+UPDATE admin_users
+SET password_hash = $2, updated_at = now()
+WHERE username = $1
+RETURNING id;
+
+-- name: UpdateAdminProfile :exec
+UPDATE admin_users
+SET display_name = $2,
+    avatar_url = $3,
+    updated_at = now()
+WHERE id = $1;
 
 -- name: CreateRefreshToken :one
 INSERT INTO admin_refresh_tokens (admin_user_id, token_hash, expires_at)

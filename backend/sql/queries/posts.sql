@@ -84,7 +84,7 @@ INSERT INTO posts (
 VALUES (
     $1, $2, $3, $4, $5, $6, $7,
     CASE WHEN $7 = 'published'::post_status THEN now() ELSE NULL END,
-    CASE WHEN $7 = 'scheduled'::post_status THEN $9 ELSE NULL END,
+    CASE WHEN $7 = 'scheduled'::post_status THEN $9::timestamptz ELSE NULL::timestamptz END,
     $8, $8
 )
 RETURNING id, created_at;

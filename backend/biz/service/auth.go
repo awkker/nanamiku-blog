@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"nanamiku-blog/backend/query"
@@ -22,6 +23,8 @@ var (
 	ErrTokenExpired       = errors.New("token expired or revoked")
 	ErrTokenInvalid       = errors.New("invalid token")
 )
+
+const DefaultAdminAvatarURL = "/picture/author.jpg"
 
 type JWTConfig struct {
 	Secret     string
@@ -54,6 +57,12 @@ type AdminClaims struct {
 	AdminID  uuid.UUID `json:"admin_id"`
 	Username string    `json:"username"`
 	Role     string    `json:"role"`
+}
+
+type AdminPublicProfile struct {
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (*TokenPair, error) {
@@ -129,6 +138,70 @@ func (s *AuthService) GetAdminInfo(ctx context.Context, adminID uuid.UUID) (*que
 		return nil, err
 	}
 	return &admin, nil
+}
+
+func (s *AuthService) GetPublicProfile(ctx context.Context) (*AdminPublicProfile, error) {
+	profile, err := s.q.GetPrimaryAdminPublicProfile(ctx)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &AdminPublicProfile{
+				Username:    "admin",
+				DisplayName: "Admin",
+				AvatarURL:   DefaultAdminAvatarURL,
+			}, nil
+		}
+		return nil, err
+	}
+
+	displayName := strings.TrimSpace(profile.DisplayName)
+	if displayName == "" {
+		displayName = strings.TrimSpace(profile.Username)
+	}
+	if displayName == "" {
+		displayName = "Admin"
+	}
+
+	avatarURL := strings.TrimSpace(profile.AvatarUrl)
+	if avatarURL == "" {
+		avatarURL = DefaultAdminAvatarURL
+	}
+
+	return &AdminPublicProfile{
+		Username:    profile.Username,
+		DisplayName: displayName,
+		AvatarURL:   avatarURL,
+	}, nil
+}
+
+func (s *AuthService) UpdateProfile(ctx context.Context, adminID uuid.UUID, displayName, avatarURL string) (*query.GetAdminByIDRow, error) {
+	current, err := s.GetAdminInfo(ctx, adminID)
+	if err != nil {
+		return nil, err
+	}
+
+	nextDisplayName := strings.TrimSpace(displayName)
+	if nextDisplayName == "" {
+		nextDisplayName = current.Username
+	}
+
+	nextAvatarURL := strings.TrimSpace(avatarURL)
+	if nextAvatarURL == "" {
+		nextAvatarURL = DefaultAdminAvatarURL
+	}
+
+	if err := s.q.UpdateAdminProfile(ctx, query.UpdateAdminProfileParams{
+		ID:          adminID,
+		DisplayName: nextDisplayName,
+		AvatarUrl:   nextAvatarURL,
+	}); err != nil {
+		return nil, fmt.Errorf("update admin profile: %w", err)
+	}
+
+	updated, err := s.GetAdminInfo(ctx, adminID)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
 }
 
 func (s *AuthService) ValidateAccessToken(tokenStr string) (*AdminClaims, error) {
