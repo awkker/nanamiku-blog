@@ -23,7 +23,10 @@
           />
           <MikuInput v-model="form.website" :label="copy.websiteLabel" :placeholder="copy.websitePlaceholder" :error="errors.website" :aria-label="copy.websiteAria" />
         </div>
-        <MikuTextarea v-model="form.message" :label="copy.messageLabel" :placeholder="copy.messagePlaceholder" :error="errors.message" :rows="4" :aria-label="copy.messageAria" required />
+        <div class="space-y-2">
+          <MikuTextarea v-model="form.message" :label="copy.messageLabel" :placeholder="copy.messagePlaceholder" :error="errors.message" :rows="4" :aria-label="copy.messageAria" required />
+          <GifEmotePicker @select="insertMessageGif" />
+        </div>
         <div class="flex justify-end">
           <MikuButton type="submit" :loading="submitting" :disabled="submitting" :aria-label="copy.submitAria">
             {{ submitting ? copy.submitLoading : copy.submitIdle }}
@@ -77,6 +80,7 @@
 import { useStore } from '@nanostores/vue'
 import { computed, onMounted, reactive, watchEffect } from 'vue'
 
+import { appendGifToken } from '../../lib/gifEmotes'
 import {
   type SortMode,
   guestbookError,
@@ -94,6 +98,7 @@ import { authState } from '../../stores/auth'
 import EmptyState from '../ui/EmptyState.vue'
 import ErrorState from '../ui/ErrorState.vue'
 import GuestbookMessageCard from './GuestbookMessageCard.vue'
+import GifEmotePicker from '../ui/GifEmotePicker.vue'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
 import MikuInput from '../ui/MikuInput.vue'
@@ -121,6 +126,10 @@ const authorDisplayName = computed(() => (auth.value.user?.name || auth.value.us
 
 function changeSort(mode: SortMode) {
   setSortMode(mode)
+}
+
+function insertMessageGif(path: string) {
+  form.message = appendGifToken(form.message, path)
 }
 
 function isValidUrl(url: string) {

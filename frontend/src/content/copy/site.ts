@@ -382,6 +382,19 @@ export const siteCopy = {
       commentSentToast: '评论已发送',
       commentFailedToast: '评论发送失败，请稍后重试',
     },
+    gifEmotePicker: {
+      openButton: '插入 GIF 表情',
+      closeButton: '收起 GIF 表情',
+      hint: '选择后会自动追加到输入框',
+      expandAria: '展开 GIF 表情面板',
+      collapseAria: '收起 GIF 表情面板',
+      insertAriaPrefix: '插入表情：',
+      altPrefix: '表情 ',
+      tabs: [
+        { key: 'miku', label: '初音未来' },
+        { key: 'nanamichiaki', label: '七海千秋' },
+      ],
+    },
     guestbookBoard: {
       postTitle: '发布留言',
       nicknameLabel: '昵称',

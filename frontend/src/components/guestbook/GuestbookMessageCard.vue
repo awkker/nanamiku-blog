@@ -51,7 +51,12 @@
           <span class="text-[11px] text-slate-400">{{ message.createdAt }}</span>
         </div>
 
-        <p class="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600">{{ message.message }}</p>
+        <RichContentWithGif
+          :content="message.message"
+          text-class="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600"
+          image-class="my-1 mr-1 inline-block h-16 w-16 rounded-lg object-cover align-middle ring-1 ring-white/80"
+          :alt-prefix="gifCopy.altPrefix"
+        />
 
         <!-- Action Bar -->
         <div class="mt-2.5 flex items-center gap-3">
@@ -87,6 +92,9 @@
             :placeholder="copy.contentPlaceholder"
             class="w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-miku/50 focus:ring-1 focus:ring-miku/30"
           />
+          <div class="mt-2">
+            <GifEmotePicker @select="insertReplyGif" />
+          </div>
           <div class="mt-2 flex items-center justify-end gap-2">
             <button
               type="button"
@@ -121,7 +129,12 @@
               <span class="h-0.5 w-0.5 rounded-full bg-slate-300" aria-hidden="true" />
               <span class="text-[11px] text-slate-400">{{ reply.createdAt }}</span>
             </div>
-            <p class="mt-1 text-sm leading-relaxed text-slate-500">{{ reply.message }}</p>
+            <RichContentWithGif
+              :content="reply.message"
+              text-class="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-500"
+              image-class="my-1 mr-1 inline-block h-14 w-14 rounded-lg object-cover align-middle ring-1 ring-white/80"
+              :alt-prefix="gifCopy.altPrefix"
+            />
             <div class="mt-1.5 flex items-center gap-2">
               <button
                 type="button"
@@ -151,11 +164,15 @@
 <script setup lang="ts">
 import { useStore } from '@nanostores/vue'
 import { computed, ref, watchEffect } from 'vue'
+
+import { siteCopy } from '../../content/copy'
+import { appendGifToken } from '../../lib/gifEmotes'
 import type { GuestbookMessage } from '../../stores/guestbook'
 import { voteMessage } from '../../stores/guestbook'
 import { authState } from '../../stores/auth'
+import GifEmotePicker from '../ui/GifEmotePicker.vue'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
-import { siteCopy } from '../../content/copy'
+import RichContentWithGif from '../ui/RichContentWithGif.vue'
 
 interface Props {
   message: GuestbookMessage
@@ -168,6 +185,7 @@ const showReplyForm = ref(false)
 const replyNickname = ref('')
 const replyContent = ref('')
 const copy = siteCopy.components.guestbookMessageCard
+const gifCopy = siteCopy.components.gifEmotePicker
 const auth = useStore(authState)
 
 const voteColor = computed(() => {
@@ -192,6 +210,10 @@ function vote(direction: 1 | -1) {
 
 function voteReply(replyId: string, direction: 1 | -1) {
   voteMessage(replyId, direction, props.message.id)
+}
+
+function insertReplyGif(path: string) {
+  replyContent.value = appendGifToken(replyContent.value, path)
 }
 
 function submitReply() {

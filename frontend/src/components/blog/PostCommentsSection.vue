@@ -106,6 +106,8 @@
           </span>
         </label>
 
+        <GifEmotePicker @select="insertCommentGif" />
+
         <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
           <Transition name="fade-slide" mode="out-in">
             <p
@@ -207,7 +209,12 @@
               <span class="text-[11px] text-slate-400">{{ formatDate(item.created_at) }}</span>
             </div>
 
-            <p class="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600">{{ item.content }}</p>
+            <RichContentWithGif
+              :content="item.content"
+              text-class="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600"
+              image-class="my-1 mr-1 inline-block h-16 w-16 rounded-lg object-cover align-middle ring-1 ring-white/80 sm:h-20 sm:w-20"
+              :alt-prefix="gifCopy.altPrefix"
+            />
 
             <div class="mt-2.5 flex items-center gap-3">
               <button
@@ -233,7 +240,12 @@
                   <span class="h-0.5 w-0.5 rounded-full bg-slate-300" aria-hidden="true" />
                   <span class="text-[11px] text-slate-400">{{ formatDate(reply.created_at) }}</span>
                 </div>
-                <p class="mt-1 text-sm leading-relaxed text-slate-500">{{ reply.content }}</p>
+                <RichContentWithGif
+                  :content="reply.content"
+                  text-class="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-500"
+                  image-class="my-1 mr-1 inline-block h-14 w-14 rounded-lg object-cover align-middle ring-1 ring-white/80 sm:h-16 sm:w-16"
+                  :alt-prefix="gifCopy.altPrefix"
+                />
                 <button
                   type="button"
                   class="mt-1.5 inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
@@ -256,8 +268,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { siteCopy } from '../../content/copy'
 import { api, type PagedData } from '../../lib/api'
+import { appendGifToken } from '../../lib/gifEmotes'
+import GifEmotePicker from '../ui/GifEmotePicker.vue'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import RichContentWithGif from '../ui/RichContentWithGif.vue'
 
 interface PostCommentItem {
   id: string
@@ -290,6 +306,7 @@ const email = ref('')
 const content = ref('')
 const contentInputRef = ref<HTMLTextAreaElement | null>(null)
 const replyTarget = ref<{ id: string; author: string } | null>(null)
+const gifCopy = siteCopy.components.gifEmotePicker
 
 const feedback = ref('')
 const feedbackType = ref<'neutral' | 'success' | 'error'>('neutral')
@@ -327,6 +344,13 @@ async function startReply(item: PostCommentItem) {
 
 function cancelReply() {
   replyTarget.value = null
+}
+
+function insertCommentGif(path: string) {
+  content.value = appendGifToken(content.value, path)
+  nextTick(() => {
+    contentInputRef.value?.focus()
+  })
 }
 
 watch(
