@@ -108,12 +108,24 @@ const heroActionClasses = [
               <div class="h-20 bg-gradient-to-r from-[#39c5bb]/30 via-[#c084fc]/20 to-[#39c5bb]/25" />
               <div class="relative -mt-10 px-5 pb-5">
                 <div class="author-avatar-ring mx-auto h-20 w-20 rounded-full p-[3px]">
-                  <img
-                    id="blog-author-avatar"
-                    src="/picture/author.jpg"
-                    alt={copy.authorCard.avatarAlt}
-                    class="h-full w-full rounded-full border-2 border-white object-cover transition-transform duration-700 hover:rotate-[360deg]"
-                  />
+                  <div class="relative h-full w-full overflow-hidden rounded-full border-2 border-white">
+                    <div
+                      id="blog-author-avatar-loader"
+                      class="absolute inset-0 flex items-center justify-center bg-white/86"
+                    >
+                      <svg viewBox="0 0 24 24" class="avatar-loader-rocket h-4.5 w-4.5 text-miku" fill="none" aria-hidden="true">
+                        <path d="M14.7 4.2c1.8.9 3.2 2.3 4.1 4.1L13.2 14l-2.8.4.4-2.8 3.9-7.4z" fill="currentColor" fill-opacity="0.92" />
+                        <path d="M10.6 11.6L8 14.2a1.8 1.8 0 000 2.6l.8.8a1.8 1.8 0 002.6 0l2.6-2.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        <path class="avatar-loader-rocket-flame" d="M8.3 17.5l-2.1 2.6 3.3-1.3z" fill="#f59e0b" />
+                      </svg>
+                    </div>
+                    <img
+                      id="blog-author-avatar"
+                      src="/picture/author.jpg"
+                      alt={copy.authorCard.avatarAlt}
+                      class="h-full w-full rounded-full object-cover opacity-0 transition-[opacity,transform] duration-700 hover:rotate-[360deg]"
+                    />
+                  </div>
                 </div>
 
                 <div class="mt-3 text-center">
@@ -206,23 +218,41 @@ const heroActionClasses = [
           </div>
         </aside>
       </main>
-
-      <button
-        id="back-to-top"
-        type="button"
-        class="fixed bottom-6 right-5 z-40 rounded-full border border-miku/35 bg-white/85 p-2.5 text-miku shadow-[0_12px_28px_rgba(15,23,42,0.18)] backdrop-blur transition hover:-translate-y-0.5 hover:border-miku/60"
-        aria-label={copy.backToTopAria}
-      >
-        <svg viewBox="0 0 24 24" class="h-4.5 w-4.5 fill-none stroke-current stroke-[2]"><path d="M18 15l-6-6-6 6" /></svg>
-      </button>
     </div>
 
     <script is:inline>
       const progressBar = document.getElementById('scroll-progress')
-      const backToTop = document.getElementById('back-to-top')
       const topNav = document.querySelector('[data-blog-topnav]')
       const blogAuthorAvatar = document.getElementById('blog-author-avatar')
+      const blogAuthorAvatarLoader = document.getElementById('blog-author-avatar-loader')
       const blogAuthorName = document.getElementById('blog-author-name')
+
+      const showBlogAvatar = () => {
+        if (!(blogAuthorAvatar instanceof HTMLImageElement)) {
+          return
+        }
+
+        blogAuthorAvatar.classList.add('is-ready')
+        blogAuthorAvatarLoader?.classList.add('is-hidden')
+      }
+
+      const resetBlogAvatar = () => {
+        if (!(blogAuthorAvatar instanceof HTMLImageElement)) {
+          return
+        }
+
+        blogAuthorAvatar.classList.remove('is-ready')
+        blogAuthorAvatarLoader?.classList.remove('is-hidden')
+      }
+
+      if (blogAuthorAvatar instanceof HTMLImageElement) {
+        blogAuthorAvatar.addEventListener('load', showBlogAvatar)
+        blogAuthorAvatar.addEventListener('error', showBlogAvatar)
+
+        if (blogAuthorAvatar.complete) {
+          showBlogAvatar()
+        }
+      }
 
       const updateScrollUI = () => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop
@@ -231,10 +261,6 @@ const heroActionClasses = [
 
         if (progressBar) {
           progressBar.style.transform = `scaleX(${ratio})`
-        }
-
-        if (backToTop) {
-          backToTop.classList.toggle('is-visible', scrollTop > 520)
         }
 
         if (topNav) {
@@ -262,6 +288,7 @@ const heroActionClasses = [
           }
 
           if (avatarURL && blogAuthorAvatar instanceof HTMLImageElement) {
+            resetBlogAvatar()
             blogAuthorAvatar.src = avatarURL
           }
         } catch {
@@ -270,11 +297,6 @@ const heroActionClasses = [
       }
 
       void hydrateAuthorProfile()
-
-      backToTop?.addEventListener('click', () => {
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
-      })
     </script>
   </body>
 </html>
@@ -307,14 +329,48 @@ const heroActionClasses = [
   .blog-card:hover {
     transform: translateY(-4px);
   }
-  #back-to-top {
+
+  #blog-author-avatar.is-ready {
+    opacity: 1;
+  }
+
+  #blog-author-avatar-loader {
+    opacity: 1;
+    transition: opacity 180ms ease;
+  }
+
+  #blog-author-avatar-loader.is-hidden {
     opacity: 0;
     pointer-events: none;
-    transform: translateY(10px);
   }
-  #back-to-top.is-visible {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
+
+  .avatar-loader-rocket {
+    transform-origin: 50% 50%;
+    animation: blog-avatar-rocket 0.95s ease-in-out infinite;
+  }
+
+  .avatar-loader-rocket-flame {
+    transform-origin: 8px 18px;
+    animation: blog-avatar-flame 0.62s ease-in-out infinite;
+  }
+
+  @keyframes blog-avatar-rocket {
+    0%, 100% {
+      transform: translateY(0) rotate(-2deg);
+    }
+    50% {
+      transform: translateY(-1px) rotate(1.5deg);
+    }
+  }
+
+  @keyframes blog-avatar-flame {
+    0%, 100% {
+      transform: scale(1, 0.9);
+      opacity: 0.74;
+    }
+    50% {
+      transform: scale(1.06, 1.2);
+      opacity: 1;
+    }
   }
 </style>

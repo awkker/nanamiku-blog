@@ -2,6 +2,7 @@
 import AdminSidebar from '../components/admin/AdminSidebar.vue'
 import AdminContentHeader from '../components/admin/AdminContentHeader.vue'
 import GlobalToast from '../components/ui/GlobalToast.vue'
+import BackToTopRocket from '../components/ui/BackToTopRocket.astro'
 import { adminCopy } from '../content/copy'
 
 interface Props {
@@ -23,4 +24,5 @@ const { activeKey = 'dashboard', pageTitle = adminCopy.layout.defaultPageTitle }
   </div>
 
   <GlobalToast client:load />
+  <BackToTopRocket threshold={220} />
 </main>

@@ -1,6 +1,7 @@
 ---
 import BaseHead from '../components/base/BaseHead.astro'
 import LoginForm from '../components/auth/LoginForm.vue'
+import BackToTopRocket from '../components/ui/BackToTopRocket.astro'
 ---
 
 <!doctype html>
@@ -36,5 +37,6 @@ import LoginForm from '../components/auth/LoginForm.vue'
         <LoginForm client:load />
       </div>
     </main>
+    <BackToTopRocket threshold={220} />
   </body>
 </html>

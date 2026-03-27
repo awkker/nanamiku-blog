@@ -1,6 +1,7 @@
 ---
 import BaseHead from '../components/base/BaseHead.astro'
 import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
+import BackToTopRocket from '../components/ui/BackToTopRocket.astro'
 import { siteCopy } from '../content/copy'
 
 const copy = siteCopy.notFoundPage
@@ -120,6 +121,7 @@ const copy = siteCopy.notFoundPage
         </LiquidGlassCard>
       </section>
     </main>
+    <BackToTopRocket threshold={220} />
   </body>
 </html>
 

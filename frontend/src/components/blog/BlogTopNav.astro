@@ -1,5 +1,6 @@
 ---
 import { siteCopy } from '../../content/copy'
+import BackToTopRocket from '../ui/BackToTopRocket.astro'
 
 interface Props {
   currentPath?: string
@@ -68,6 +69,8 @@ function isActive(href: string) {
     </div>
   </nav>
 </header>
+
+<BackToTopRocket />
 
 <style>
   .blog-top-nav.is-scrolled {

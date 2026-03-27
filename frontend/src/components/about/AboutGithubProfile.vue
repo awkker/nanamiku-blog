@@ -1,12 +1,57 @@
 <template>
   <div class="space-y-4">
     <div v-if="loading" class="space-y-4">
+      <LiquidGlassCard padding="18px" maxWidth="100%">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-miku">
+            <LoadingSpinner size="lg" />
+          </span>
+          <div>
+            <p class="text-sm font-semibold text-slate-800">{{ copy.loadingTitle }}</p>
+            <p class="mt-0.5 text-xs text-slate-500">{{ copy.loadingHint }}</p>
+          </div>
+        </div>
+      </LiquidGlassCard>
+
       <div class="grid gap-4 lg:grid-cols-2">
-        <div class="h-56 animate-pulse rounded-2xl border border-white/40 bg-white/25" />
-        <div class="h-56 animate-pulse rounded-2xl border border-white/40 bg-white/25" />
+        <div class="h-56 animate-pulse rounded-2xl border border-white/40 bg-white/25 p-4">
+          <div class="h-5 w-1/3 rounded bg-white/55" />
+          <div class="mt-4 flex items-center gap-3">
+            <div class="h-14 w-14 rounded-xl bg-white/55" />
+            <div class="flex-1 space-y-2">
+              <div class="h-4 w-2/3 rounded bg-white/55" />
+              <div class="h-3 w-4/5 rounded bg-white/45" />
+            </div>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-2">
+            <div class="h-12 rounded-lg bg-white/50" />
+            <div class="h-12 rounded-lg bg-white/50" />
+            <div class="h-12 rounded-lg bg-white/50" />
+          </div>
+        </div>
+        <div class="h-56 animate-pulse rounded-2xl border border-white/40 bg-white/25 p-4">
+          <div class="h-5 w-1/3 rounded bg-white/55" />
+          <div class="mt-3 h-[168px] rounded-xl bg-white/50" />
+        </div>
       </div>
-      <div class="h-20 animate-pulse rounded-2xl border border-white/40 bg-white/25" />
-      <div class="h-40 animate-pulse rounded-2xl border border-white/40 bg-white/25" />
+      <div class="animate-pulse rounded-2xl border border-white/40 bg-white/25 p-4">
+        <div class="h-4 w-1/5 rounded bg-white/55" />
+        <div class="mt-3 flex flex-wrap gap-2">
+          <div class="h-7 w-20 rounded-full bg-white/50" />
+          <div class="h-7 w-24 rounded-full bg-white/50" />
+          <div class="h-7 w-16 rounded-full bg-white/50" />
+          <div class="h-7 w-[5.5rem] rounded-full bg-white/50" />
+        </div>
+      </div>
+      <div class="rounded-2xl border border-white/40 bg-white/25 p-4">
+        <div class="mb-3 flex items-center gap-2 text-slate-500">
+          <LoadingSpinner size="sm" />
+          <span class="text-xs">{{ copy.loadingLinks }}</span>
+        </div>
+        <div class="grid gap-2.5 md:grid-cols-2 lg:grid-cols-3">
+          <div v-for="i in 6" :key="i" class="h-20 animate-pulse rounded-xl border border-white/55 bg-white/45" />
+        </div>
+      </div>
     </div>
 
     <LiquidGlassCard v-else-if="error" padding="20px" maxWidth="100%">
@@ -18,11 +63,29 @@
       <div class="grid gap-4 lg:grid-cols-2">
         <LiquidGlassCard padding="24px" maxWidth="100%">
           <div class="flex items-start gap-5">
-            <img
-              :src="profile.avatarUrl"
-              :alt="profile.name"
-              class="h-20 w-20 shrink-0 rounded-2xl border-2 border-[#39c5bb]/25 object-cover shadow-md"
-            />
+            <div class="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-[#39c5bb]/25 shadow-md">
+              <div
+                v-if="!avatarReady"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-miku"
+              >
+                <LoadingSpinner size="sm" />
+              </div>
+              <img
+                v-if="profile.avatarUrl"
+                :src="profile.avatarUrl"
+                :alt="profile.name"
+                class="h-full w-full object-cover transition-opacity duration-300"
+                :class="avatarReady ? 'opacity-100' : 'opacity-0'"
+                @load="handleAvatarLoaded"
+                @error="handleAvatarLoaded"
+              />
+              <div v-else class="flex h-full w-full items-center justify-center bg-white/72 text-[#39c5bb]">
+                <svg viewBox="0 0 24 24" class="h-9 w-9 fill-none stroke-current stroke-[1.6]" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4.5 20a7.5 7.5 0 0115 0" />
+                </svg>
+              </div>
+            </div>
             <div class="min-w-0">
               <h2 class="text-lg font-bold text-slate-900">{{ profile.name }}</h2>
               <p class="mt-0.5 text-sm leading-relaxed text-slate-500">{{ profile.bio }}</p>
@@ -119,13 +182,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import LoadingSpinner from '../ui/LoadingSpinner.vue'
 import { siteCopy } from '../../content/copy'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
@@ -163,6 +227,7 @@ const profile = ref<ProfileData>({
   totalStars: 0,
   followers: 0,
 })
+const avatarReady = ref(false)
 
 const techStack = ref<Array<{ name: string; count: number }>>([])
 
@@ -177,6 +242,18 @@ interface RepoItem {
 
 const recentRepos = ref<RepoItem[]>([])
 const activityData = ref<number[]>(new Array(12).fill(0))
+
+function handleAvatarLoaded() {
+  avatarReady.value = true
+}
+
+watch(
+  () => profile.value.avatarUrl,
+  (nextAvatar) => {
+    avatarReady.value = !nextAvatar
+  },
+  { immediate: true },
+)
 
 const monthLabels = computed(() => {
   const now = new Date()

@@ -28,6 +28,9 @@ export const siteCopy = {
     logoAlt: 'nanamiku logo',
     text: 'NANAMIKU BLOG',
   },
+  common: {
+    backToTopAria: '返回顶部',
+  },
   home: {
     metaTitle: 'nanamiku blog',
     metaDescription: 'nanamiku blog 开屏页',
@@ -102,17 +105,17 @@ export const siteCopy = {
     socialLinks: [
       {
         label: 'GitHub',
-        href: 'https://github.com',
+        href: 'https://github.com/awkker',
         icon: 'M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22',
       },
       {
-        label: 'Twitter',
-        href: 'https://twitter.com',
+        label: 'X',
+        href: 'https://x.com/XunCao81317',
         icon: 'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z',
       },
       {
         label: 'Mail',
-        href: 'mailto:hello@nanamiku.blog',
+        href: 'mailto:chw0536@126.com',
         icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm16 2l-8 5-8-5',
       },
     ],
@@ -157,7 +160,7 @@ export const siteCopy = {
     heroActions: [
       { href: '/blog#latest-posts', label: '看精选文章' },
       { href: '#projects', label: '看主推项目' },
-      { href: 'mailto:hello@nanamiku.blog?subject=来自博客的联系', label: '联系我' },
+      { href: 'mailto:chw0536@126.com?subject=来自博客的联系', label: '联系我' },
     ],
     stats: {
       postsLabel: '已发布文章',
@@ -251,7 +254,7 @@ export const siteCopy = {
         focus: 'Astro + Go 的轻量博客引擎',
         role: '负责信息架构、前后端联调、视觉规范落地',
         metric: '首屏信息密度与阅读路径明显增强',
-        href: '/blog',
+        href: 'https://github.com/awkker/nanamiku-blog',
       },
       {
         name: 'Glass UI Lab',
@@ -304,15 +307,14 @@ export const siteCopy = {
       title: '如果你也在做类似方向，欢迎交流',
       subtitle: '可以聊前端体验、工程化方案、博客搭建与内容结构。',
       emailButton: '发邮件',
-      emailHref: 'mailto:hello@nanamiku.blog?subject=合作交流',
+      emailHref: 'mailto:chw0536@126.com?subject=合作交流',
       githubButton: 'GitHub',
     },
     githubUsername: 'awkker',
     socialLinks: [
       { label: 'QQ', href: 'https://qm.qq.com/q/c7DY18rEju' },
-      { label: 'Bilibili', href: 'https://space.bilibili.com/1969160969' },
-      { label: '抖音', href: 'https://www.douyin.com/user/MS4wLjABAAAATzdjtBBrLLCn69TtPMeseuEUzztbNZzw-9f13adrfiM' },
-      { label: '小红书', href: 'https://www.xiaohongshu.com/user/profile/6427cf87000000002901166e' },
+      { label: 'Bilibili', href: 'https://space.bilibili.com/472356194?spm_id_from=333.1007.0.0' },
+      { label: 'X', href: 'https://x.com/XunCao81317' },
     ],
     backToTopAria: '返回顶部',
   },
@@ -349,6 +351,16 @@ export const siteCopy = {
     blogFeed: {
       retry: '重试',
       empty: '暂无已发布的文章',
+      searchLabel: '智能搜索',
+      searchPlaceholder: '输入标题、摘要、标签或分类...',
+      searchHint: '支持联想、短语匹配、拼写容错与多关键词组合',
+      searchLoadingHint: '正在构建全量搜索索引...',
+      searchSuggestionTitle: '联想结果',
+      searchSuggestionEnterHint: '回车可直接显示全部匹配结果',
+      searchClear: '清空',
+      searchResultPrefix: '搜索到',
+      searchResultSuffix: '篇相关文章',
+      searchEmpty: '没有找到匹配内容，换个关键词试试。',
       featuredBadge: '置顶阅读',
       readSuffix: ' 次阅读',
       likeSuffix: ' 点赞',
@@ -448,6 +460,9 @@ export const siteCopy = {
     },
     aboutGithubProfile: {
       loadError: 'GitHub 数据暂时无法加载，请稍后刷新页面重试。',
+      loadingTitle: '正在连接 GitHub 数据',
+      loadingHint: '稍等片刻，马上为你展示仓库、活跃度与关联链接。',
+      loadingLinks: 'GitHub 相关链接正在加载',
       viewProfile: '查看 GitHub 主页 →',
       stats: {
         repos: 'Repos',

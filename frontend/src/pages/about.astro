@@ -112,12 +112,24 @@ const socialLinks = copy.socialLinks
           <LiquidGlassCard client:visible padding="24px" maxWidth="100%">
             <div class="space-y-4">
               <div class="flex items-center gap-3">
-                <img
-                  id="about-profile-avatar"
-                  src="/picture/author.jpg"
-                  alt={copy.profileCard.avatarAlt}
-                  class="h-14 w-14 rounded-xl border border-slate-200 object-cover"
-                />
+                <div class="relative h-14 w-14">
+                  <div
+                    id="about-profile-avatar-loader"
+                    class="absolute inset-0 flex items-center justify-center rounded-xl border border-slate-200/75 bg-white/82"
+                  >
+                    <svg viewBox="0 0 24 24" class="avatar-loader-rocket h-4.5 w-4.5 text-miku" fill="none" aria-hidden="true">
+                      <path d="M14.7 4.2c1.8.9 3.2 2.3 4.1 4.1L13.2 14l-2.8.4.4-2.8 3.9-7.4z" fill="currentColor" fill-opacity="0.92" />
+                      <path d="M10.6 11.6L8 14.2a1.8 1.8 0 000 2.6l.8.8a1.8 1.8 0 002.6 0l2.6-2.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                      <path class="avatar-loader-rocket-flame" d="M8.3 17.5l-2.1 2.6 3.3-1.3z" fill="#f59e0b" />
+                    </svg>
+                  </div>
+                  <img
+                    id="about-profile-avatar"
+                    src="/picture/author.jpg"
+                    alt={copy.profileCard.avatarAlt}
+                    class="h-14 w-14 rounded-xl border border-slate-200 object-cover opacity-0 transition-opacity duration-300"
+                  />
+                </div>
                 <div>
                   <p id="about-profile-name" class="text-base font-semibold text-slate-900">{copy.profileCard.name}</p>
                   <p class="text-xs text-slate-500">{copy.profileCard.role}</p>
@@ -347,21 +359,39 @@ const socialLinks = copy.socialLinks
       </div>
     </main>
 
-    <button
-      id="back-to-top"
-      type="button"
-      class="fixed bottom-6 right-5 z-40 rounded-full border border-miku/35 bg-white/85 p-2.5 text-miku shadow-[0_12px_28px_rgba(15,23,42,0.18)] backdrop-blur transition hover:-translate-y-0.5 hover:border-miku/60"
-      aria-label={copy.backToTopAria}
-    >
-      <svg viewBox="0 0 24 24" class="h-4.5 w-4.5 fill-none stroke-current stroke-[2]"><path d="M18 15l-6-6-6 6" /></svg>
-    </button>
-
     <script is:inline>
       const progressBar = document.getElementById('scroll-progress')
-      const backToTop = document.getElementById('back-to-top')
       const topNav = document.querySelector('[data-blog-topnav]')
       const aboutProfileAvatar = document.getElementById('about-profile-avatar')
+      const aboutProfileAvatarLoader = document.getElementById('about-profile-avatar-loader')
       const aboutProfileName = document.getElementById('about-profile-name')
+
+      const showAboutAvatar = () => {
+        if (!(aboutProfileAvatar instanceof HTMLImageElement)) {
+          return
+        }
+
+        aboutProfileAvatar.classList.add('is-ready')
+        aboutProfileAvatarLoader?.classList.add('is-hidden')
+      }
+
+      const resetAboutAvatar = () => {
+        if (!(aboutProfileAvatar instanceof HTMLImageElement)) {
+          return
+        }
+
+        aboutProfileAvatar.classList.remove('is-ready')
+        aboutProfileAvatarLoader?.classList.remove('is-hidden')
+      }
+
+      if (aboutProfileAvatar instanceof HTMLImageElement) {
+        aboutProfileAvatar.addEventListener('load', showAboutAvatar)
+        aboutProfileAvatar.addEventListener('error', showAboutAvatar)
+
+        if (aboutProfileAvatar.complete) {
+          showAboutAvatar()
+        }
+      }
 
       const updateScrollUI = () => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop
@@ -370,10 +400,6 @@ const socialLinks = copy.socialLinks
 
         if (progressBar) {
           progressBar.style.transform = `scaleX(${ratio})`
-        }
-
-        if (backToTop) {
-          backToTop.classList.toggle('is-visible', scrollTop > 460)
         }
 
         if (topNav) {
@@ -401,6 +427,7 @@ const socialLinks = copy.socialLinks
           }
 
           if (avatarURL && aboutProfileAvatar instanceof HTMLImageElement) {
+            resetAboutAvatar()
             aboutProfileAvatar.src = avatarURL
           }
         } catch {
@@ -409,11 +436,6 @@ const socialLinks = copy.socialLinks
       }
 
       void hydrateAboutProfile()
-
-      backToTop?.addEventListener('click', () => {
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
-      })
     </script>
   </body>
 </html>
@@ -441,15 +463,47 @@ const socialLinks = copy.socialLinks
     transition: transform 120ms linear;
   }
 
-  #back-to-top {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(10px);
+  #about-profile-avatar.is-ready {
+    opacity: 1;
   }
 
-  #back-to-top.is-visible {
+  #about-profile-avatar-loader {
     opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
+    transition: opacity 180ms ease;
+  }
+
+  #about-profile-avatar-loader.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .avatar-loader-rocket {
+    transform-origin: 50% 50%;
+    animation: about-avatar-rocket 0.95s ease-in-out infinite;
+  }
+
+  .avatar-loader-rocket-flame {
+    transform-origin: 8px 18px;
+    animation: about-avatar-flame 0.62s ease-in-out infinite;
+  }
+
+  @keyframes about-avatar-rocket {
+    0%, 100% {
+      transform: translateY(0) rotate(-2deg);
+    }
+    50% {
+      transform: translateY(-1px) rotate(1.5deg);
+    }
+  }
+
+  @keyframes about-avatar-flame {
+    0%, 100% {
+      transform: scale(1, 0.9);
+      opacity: 0.74;
+    }
+    50% {
+      transform: scale(1.06, 1.2);
+      opacity: 1;
+    }
   }
 </style>
