@@ -1,5 +1,6 @@
 ---
 import { siteCopy } from '../../content/copy'
+import ThemeToggleButton from '../base/ThemeToggleButton.vue'
 import BackToTopRocket from '../ui/BackToTopRocket.astro'
 
 interface Props {
@@ -24,10 +25,10 @@ function isActive(href: string) {
   data-blog-topnav
   class="blog-top-nav fixed inset-x-0 top-0 z-50 border-b border-white/50 bg-white/62 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300"
 >
-  <nav class="mx-auto flex h-14 w-full max-w-[1320px] items-center justify-between gap-3 px-4 text-sm text-slate-700">
+  <nav class="mx-auto flex h-14 w-full max-w-[1320px] items-center justify-between gap-2.5 px-3 text-sm text-slate-700 sm:gap-3 sm:px-4">
     <a href="/" class="inline-flex shrink-0 items-center gap-2 font-semibold tracking-[0.18em]">
       <img src="/picture/logo-64.webp" alt={siteCopy.brand.logoAlt} class="h-7 w-7 rounded-sm object-cover" width="28" height="28" loading="lazy" decoding="async" />
-      <span>{siteCopy.brand.text}</span>
+      <span class="hidden sm:inline">{siteCopy.brand.text}</span>
     </a>
 
     <div class="hidden items-center gap-4 md:flex">
@@ -47,27 +48,92 @@ function isActive(href: string) {
       }
     </div>
 
-    <div class="flex items-center gap-2">
-      {
-        actionLinks.map((item) => (
-          <a
-            href={item.href}
-            data-auth-visible={item.auth}
-            class:list={[
-              'rounded-xl border px-3 py-1.5 text-xs transition sm:text-sm',
-              item.auth && 'hidden',
-              isActive(item.href)
-                ? 'border-miku/45 bg-miku-soft text-miku'
-                : 'border-white/35 bg-white/30 hover:border-miku/35 hover:text-miku',
-            ]}
-            aria-label={`${siteCopy.blogTopNav.ariaPrefix}${item.label}`}
-          >
-            {item.label}
-          </a>
-        ))
-      }
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <ThemeToggleButton client:load />
+      <button
+        type="button"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/35 bg-white/30 text-slate-700 transition hover:border-miku/35 hover:text-miku md:hidden"
+        aria-label={siteCopy.blogTopNav.mobileMenu.openButtonAria}
+        data-mobile-nav-open-aria={siteCopy.blogTopNav.mobileMenu.openButtonAria}
+        data-mobile-nav-close-aria={siteCopy.blogTopNav.mobileMenu.closeButtonAria}
+        data-mobile-nav-toggle
+        data-mobile-nav-state="closed"
+      >
+        <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[1.8]" aria-hidden="true" data-mobile-nav-icon>
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+      <div class="hidden items-center gap-2 md:flex">
+        {
+          actionLinks.map((item) => (
+            <a
+              href={item.href}
+              data-auth-visible={item.auth}
+              class:list={[
+                'rounded-xl border px-3 py-1.5 text-xs transition sm:text-sm',
+                item.auth && 'hidden',
+                isActive(item.href)
+                  ? 'border-miku/45 bg-miku-soft text-miku'
+                  : 'border-white/35 bg-white/30 hover:border-miku/35 hover:text-miku',
+              ]}
+              aria-label={`${siteCopy.blogTopNav.ariaPrefix}${item.label}`}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </div>
     </div>
   </nav>
+
+  <div
+    class="mobile-nav-panel hidden border-t border-white/40 bg-white/90 px-3 pb-4 pt-3 shadow-[0_12px_28px_rgba(15,23,42,0.14)] sm:px-4 md:hidden"
+    data-mobile-nav-panel
+    aria-label={siteCopy.blogTopNav.mobileMenu.panelAria}
+  >
+    <div class="grid gap-2.5">
+      <div class="grid grid-cols-2 gap-2">
+        {
+          primaryLinks.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                'rounded-xl border px-3 py-2 text-xs font-medium transition',
+                isActive(item.href)
+                  ? 'border-miku/45 bg-miku-soft text-miku'
+                  : 'border-white/55 bg-white/70 text-slate-700 hover:border-miku/35 hover:text-miku',
+              ]}
+              aria-label={`${siteCopy.blogTopNav.ariaPrefix}${item.label}`}
+              data-mobile-nav-link
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {
+          actionLinks.map((item) => (
+            <a
+              href={item.href}
+              data-auth-visible={item.auth}
+              class:list={[
+                'rounded-xl border px-3 py-1.5 text-xs transition',
+                item.auth && 'hidden',
+                isActive(item.href)
+                  ? 'border-miku/45 bg-miku-soft text-miku'
+                  : 'border-white/55 bg-white/70 text-slate-700 hover:border-miku/35 hover:text-miku',
+              ]}
+              aria-label={`${siteCopy.blogTopNav.ariaPrefix}${item.label}`}
+              data-mobile-nav-link
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </div>
 </header>
 
 <BackToTopRocket />
@@ -82,6 +148,53 @@ function isActive(href: string) {
 </style>
 
 <script is:inline>
+  function setupMobileNav() {
+    const toggle = document.querySelector('[data-mobile-nav-toggle]');
+    const panel = document.querySelector('[data-mobile-nav-panel]');
+    const icon = document.querySelector('[data-mobile-nav-icon]');
+    const links = document.querySelectorAll('[data-mobile-nav-link]');
+
+    if (!toggle || !panel || !icon) {
+      return;
+    }
+
+    const openAria = toggle.getAttribute('data-mobile-nav-open-aria') || '打开导航菜单';
+    const closeAria = toggle.getAttribute('data-mobile-nav-close-aria') || '关闭导航菜单';
+
+    const closeMenu = () => {
+      panel.classList.add('hidden');
+      toggle.setAttribute('data-mobile-nav-state', 'closed');
+      toggle.setAttribute('aria-label', openAria);
+      icon.innerHTML = '<path d="M4 7h16M4 12h16M4 17h16" />';
+    };
+
+    const openMenu = () => {
+      panel.classList.remove('hidden');
+      toggle.setAttribute('data-mobile-nav-state', 'open');
+      toggle.setAttribute('aria-label', closeAria);
+      icon.innerHTML = '<path d="M6 6l12 12M18 6L6 18" />';
+    };
+
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('data-mobile-nav-state') === 'open';
+      if (open) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
+    links.forEach((item) => {
+      item.addEventListener('click', () => closeMenu());
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) {
+        closeMenu();
+      }
+    });
+  }
+
   function updateAuthVisibleLinks() {
     const token = window.localStorage.getItem('miku_blog_token');
     const authed = Boolean(token);
@@ -94,6 +207,7 @@ function isActive(href: string) {
     });
   }
 
+  setupMobileNav();
   updateAuthVisibleLinks();
   window.addEventListener('storage', updateAuthVisibleLinks);
 </script>

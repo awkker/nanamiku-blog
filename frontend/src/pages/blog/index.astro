@@ -1,6 +1,7 @@
 ---
 import BaseHead from '../../components/base/BaseHead.astro'
 import BlogTopNav from '../../components/blog/BlogTopNav.astro'
+import SiteFooter from '../../components/base/SiteFooter.vue'
 import LiquidGlassCard from '../../components/ui/LiquidGlassCard.vue'
 import LatestMoments from '../../components/moments/LatestMoments.vue'
 import BlogFeed from '../../components/blog/BlogFeed.vue'
@@ -24,7 +25,7 @@ const heroActionClasses = [
   </head>
   <body class="bg-slate-100 text-slate-800">
     <div class="relative min-h-screen pt-14">
-      <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(57,197,187,0.22),transparent_46%),radial-gradient(circle_at_85%_18%,rgba(192,132,252,0.16),transparent_36%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]" />
+      <div class="blog-index-background pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(57,197,187,0.22),transparent_46%),radial-gradient(circle_at_85%_18%,rgba(192,132,252,0.16),transparent_36%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]" />
       <div id="scroll-progress" class="fixed left-0 top-14 z-[60] h-0.5 w-full bg-gradient-to-r from-[#c084fc] via-miku to-[#c084fc]" />
       <BlogTopNav currentPath={Astro.url.pathname} />
 
@@ -220,6 +221,8 @@ const heroActionClasses = [
       </main>
     </div>
 
+    <SiteFooter client:load />
+
     <script is:inline>
       const progressBar = document.getElementById('scroll-progress')
       const topNav = document.querySelector('[data-blog-topnav]')
@@ -306,6 +309,14 @@ const heroActionClasses = [
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  html.theme-night .blog-index-background {
+    background:
+      radial-gradient(circle at top, rgba(57, 197, 187, 0.12), transparent 46%),
+      radial-gradient(circle at 85% 18%, rgba(192, 132, 252, 0.1), transparent 38%),
+      linear-gradient(180deg, #0b1220 0%, #0a1020 45%, #060b16 100%) !important;
+  }
+
   .author-avatar-ring {
     background: conic-gradient(#39c5bb, #c084fc, #39c5bb);
     animation: ring-rotate 6s linear infinite;

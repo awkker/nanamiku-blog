@@ -1,0 +1,22 @@
+---
+import BaseHead from '../../components/base/BaseHead.astro'
+import AdminFooterManager from '../../components/admin/AdminFooterManager.vue'
+import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
+import AdminLayout from '../../layouts/AdminLayout.astro'
+import { adminCopy } from '../../content/copy'
+
+const copy = adminCopy.footerManager
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title={copy.page.metaTitle} description={copy.page.metaDescription} />
+    <AdminRouteGuard />
+  </head>
+  <body>
+    <AdminLayout activeKey="footer" pageTitle={copy.page.title}>
+      <AdminFooterManager client:load />
+    </AdminLayout>
+  </body>
+</html>

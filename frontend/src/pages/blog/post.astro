@@ -1,6 +1,7 @@
 ---
 import BaseHead from '../../components/base/BaseHead.astro'
 import BlogTopNav from '../../components/blog/BlogTopNav.astro'
+import SiteFooter from '../../components/base/SiteFooter.vue'
 import BlogPostView from '../../components/blog/BlogPostView.vue'
 ---
 
@@ -12,8 +13,19 @@ import BlogPostView from '../../components/blog/BlogPostView.vue'
   <body class="bg-slate-50 text-slate-800">
     <BlogTopNav currentPath="/blog" />
     <main class="relative min-h-screen px-4 pb-20 pt-20 sm:px-6 lg:px-8">
-      <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(57,197,187,0.12),transparent_50%),radial-gradient(circle_at_85%_18%,rgba(192,132,252,0.08),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]" />
+      <div class="blog-post-view-background pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(57,197,187,0.12),transparent_50%),radial-gradient(circle_at_85%_18%,rgba(192,132,252,0.08),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]" />
       <BlogPostView client:load />
     </main>
+
+    <SiteFooter client:load />
   </body>
 </html>
+
+<style is:global>
+  html.theme-night .blog-post-view-background {
+    background:
+      radial-gradient(circle at top, rgba(57, 197, 187, 0.12), transparent 48%),
+      radial-gradient(circle at 85% 18%, rgba(192, 132, 252, 0.1), transparent 40%),
+      linear-gradient(180deg, #0b1220 0%, #0a1020 45%, #060b16 100%) !important;
+  }
+</style>

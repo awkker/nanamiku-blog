@@ -31,6 +31,21 @@ export const siteCopy = {
   common: {
     backToTopAria: '返回顶部',
   },
+  siteFooter: {
+    // DIY 入口：站点页尾备案号与自定义文案。默认值用于首次加载与“恢复默认”。
+    defaults: {
+      icpText: '备案号待配置',
+      icpLink: 'https://beian.miit.gov.cn/',
+      customTexts: ['本站内容仅用于学习交流，请勿用于商业转载。'],
+    },
+    display: {
+      copyrightPrefix: '© ',
+      siteName: 'NANAMIKU BLOG',
+      rightsText: '保留所有权利',
+      emptyIcpText: '备案号待配置',
+      icpAriaPrefix: '打开备案信息：',
+    },
+  },
   home: {
     metaTitle: 'nanamiku blog',
     metaDescription: 'nanamiku blog 开屏页',
@@ -54,6 +69,17 @@ export const siteCopy = {
   },
   blogTopNav: {
     ariaPrefix: '前往',
+    mobileMenu: {
+      panelAria: '移动端页面导航',
+      openButtonAria: '打开导航菜单',
+      closeButtonAria: '关闭导航菜单',
+    },
+    themeToggle: {
+      switchToNightAria: '切换夜间模式',
+      switchToLightAria: '切换亮色模式',
+      nightLabel: '夜间',
+      lightLabel: '亮色',
+    },
     primaryLinks: [
       { href: '/blog', label: '博客首页' },
       { href: '/moments', label: '说说' },

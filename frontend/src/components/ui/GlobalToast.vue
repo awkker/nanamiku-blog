@@ -2,7 +2,7 @@
   <Transition name="toast-up">
     <div
       v-if="toast.open"
-      class="fixed bottom-5 right-5 z-50 rounded-2xl border px-4 py-3 text-sm text-white shadow-lg backdrop-blur-md"
+      class="fixed bottom-5 right-4 z-50 max-w-[calc(100vw-2rem)] break-words rounded-2xl border px-4 py-3 text-sm text-white shadow-lg backdrop-blur-md sm:right-5 sm:max-w-[420px]"
       :class="toast.type === 'error'
         ? 'border-red-300/50 bg-red-400/25'
         : toast.type === 'success'

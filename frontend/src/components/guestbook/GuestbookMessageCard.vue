@@ -76,7 +76,7 @@
         </div>
 
         <!-- Inline Reply Form -->
-        <div v-if="showReplyForm" class="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+        <div v-if="showReplyForm" class="guestbook-reply-form mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
           <div class="mb-2">
             <input
               v-model="replyNickname"
@@ -115,8 +115,8 @@
         </div>
 
         <!-- Nested Replies -->
-        <div v-if="message.replies.length > 0" class="mt-3 space-y-2 border-l-2 border-slate-200 pl-4">
-          <div v-for="reply in message.replies" :key="reply.id" class="rounded-lg bg-slate-50/60 px-3 py-2.5">
+        <div v-if="message.replies.length > 0" class="guestbook-reply-thread mt-3 space-y-2 border-l-2 border-slate-200 pl-4">
+          <div v-for="reply in message.replies" :key="reply.id" class="guestbook-reply-item rounded-lg bg-slate-50/60 px-3 py-2.5">
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
               <img :src="reply.avatar" :alt="reply.nickname" class="h-4 w-4 rounded-full object-cover" loading="lazy" />
               <span class="text-xs font-semibold text-slate-600">{{ reply.nickname }}</span>

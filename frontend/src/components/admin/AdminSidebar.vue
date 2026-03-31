@@ -146,6 +146,7 @@ const navGroups = [
   {
     section: 'SYSTEM',
     items: [
+      { key: 'footer', label: '页尾设置', href: '/admin/footer' },
       { key: 'profile', label: '个人设置', href: '/admin/profile' },
       { key: 'friends', label: '友链管理', href: '/admin/friends' },
       { key: 'backup', label: '数据备份', href: '/admin/backup' },

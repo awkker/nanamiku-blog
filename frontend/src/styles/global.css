@@ -20,6 +20,15 @@
 
 :root {
   --miku-color: rgb(57, 197, 187);
+  --site-bg: #f1f5f9;
+  --site-text: #1e293b;
+  --site-muted: #64748b;
+}
+
+html.theme-night {
+  --site-bg: #0b1220;
+  --site-text: #dbe7ff;
+  --site-muted: #a4b0c7;
 }
 
 * {
@@ -30,11 +39,28 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+}
+
+.flex > * {
+  min-width: 0;
 }
 
 body {
-  @apply bg-slate-100 font-sans text-slate-800 antialiased;
+  @apply font-sans antialiased;
+  background: var(--site-bg);
+  color: var(--site-text);
   font-family: 'Atkinson', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  transition: background-color 240ms ease, color 240ms ease;
 }
 
 a {
@@ -51,6 +77,135 @@ button,
 textarea,
 select {
   font: inherit;
+}
+
+html.theme-night .blog-top-nav {
+  border-color: rgba(71, 85, 105, 0.46);
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.48);
+  backdrop-filter: none;
+}
+
+html.theme-night .blog-top-nav.is-scrolled {
+  border-color: rgba(71, 85, 105, 0.56);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.58);
+  backdrop-filter: none;
+}
+
+html.theme-night .mobile-nav-panel {
+  border-color: rgba(71, 85, 105, 0.46);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.56);
+}
+
+html.theme-night .bg-slate-50,
+html.theme-night .bg-slate-100 {
+  background-color: #0b1220 !important;
+  color: var(--site-text);
+}
+
+html.theme-night [class*='bg-slate-50/'],
+html.theme-night [class*='bg-slate-100/'] {
+  background-color: rgba(15, 23, 42, 0.92) !important;
+  color: var(--site-text);
+}
+
+html.theme-night [class*='bg-white'] {
+  background-color: rgba(15, 23, 42, 0.88) !important;
+  backdrop-filter: none !important;
+}
+
+html.theme-night [class*='border-white'] {
+  border-color: rgba(71, 85, 105, 0.38) !important;
+}
+
+html.theme-night [class*='border-slate-'] {
+  border-color: rgba(71, 85, 105, 0.46) !important;
+}
+
+html.theme-night [class*='text-slate-9'],
+html.theme-night [class*='text-slate-8'],
+html.theme-night [class*='text-slate-7'] {
+  color: var(--site-text) !important;
+}
+
+html.theme-night [class*='text-slate-6'],
+html.theme-night [class*='text-slate-5'],
+html.theme-night [class*='text-slate-4'] {
+  color: var(--site-muted) !important;
+}
+
+html.theme-night .glass-layer {
+  border-color: rgba(71, 85, 105, 0.46);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.44);
+  backdrop-filter: none;
+}
+
+html.theme-night .liquid-glass-frame {
+  border-color: rgba(71, 85, 105, 0.55) !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.38) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.theme-night .liquid-glass-frame::before {
+  display: none !important;
+}
+
+html.theme-night .guestbook-reply-thread {
+  border-left-color: rgba(71, 85, 105, 0.56) !important;
+}
+
+html.theme-night .guestbook-reply-form,
+html.theme-night .guestbook-reply-item {
+  border-color: rgba(71, 85, 105, 0.5) !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+}
+
+html.theme-night .article-prose {
+  --tw-prose-body: #d5e3ff;
+  --tw-prose-headings: #eff5ff;
+  --tw-prose-lead: #c7d4ee;
+  --tw-prose-links: #66ddd4;
+  --tw-prose-bold: #f3f7ff;
+  --tw-prose-counters: #a8bad8;
+  --tw-prose-bullets: #8ea1c2;
+  --tw-prose-hr: rgba(125, 148, 186, 0.28);
+  --tw-prose-quotes: #dbe7ff;
+  --tw-prose-quote-borders: rgba(192, 132, 252, 0.52);
+  --tw-prose-captions: #9db0cf;
+  --tw-prose-code: #e2ebff;
+  --tw-prose-pre-code: #dbe7ff;
+  --tw-prose-pre-bg: #0b1220;
+  --tw-prose-th-borders: rgba(125, 148, 186, 0.35);
+  --tw-prose-td-borders: rgba(125, 148, 186, 0.24);
+}
+
+html.theme-night .article-prose p,
+html.theme-night .article-prose li,
+html.theme-night .article-prose blockquote {
+  color: #d5e3ff !important;
+}
+
+html.theme-night .article-prose h1,
+html.theme-night .article-prose h2,
+html.theme-night .article-prose h3,
+html.theme-night .article-prose h4 {
+  color: #eff5ff !important;
+  border-bottom-color: rgba(57, 197, 187, 0.28) !important;
+}
+
+html.theme-night .article-prose blockquote {
+  background: rgba(192, 132, 252, 0.14) !important;
+  border-left-color: rgba(192, 132, 252, 0.7) !important;
+}
+
+html.theme-night .article-prose code {
+  color: #e2ebff !important;
+  background: rgba(15, 23, 42, 0.96) !important;
 }
 
 @layer components {

@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content'
 import BaseHead from '../components/base/BaseHead.astro'
 import BlogTopNav from '../components/blog/BlogTopNav.astro'
+import SiteFooter from '../components/base/SiteFooter.vue'
 import MarkdownCodeEnhancer from '../components/blog/MarkdownCodeEnhancer.vue'
 import ReadingToc from '../components/blog/ReadingToc.vue'
 import ArticleHero from '../components/blog/ArticleHero.astro'
@@ -57,7 +58,7 @@ const tocHeadingCount = headings.filter((heading) => heading.depth <= 3).length
   </head>
 
   <body class="bg-slate-50 text-slate-800">
-    <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_10%_0%,rgba(57,197,187,0.2),transparent_42%),radial-gradient(circle_at_88%_8%,rgba(192,132,252,0.14),transparent_34%),linear-gradient(180deg,#f8fcfc_0%,#f1f8f7_50%,#f5f7ff_100%)]" />
+    <div class="blog-post-background pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_10%_0%,rgba(57,197,187,0.2),transparent_42%),radial-gradient(circle_at_88%_8%,rgba(192,132,252,0.14),transparent_34%),linear-gradient(180deg,#f8fcfc_0%,#f1f8f7_50%,#f5f7ff_100%)]" />
 
     <BlogTopNav currentPath={Astro.url.pathname} />
 
@@ -100,6 +101,8 @@ const tocHeadingCount = headings.filter((heading) => heading.depth <= 3).length
       <ArticleFooter prevPost={prevPost} nextPost={nextPost} relatedPosts={relatedPosts} />
     </main>
 
+    <SiteFooter client:load />
+
     <script is:inline>
       (() => {
         const topNav = document.querySelector('[data-blog-topnav]')
@@ -117,3 +120,12 @@ const tocHeadingCount = headings.filter((heading) => heading.depth <= 3).length
     </script>
   </body>
 </html>
+
+<style is:global>
+  html.theme-night .blog-post-background {
+    background:
+      radial-gradient(circle at 10% 0%, rgba(57, 197, 187, 0.12), transparent 44%),
+      radial-gradient(circle at 88% 8%, rgba(192, 132, 252, 0.1), transparent 36%),
+      linear-gradient(180deg, #0b1220 0%, #0a1120 48%, #060b16 100%) !important;
+  }
+</style>

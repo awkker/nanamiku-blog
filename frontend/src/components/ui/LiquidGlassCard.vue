@@ -1,5 +1,5 @@
 <template>
-  <div ref="frameRef" class="liquid-glass-frame" :style="frameStyle">
+  <div ref="frameRef" class="liquid-glass-frame" :class="{ 'is-night': isNight }" :style="frameStyle">
     <div class="liquid-glass-content">
       <slot />
     </div>
@@ -10,6 +10,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { createLiquidGlass, type LiquidGlassController } from '../../utils/liquidGlass'
+import { hydrateThemeMode } from '../../stores/theme'
 
 interface Props {
   width?: string
@@ -43,6 +44,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const frameRef = ref<HTMLElement | null>(null)
 let controller: LiquidGlassController | null = null
+const isNight = ref(false)
+let themeObserver: MutationObserver | null = null
 
 const frameStyle = computed(() => ({
   width: props.width,
@@ -51,45 +54,98 @@ const frameStyle = computed(() => ({
   borderRadius: `${props.borderRadius}px`,
 }))
 
-onMounted(() => {
-  if (!frameRef.value) {
+const liquidOptions = computed(() => ({
+  borderRadius: props.borderRadius,
+  cornerSoftness: props.cornerSoftness,
+  displacementStrength: props.displacementStrength,
+  edgeRefractionStrength: props.edgeRefractionStrength,
+  blur: props.blur,
+  contrast: props.contrast,
+  brightness: props.brightness,
+  saturate: props.saturate,
+  interactive: props.interactive,
+}))
+
+function destroyController() {
+  controller?.destroy()
+  controller = null
+}
+
+function syncThemeFromDocument() {
+  if (typeof document === 'undefined') {
+    isNight.value = false
     return
   }
 
-  // 组件挂载时初始化液态玻璃效果
-  controller = createLiquidGlass(frameRef.value, {
-    borderRadius: props.borderRadius,
-    cornerSoftness: props.cornerSoftness,
-    displacementStrength: props.displacementStrength,
-    edgeRefractionStrength: props.edgeRefractionStrength,
-    blur: props.blur,
-    contrast: props.contrast,
-    brightness: props.brightness,
-    saturate: props.saturate,
-    interactive: props.interactive,
-  })
+  const root = document.documentElement
+  const byClass = root.classList.contains('theme-night')
+  const byDataAttr = root.getAttribute('data-theme') === 'night'
+  isNight.value = byClass || byDataAttr
+}
+
+function handleThemeChange() {
+  syncThemeFromDocument()
+}
+
+function initController() {
+  if (!frameRef.value || controller || isNight.value) {
+    return
+  }
+
+  controller = createLiquidGlass(frameRef.value, liquidOptions.value)
+}
+
+onMounted(() => {
+  hydrateThemeMode()
+  syncThemeFromDocument()
+  window.addEventListener('miku-theme-change', handleThemeChange)
+
+  if (typeof MutationObserver !== 'undefined') {
+    themeObserver = new MutationObserver(() => syncThemeFromDocument())
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    })
+  }
+
+  initController()
 })
 
 watch(
-  () => ({
-    borderRadius: props.borderRadius,
-    cornerSoftness: props.cornerSoftness,
-    displacementStrength: props.displacementStrength,
-    edgeRefractionStrength: props.edgeRefractionStrength,
-    blur: props.blur,
-    contrast: props.contrast,
-    brightness: props.brightness,
-    saturate: props.saturate,
-    interactive: props.interactive,
-  }),
+  liquidOptions,
   // 外部 props 变化时同步更新液态玻璃参数
-  (next) => controller?.update(next),
+  (next) => {
+    if (isNight.value) {
+      return
+    }
+
+    if (!controller) {
+      initController()
+      return
+    }
+
+    controller.update(next)
+  },
+)
+
+watch(
+  isNight,
+  (night) => {
+    if (night) {
+      destroyController()
+      return
+    }
+
+    initController()
+  },
 )
 
 onBeforeUnmount(() => {
   // 组件卸载时释放监听与滤镜资源
-  controller?.destroy()
-  controller = null
+  window.removeEventListener('miku-theme-change', handleThemeChange)
+  themeObserver?.disconnect()
+  themeObserver = null
+  destroyController()
 })
 </script>
 
@@ -117,5 +173,15 @@ onBeforeUnmount(() => {
 .liquid-glass-content {
   position: relative;
   z-index: 1;
+}
+
+.liquid-glass-frame.is-night {
+  border: 1px solid rgba(71, 85, 105, 0.55);
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.38);
+}
+
+.liquid-glass-frame.is-night::before {
+  display: none;
 }
 </style>

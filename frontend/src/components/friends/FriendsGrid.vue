@@ -1,6 +1,6 @@
 <template>
   <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center gap-2.5">
         <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#c084fc]/10">
           <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#c084fc] stroke-[2]" aria-hidden="true">
@@ -16,6 +16,7 @@
       </div>
       <MikuButton
         variant="ghost"
+        class="w-full justify-center sm:w-auto"
         aria-label="申请交换友链"
         @click="showToast('友链申请通道将在下一阶段开放。', 'info')"
       >

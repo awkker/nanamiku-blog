@@ -17,6 +17,19 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const { title, description, image = FallbackImage } = Astro.props;
 ---
 
+<script is:inline>
+  (() => {
+    try {
+      const root = document.documentElement;
+      const mode = window.localStorage.getItem('miku_blog_theme_mode') === 'night' ? 'night' : 'light';
+      root.classList.toggle('theme-night', mode === 'night');
+      root.setAttribute('data-theme', mode);
+    } catch {
+      // keep light mode fallback
+    }
+  })();
+</script>
+
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />

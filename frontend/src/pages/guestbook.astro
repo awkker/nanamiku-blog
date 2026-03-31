@@ -1,6 +1,7 @@
 ---
 import BaseHead from '../components/base/BaseHead.astro'
 import BlogTopNav from '../components/blog/BlogTopNav.astro'
+import SiteFooter from '../components/base/SiteFooter.vue'
 import GlobalToast from '../components/ui/GlobalToast.vue'
 import GuestbookBoard from '../components/guestbook/GuestbookBoard.vue'
 import { siteCopy } from '../content/copy'
@@ -24,20 +25,20 @@ const copy = siteCopy.guestbookPage
         <div class="absolute bottom-[12%] left-[30%] h-[260px] w-[260px] rounded-full bg-[#39c5bb]/5 blur-[90px]" />
       </div>
 
-      <header class="relative mx-auto max-w-3xl px-4 pb-4 pt-12 text-center sm:px-6 sm:pt-16 lg:px-8">
-        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/60 px-4 py-1.5 text-xs tracking-[0.22em] text-slate-400">
+      <header class="relative mx-auto max-w-3xl space-y-4 px-4 pb-4 pt-12 text-center sm:space-y-5 sm:px-6 sm:pt-16 lg:px-8">
+        <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/60 px-4 py-1.5 text-xs tracking-[0.22em] text-slate-400">
           <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.8]" aria-hidden="true">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
           </svg>
           {copy.heroBadge}
         </div>
-        <h1 class="bg-gradient-to-r from-slate-800 via-[#39c5bb] to-[#c084fc] bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
+        <h1 class="bg-gradient-to-r from-slate-800 via-[#39c5bb] to-[#c084fc] bg-clip-text pt-1 text-4xl font-bold leading-[1.2] tracking-tight text-transparent sm:text-5xl sm:leading-[1.16]">
           {copy.title}
         </h1>
-        <p class="mx-auto mt-4 max-w-lg text-base leading-relaxed text-slate-500">
+        <p class="mx-auto max-w-lg text-base leading-relaxed text-slate-500">
           {copy.description}
         </p>
-        <nav class="mt-6 flex flex-wrap items-center justify-center gap-2.5" aria-label={copy.navAria}>
+        <nav class="flex flex-wrap items-center justify-center gap-2.5 pt-1.5" aria-label={copy.navAria}>
           <a
             href={copy.quickLinks[0].href}
             class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/60 px-3.5 py-2 text-sm text-slate-500 transition hover:border-miku/40 hover:text-miku"
@@ -63,5 +64,7 @@ const copy = siteCopy.guestbookPage
 
       <GlobalToast client:load />
     </main>
+
+    <SiteFooter client:load />
   </body>
 </html>

@@ -1,26 +1,26 @@
 <template>
-  <div class="flex items-center gap-2">
-    <button @click="expanded = !expanded" class="max-w-[140px] truncate rounded-full bg-white/15 px-2 py-0.5 transition hover:bg-white/25">
+  <div class="flex items-center gap-1 min-[380px]:gap-1.5 sm:gap-2">
+    <button @click="expanded = !expanded" class="max-w-[74px] truncate rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] transition hover:bg-white/25 min-[380px]:max-w-[96px] min-[380px]:text-[11px] sm:max-w-[140px] sm:px-2">
       {{ currentTrack.title }}
     </button>
-    <button @click="prev" class="rounded p-1 transition hover:bg-white/15" aria-label="上一首">
+    <button @click="prev" class="hidden rounded p-1 transition hover:bg-white/15 sm:inline-flex" aria-label="上一首">
       <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M6 6h2v12H6zm3 6l9-6v12z" /></svg>
     </button>
     <button @click="togglePlay" class="rounded p-1 transition hover:bg-white/15" :aria-label="isPlaying ? '暂停' : '播放'">
       <svg v-if="isPlaying" viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M7 5h4v14H7zm6 0h4v14h-4z" /></svg>
       <svg v-else viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M8 5v14l11-7z" /></svg>
     </button>
-    <button @click="next" class="rounded p-1 transition hover:bg-white/15" aria-label="下一首">
+    <button @click="next" class="hidden rounded p-1 transition hover:bg-white/15 sm:inline-flex" aria-label="下一首">
       <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M16 6h2v12h-2zM7 6l9 6-9 6z" /></svg>
     </button>
-    <input type="range" min="0" max="100" :value="Math.round(volume * 100)" @input="onVolumeInput" class="player-range h-[3px] w-14 cursor-pointer" aria-label="音量" />
+    <input type="range" min="0" max="100" :value="Math.round(volume * 100)" @input="onVolumeInput" class="player-range hidden h-[3px] w-14 cursor-pointer sm:block" aria-label="音量" />
 
     <Transition name="fade">
       <div v-if="expanded" class="fixed inset-0 z-40 bg-black/20" @click="expanded = false" />
     </Transition>
 
     <Transition name="card-slide">
-      <div v-if="expanded" class="fixed right-4 top-10 z-50 w-80 rounded-2xl border border-white/15 bg-slate-900/88 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+      <div v-if="expanded" class="fixed right-2 top-10 z-50 w-[calc(100vw-1rem)] max-w-sm rounded-2xl border border-white/15 bg-slate-900/88 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl min-[380px]:right-3 min-[380px]:p-5 sm:right-4 sm:w-80">
         <button @click="expanded = false" class="absolute right-3 top-3 rounded-full p-1 text-white/40 transition hover:bg-white/10 hover:text-white/70" aria-label="关闭">
           <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[2]"><path d="M18 6L6 18M6 6l12 12" /></svg>
         </button>
