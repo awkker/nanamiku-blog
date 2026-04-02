@@ -99,7 +99,8 @@ const heroActionClasses = [
       </header>
 
       <main id="content-start" class="mx-auto mt-6 grid w-full max-w-[1320px] grid-cols-1 gap-8 px-4 pb-20 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section id="latest-posts">
+        <section id="archive" class="scroll-mt-24">
+          <div id="latest-posts" class="scroll-mt-24" />
           <BlogFeed client:load />
         </section>
 
@@ -185,7 +186,7 @@ const heroActionClasses = [
             </div>
           </LiquidGlassCard>
 
-          <div class="glass-layer rounded-2xl p-4">
+          <div id="recent-updates" class="glass-layer scroll-mt-24 rounded-2xl p-4">
             <h3 class="text-sm font-semibold text-slate-900">{copy.nowTitle}</h3>
             <ul class="mt-3 space-y-2">
               {

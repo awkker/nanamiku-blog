@@ -25,8 +25,15 @@ export interface SiteActionItem {
 
 export const siteCopy = {
   brand: {
-    logoAlt: 'nanamiku logo',
-    text: 'NANAMIKU BLOG',
+    logoAlt: 'NanaMiku Blog logo',
+    text: 'NanaMiku Blog',
+  },
+  seo: {
+    // DIY 入口：统一维护站点域名、品牌名、默认 SEO 描述与默认分享图。
+    siteUrl: 'https://nanamiku.blog',
+    siteTitle: 'NanaMiku Blog',
+    defaultDescription: 'NanaMiku Blog 是 Xunyi 的技术创作空间，持续记录 Astro、Vue Islands 与 Go 全栈实践。',
+    defaultSocialImage: '/picture/logo-64.webp',
   },
   common: {
     backToTopAria: '返回顶部',
@@ -34,15 +41,14 @@ export const siteCopy = {
   siteFooter: {
     // DIY 入口：站点页尾备案号与自定义文案。默认值用于首次加载与“恢复默认”。
     defaults: {
-      icpText: '备案号待配置',
-      icpLink: 'https://beian.miit.gov.cn/',
+      icpText: '',
+      icpLink: '',
       customTexts: ['本站内容仅用于学习交流，请勿用于商业转载。'],
     },
     display: {
       copyrightPrefix: '© ',
       siteName: 'NANAMIKU BLOG',
       rightsText: '保留所有权利',
-      emptyIcpText: '备案号待配置',
       icpAriaPrefix: '打开备案信息：',
     },
   },
@@ -317,7 +323,7 @@ export const siteCopy = {
       {
         title: '最近更新',
         desc: '快速查看我当前在推进的主线和近期输出。',
-        href: '/blog#latest-posts',
+        href: '/blog#recent-updates',
       },
     ],
     monthlyGoalsTitle: '本月目标',

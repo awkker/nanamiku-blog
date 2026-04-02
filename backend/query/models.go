@@ -387,6 +387,13 @@ type FriendLinkHealthLog struct {
 	CheckedAt    time.Time    `json:"checked_at"`
 }
 
+type GuestbookAuthorMark struct {
+	MessageID      uuid.UUID `json:"message_id"`
+	AdminID        uuid.UUID `json:"admin_id"`
+	AdminAvatarUrl string    `json:"admin_avatar_url"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 type GuestbookMessage struct {
 	ID            uuid.UUID        `json:"id"`
 	ParentID      pgtype.UUID      `json:"parent_id"`
@@ -531,6 +538,14 @@ type SensitiveWord struct {
 	Word      string    `json:"word"`
 	Category  string    `json:"category"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type SiteSetting struct {
+	Key       string          `json:"key"`
+	Value     json.RawMessage `json:"value"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+	UpdatedBy pgtype.UUID     `json:"updated_by"`
 }
 
 type Tag struct {

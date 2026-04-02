@@ -92,6 +92,7 @@ type Querier interface {
 	GetPostTagNames(ctx context.Context, postID uuid.UUID) ([]GetPostTagNamesRow, error)
 	GetPrimaryAdminPublicProfile(ctx context.Context) (GetPrimaryAdminPublicProfileRow, error)
 	GetRefreshTokenByHash(ctx context.Context, tokenHash string) (AdminRefreshToken, error)
+	GetSiteSetting(ctx context.Context, key string) (SiteSetting, error)
 	GetTotalLikeCount(ctx context.Context) (int64, error)
 	GetTotalPostCount(ctx context.Context) (int64, error)
 	GetVisitorByID(ctx context.Context, id uuid.UUID) (Visitor, error)
@@ -169,6 +170,7 @@ type Querier interface {
 	UpsertAnalyticsSession(ctx context.Context, arg UpsertAnalyticsSessionParams) (UpsertAnalyticsSessionRow, error)
 	UpsertGuestbookVote(ctx context.Context, arg UpsertGuestbookVoteParams) error
 	UpsertPostViewDaily(ctx context.Context, arg UpsertPostViewDailyParams) error
+	UpsertSiteSetting(ctx context.Context, arg UpsertSiteSettingParams) (SiteSetting, error)
 	UpsertTag(ctx context.Context, arg UpsertTagParams) (uuid.UUID, error)
 }
 

@@ -26,6 +26,7 @@ func NewBackupService(db *pgxpool.Pool) *BackupService {
 var backupTableOrder = []string{
 	"admin_users",
 	"admin_refresh_tokens",
+	"site_settings",
 	"visitors",
 	"posts",
 	"tags",

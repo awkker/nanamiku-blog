@@ -20,6 +20,7 @@
           :placeholder="copy.form.icpPlaceholder"
           class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-miku/50"
           :aria-label="copy.form.icpLabel"
+          :disabled="loading || saving"
         />
         <input
           v-model="icpLink"
@@ -27,6 +28,7 @@
           :placeholder="copy.form.icpLinkPlaceholder"
           class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-miku/50"
           :aria-label="copy.form.icpLinkLabel"
+          :disabled="loading || saving"
         />
       </div>
     </AdminPlainCard>
@@ -41,6 +43,7 @@
         <MikuButton
           type="button"
           variant="solid"
+          :disabled="loading || saving"
           :aria-label="copy.form.addButtonAria"
           @click="addLine"
         >
@@ -60,11 +63,13 @@
             :placeholder="copy.form.customLinePlaceholder"
             class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-miku/50"
             :aria-label="`${copy.form.customLineLabelPrefix}${index + 1}`"
+            :disabled="loading || saving"
           />
           <button
             type="button"
             class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 transition hover:border-red-300 hover:text-red-600"
             :aria-label="copy.form.removeButtonAria"
+            :disabled="loading || saving"
             @click="removeLine(index)"
           >
             {{ copy.form.removeButton }}
@@ -79,7 +84,7 @@
 
     <AdminPlainCard padding="20px">
       <div class="flex flex-wrap items-center gap-3">
-        <MikuButton type="button" variant="solid" :disabled="saving" :aria-label="copy.form.saveButtonAria" @click="save">
+        <MikuButton type="button" variant="solid" :disabled="loading || saving" :aria-label="copy.form.saveButtonAria" @click="save">
           {{ saving ? copy.form.savingButton : copy.form.saveButton }}
         </MikuButton>
 
@@ -87,6 +92,7 @@
           type="button"
           class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-600 transition hover:border-miku/40 hover:text-miku"
           :aria-label="copy.form.resetButtonAria"
+          :disabled="loading || saving"
           @click="reset"
         >
           {{ copy.form.resetButton }}
@@ -98,9 +104,10 @@
 
 <script setup lang="ts">
 import { useStore } from '@nanostores/vue'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import { adminCopy } from '../../content/copy'
+import { ApiError } from '../../lib/api'
 import {
   hydrateSiteFooterSettings,
   resetSiteFooterSettings,
@@ -119,6 +126,7 @@ const icpText = ref('')
 const icpLink = ref('')
 const customTexts = ref<string[]>([])
 const saving = ref(false)
+const loading = ref(false)
 
 function syncFromStore() {
   icpText.value = settings.value.icpText
@@ -140,11 +148,21 @@ function cleanLines(lines: string[]): string[] {
     .filter((line) => line.length > 0)
 }
 
-function save() {
+async function load() {
+  loading.value = true
+  try {
+    await hydrateSiteFooterSettings()
+  } finally {
+    syncFromStore()
+    loading.value = false
+  }
+}
+
+async function save() {
   saving.value = true
 
   try {
-    saveSiteFooterSettings({
+    await saveSiteFooterSettings({
       icpText: icpText.value.trim(),
       icpLink: icpLink.value.trim(),
       customTexts: cleanLines(customTexts.value),
@@ -152,25 +170,29 @@ function save() {
 
     syncFromStore()
     showToast(copy.toast.saveSuccess, 'success')
-  } catch {
-    showToast(copy.toast.saveFailed, 'error')
+  } catch (err) {
+    const msg = err instanceof ApiError ? err.message : copy.toast.saveFailed
+    showToast(msg, 'error')
   } finally {
     saving.value = false
   }
 }
 
-function reset() {
-  resetSiteFooterSettings()
-  syncFromStore()
-  showToast(copy.toast.resetSuccess, 'success')
+async function reset() {
+  saving.value = true
+  try {
+    await resetSiteFooterSettings()
+    syncFromStore()
+    showToast(copy.toast.resetSuccess, 'success')
+  } catch (err) {
+    const msg = err instanceof ApiError ? err.message : copy.toast.saveFailed
+    showToast(msg, 'error')
+  } finally {
+    saving.value = false
+  }
 }
 
 onMounted(() => {
-  hydrateSiteFooterSettings()
-  syncFromStore()
-})
-
-watch(settings, () => {
-  syncFromStore()
+  load()
 })
 </script>

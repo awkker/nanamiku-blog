@@ -35,10 +35,22 @@ const iconPaths: Record<string, string> = {
       <HeroParallax client:load />
 
       <header class="absolute left-0 top-0 z-20 flex h-8 w-full items-center justify-between border-b border-white/30 bg-white/35 px-2.5 text-sm font-medium text-[#39c5bb]/90 backdrop-blur-none min-[380px]:px-3 sm:px-4">
-        <div class="flex items-center gap-1.5 text-xs tracking-[0.16em] min-[380px]:gap-2 min-[380px]:tracking-[0.2em]">
-          <img src="/picture/logo-64.webp" alt={siteCopy.brand.logoAlt} class="h-4 w-4 rounded-sm object-cover" width="16" height="16" loading="eager" decoding="async" fetchpriority="high" />
-          <span class="hidden rounded bg-white/20 px-2 py-0.5 min-[430px]:inline">{siteCopy.brand.text}</span>
-        </div>
+        <a
+          href="/"
+          class="inline-flex items-center gap-2 rounded-[18px] border border-white/45 bg-white/72 px-2.5 py-1 text-[13px] font-semibold tracking-[0.01em] text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.1)] transition hover:border-miku/35 hover:text-miku"
+        >
+          <img
+            src="/picture/logo-64.webp"
+            alt={siteCopy.brand.logoAlt}
+            class="h-5 w-5 rounded-lg object-cover"
+            width="20"
+            height="20"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+          />
+          <span class="whitespace-nowrap">{siteCopy.brand.text}</span>
+        </a>
 
         <div class="flex items-center gap-1 text-[11px] min-[380px]:gap-1.5 sm:gap-3">
           <MusicPlayer client:load />

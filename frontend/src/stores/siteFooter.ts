@@ -1,14 +1,20 @@
 import { atom } from 'nanostores'
 
 import { siteCopy } from '../content/copy'
+import { api } from '../lib/api'
 
-const STORAGE_KEY = 'miku_blog_site_footer'
 const MAX_CUSTOM_TEXTS = 8
 
 export interface SiteFooterSettings {
   icpText: string
   icpLink: string
   customTexts: string[]
+}
+
+interface SiteFooterSettingsPayload {
+  icp_text?: string
+  icp_link?: string
+  custom_texts?: string[]
 }
 
 function trimText(input: unknown): string {
@@ -42,57 +48,74 @@ function normalizeSettings(input: unknown): SiteFooterSettings {
   }
 
   const defaults = getDefaultSettings()
-  const source = input as Partial<SiteFooterSettings>
+  const source = input as Partial<SiteFooterSettings> &
+    SiteFooterSettingsPayload &
+    Record<string, unknown>
+  const hasCustomTexts = Object.prototype.hasOwnProperty.call(source, 'customTexts')
+    || Object.prototype.hasOwnProperty.call(source, 'custom_texts')
 
   return {
-    icpText: trimText(source.icpText) || defaults.icpText,
-    icpLink: trimText(source.icpLink) || defaults.icpLink,
-    customTexts: sanitizeCustomTexts(source.customTexts),
+    icpText: trimText(source.icpText ?? source.icp_text) || defaults.icpText,
+    icpLink: trimText(source.icpLink ?? source.icp_link) || defaults.icpLink,
+    customTexts: hasCustomTexts ? sanitizeCustomTexts(source.customTexts ?? source.custom_texts) : defaults.customTexts,
+  }
+}
+
+function toPayload(settings: SiteFooterSettings): SiteFooterSettingsPayload {
+  return {
+    icp_text: settings.icpText,
+    icp_link: settings.icpLink,
+    custom_texts: settings.customTexts,
   }
 }
 
 export const siteFooterSettings = atom<SiteFooterSettings>(getDefaultSettings())
 
 let hydrated = false
+let hydrationPromise: Promise<SiteFooterSettings> | null = null
 
-export function hydrateSiteFooterSettings() {
-  if (hydrated || typeof window === 'undefined') {
-    return
+export async function hydrateSiteFooterSettings(force = false): Promise<SiteFooterSettings> {
+  if (typeof window === 'undefined') {
+    return siteFooterSettings.get()
   }
 
-  hydrated = true
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      return
-    }
-
-    const parsed = JSON.parse(raw)
-    siteFooterSettings.set(normalizeSettings(parsed))
-  } catch {
-    siteFooterSettings.set(getDefaultSettings())
+  if (!force && hydrated) {
+    return siteFooterSettings.get()
   }
+
+  if (hydrationPromise) {
+    return hydrationPromise
+  }
+
+  hydrationPromise = api
+    .get<SiteFooterSettingsPayload | undefined>('/site-settings/footer')
+    .then((data) => {
+      const normalized = normalizeSettings(data)
+      siteFooterSettings.set(normalized)
+      hydrated = true
+      return normalized
+    })
+    .catch(() => {
+      const fallback = siteFooterSettings.get()
+      siteFooterSettings.set(fallback)
+      return fallback
+    })
+    .finally(() => {
+      hydrationPromise = null
+    })
+
+  return hydrationPromise
 }
 
-export function saveSiteFooterSettings(next: SiteFooterSettings) {
+export async function saveSiteFooterSettings(next: SiteFooterSettings): Promise<SiteFooterSettings> {
   const normalized = normalizeSettings(next)
-  siteFooterSettings.set(normalized)
-
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
+  const saved = await api.put<SiteFooterSettingsPayload>('/admin/site-settings/footer', toPayload(normalized))
+  const finalSettings = normalizeSettings(saved)
+  siteFooterSettings.set(finalSettings)
+  hydrated = true
+  return finalSettings
 }
 
-export function resetSiteFooterSettings() {
-  const defaults = getDefaultSettings()
-  siteFooterSettings.set(defaults)
-
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults))
+export function resetSiteFooterSettings(): Promise<SiteFooterSettings> {
+  return saveSiteFooterSettings(getDefaultSettings())
 }

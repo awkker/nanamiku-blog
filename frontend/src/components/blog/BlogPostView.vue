@@ -198,93 +198,44 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { api, type PagedData } from '../../lib/api'
+import { getReadingStats, renderPostMarkdown } from '../../lib/post-content'
+import { toPostUrl, type HeadingItem, type PostDetail, type PostSummary } from '../../lib/post-types'
 import MarkdownCodeEnhancer from './MarkdownCodeEnhancer.vue'
 import PostCommentsSection from './PostCommentsSection.vue'
 import PostLikeBar from './PostLikeBar.vue'
 import ReadingToc from './ReadingToc.vue'
 
-interface TagItem {
-  name: string
-  slug: string
+interface Props {
+  initialSlug?: string
+  initialPost?: PostDetail | null
+  initialRelatedPosts?: PostSummary[]
+  initialRenderedContent?: string
+  initialTocHeadings?: HeadingItem[]
+  initialWordCount?: number
+  initialReadingMinutes?: number
 }
 
-interface PostDetail {
-  id: string
-  slug: string
-  title: string
-  excerpt: string
-  content_markdown: string
-  hero_image_url: string
-  category: string
-  status: string
-  published_at?: string
-  view_count: number
-  like_count: number
-  comment_count: number
-  created_at: string
-  updated_at: string
-  tags: TagItem[]
-  liked: boolean
-}
+const props = withDefaults(defineProps<Props>(), {
+  initialSlug: '',
+  initialPost: null,
+  initialRelatedPosts: () => [],
+  initialRenderedContent: '',
+  initialTocHeadings: () => [],
+  initialWordCount: 0,
+  initialReadingMinutes: 1,
+})
 
-interface PostItem {
-  id: string
-  slug: string
-  title: string
-  excerpt: string
-  published_at?: string
-  created_at: string
-}
-
-interface HeadingItem {
-  depth: number
-  slug: string
-  text: string
-}
-
-const post = ref<PostDetail | null>(null)
-const loading = ref(true)
+const post = ref<PostDetail | null>(props.initialPost)
+const loading = ref(!props.initialPost)
 const error = ref('')
-const markdownHtml = ref('')
-const tocHeadings = ref<HeadingItem[]>([])
-const relatedPosts = ref<PostItem[]>([])
-const wordCount = ref(0)
-const readingMinutes = ref(1)
-const commentCount = ref(0)
+const markdownHtml = ref(props.initialRenderedContent)
+const tocHeadings = ref<HeadingItem[]>(props.initialTocHeadings)
+const relatedPosts = ref<PostSummary[]>(props.initialRelatedPosts)
+const wordCount = ref(Number(props.initialWordCount || 0))
+const readingMinutes = ref(Math.max(1, Number(props.initialReadingMinutes || 1)))
+const commentCount = ref(Number(props.initialPost?.comment_count || 0))
 
 const renderedContent = computed(() => markdownHtml.value)
-
-let markedModule: Awaited<ReturnType<typeof import('marked')>> | null = null
-
-function escapeHtml(input: string): string {
-  return input
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-}
-
-function normalizeMarkdown(source: string): string {
-  return source
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]+)]\([^)]*\)/g, '$1')
-    .replace(/<\/?[^>]+(>|$)/g, ' ')
-    .replace(/[#>*_~\-]/g, ' ')
-}
-
-function getReadingStats(source: string) {
-  const normalized = normalizeMarkdown(source)
-  const latinWords = normalized.match(/[A-Za-z0-9]+/g) ?? []
-  const cjkChars = normalized.match(/[\u3400-\u9fff]/g) ?? []
-  const words = latinWords.length + cjkChars.length
-  return {
-    wordCount: words,
-    readingMinutes: Math.max(1, Math.ceil(words / 260)),
-  }
-}
 
 function formatDate(iso?: string): string {
   if (!iso) return '--'
@@ -296,131 +247,48 @@ function formatDate(iso?: string): string {
   }
 }
 
-function slugifyHeading(text: string): string {
-  const normalized = text
-    .trim()
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\p{Letter}\p{Number}\u4e00-\u9fff\s-]/gu, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-
-  return normalized || 'section'
-}
-
-function collectHeadings(markdown: string, markedLib: Awaited<ReturnType<typeof import('marked')>>): HeadingItem[] {
-  const counters = new Map<string, number>()
-  const collected: HeadingItem[] = []
-  const tokens = markedLib.marked.lexer(markdown)
-
-  const visit = (list: unknown[]) => {
-    list.forEach((token) => {
-      if (!token || typeof token !== 'object') {
-        return
-      }
-
-      const t = token as {
-        type?: string
-        depth?: number
-        text?: string
-        tokens?: unknown[]
-        items?: Array<{ tokens?: unknown[] }>
-      }
-
-      if (t.type === 'heading') {
-        const rawText = t.text?.trim() || `章节 ${collected.length + 1}`
-        const base = slugifyHeading(rawText)
-        const nextIndex = (counters.get(base) ?? 0) + 1
-        counters.set(base, nextIndex)
-        const slug = nextIndex === 1 ? base : `${base}-${nextIndex}`
-        collected.push({
-          depth: Number(t.depth) || 2,
-          slug,
-          text: rawText,
-        })
-        return
-      }
-
-      if (t.type === 'blockquote' && Array.isArray(t.tokens)) {
-        visit(t.tokens)
-      }
-
-      if (t.type === 'list' && Array.isArray(t.items)) {
-        t.items.forEach((item) => {
-          if (Array.isArray(item.tokens)) {
-            visit(item.tokens)
-          }
-        })
-      }
-    })
-  }
-
-  visit(tokens)
-  return collected
-}
-
-async function renderMarkdown(markdown: string): Promise<{ html: string; headings: HeadingItem[] }> {
-  if (!markdown) {
-    return {
-      html: '',
-      headings: [],
-    }
-  }
-
-  try {
-    if (!markedModule) {
-      markedModule = await import('marked')
-    }
-
-    const headings = collectHeadings(markdown, markedModule)
-    let headingCursor = 0
-
-    const renderer = new markedModule.marked.Renderer()
-    renderer.heading = function ({ tokens, depth }: { tokens: unknown[]; depth: number }) {
-      const content = this.parser.parseInline(tokens)
-      const fallbackSlug = `section-${headingCursor + 1}`
-      const slug = headings[headingCursor]?.slug || fallbackSlug
-      headingCursor += 1
-      return `<h${depth} id="${slug}" data-heading-id="${slug}">${content}</h${depth}>`
-    }
-
-    const html = await markedModule.marked.parse(markdown, {
-      gfm: true,
-      breaks: false,
-      renderer,
-    })
-
-    return {
-      html: String(html),
-      headings: headings.filter((item) => item.depth <= 3),
-    }
-  } catch {
-    const readable = escapeHtml(markdown).replace(/\n/g, '<br>')
-    return {
-      html: `<p>${readable}</p>`,
-      headings: [],
-    }
-  }
-}
-
 function getSlugFromUrl(): string {
-  if (typeof window === 'undefined') return ''
-  const params = new URLSearchParams(window.location.search)
-  return params.get('slug') || ''
-}
+  if (typeof window === 'undefined') return props.initialSlug || ''
 
-function toPostUrl(slug: string): string {
-  return `/blog/post?slug=${encodeURIComponent(slug)}`
+  const segments = window.location.pathname.split('/').filter(Boolean)
+  const pathSlug = segments.length >= 2 && segments[0] === 'blog'
+    ? decodeURIComponent(segments[segments.length - 1] || '')
+    : ''
+  if (pathSlug) {
+    return pathSlug
+  }
+
+  const params = new URLSearchParams(window.location.search)
+  return params.get('slug') || props.initialSlug || ''
 }
 
 async function loadRelatedPosts(currentSlug: string) {
+  if (relatedPosts.value.length > 0) {
+    return
+  }
+
   try {
-    const data = await api.get<PagedData<PostItem>>('/posts?page=1&size=8')
+    const data = await api.get<PagedData<PostSummary>>('/posts?page=1&size=8')
     relatedPosts.value = (data.items || []).filter((item) => item.slug !== currentSlug).slice(0, 3)
   } catch {
     relatedPosts.value = []
+  }
+}
+
+async function applyPostState(nextPost: PostDetail) {
+  post.value = nextPost
+  commentCount.value = Number(nextPost.comment_count || 0)
+
+  if (!markdownHtml.value) {
+    const rendered = await renderPostMarkdown(nextPost.content_markdown || '')
+    markdownHtml.value = rendered.html
+    tocHeadings.value = rendered.headings
+  }
+
+  if (!wordCount.value) {
+    const stats = getReadingStats(nextPost.content_markdown || nextPost.excerpt || '')
+    wordCount.value = stats.wordCount
+    readingMinutes.value = stats.readingMinutes
   }
 }
 
@@ -439,18 +307,9 @@ async function loadPost() {
   relatedPosts.value = []
 
   try {
-    post.value = await api.get<PostDetail>(`/posts/${encodeURIComponent(slug)}`)
-    commentCount.value = Number(post.value.comment_count || 0)
-    const markdownSource = post.value.content_markdown || ''
-    const rendered = await renderMarkdown(markdownSource)
-    markdownHtml.value = rendered.html
-    tocHeadings.value = rendered.headings
-
-    const stats = getReadingStats(markdownSource || post.value.excerpt || '')
-    wordCount.value = stats.wordCount
-    readingMinutes.value = stats.readingMinutes
-
-    await loadRelatedPosts(post.value.slug || slug)
+    const detail = await api.get<PostDetail>(`/posts/${encodeURIComponent(slug)}`)
+    await applyPostState(detail)
+    await loadRelatedPosts(detail.slug || slug)
   } catch {
     error.value = '文章加载失败，请检查链接是否正确'
   } finally {
@@ -469,6 +328,20 @@ function handleCommentCountUpdated(nextCount: number) {
 }
 
 onMounted(() => {
-  loadPost()
+  const slug = getSlugFromUrl()
+  if (!slug) {
+    error.value = '缺少文章标识'
+    loading.value = false
+    return
+  }
+
+  if (post.value && post.value.slug === slug) {
+    loading.value = false
+    void applyPostState(post.value)
+    void loadRelatedPosts(slug)
+    return
+  }
+
+  void loadPost()
 })
 </script>

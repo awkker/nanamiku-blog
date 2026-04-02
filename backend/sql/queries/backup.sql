@@ -2,6 +2,7 @@
 SELECT jsonb_build_object(
     'admin_users', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM admin_users t), '[]'::jsonb),
     'admin_refresh_tokens', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM admin_refresh_tokens t), '[]'::jsonb),
+    'site_settings', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM site_settings t), '[]'::jsonb),
     'visitors', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.first_seen_at) FROM visitors t), '[]'::jsonb),
 
     'posts', COALESCE((SELECT jsonb_agg(to_jsonb(t) - 'search_vector' ORDER BY t.created_at) FROM posts t), '[]'::jsonb),

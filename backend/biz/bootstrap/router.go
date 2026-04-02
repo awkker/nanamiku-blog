@@ -15,13 +15,14 @@ import (
 )
 
 type Services struct {
-	Auth       *service.AuthService
-	Guestbook  *service.GuestbookService
-	Posts      *service.PostsService
-	Moments    *service.MomentsService
-	Friends    *service.FriendsService
-	Dashboard  *service.DashboardService
-	Moderation *service.ModerationService
+	Auth         *service.AuthService
+	Guestbook    *service.GuestbookService
+	Posts        *service.PostsService
+	Moments      *service.MomentsService
+	Friends      *service.FriendsService
+	SiteSettings *service.SiteSettingsService
+	Dashboard    *service.DashboardService
+	Moderation   *service.ModerationService
 }
 
 func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *Config) *Services {
@@ -40,6 +41,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	guestbookSvc := service.NewGuestbookService(db)
 	momentsSvc := service.NewMomentsService(db)
 	friendsSvc := service.NewFriendsService(db)
+	siteSettingsSvc := service.NewSiteSettingsService(db)
 	geoResolver, err := service.NewGeoIPResolver(cfg.GeoIP.DBPath)
 	if err != nil {
 		slog.Warn("geoip resolver disabled", "error", err)
@@ -68,10 +70,12 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	guestbookH := public.NewGuestbookHandler(guestbookSvc, moderationSvc, authSvc)
 	momentsH := public.NewMomentsHandler(momentsSvc, moderationSvc)
 	friendsH := public.NewFriendsHandler(friendsSvc)
+	siteSettingsH := public.NewSiteSettingsHandler(siteSettingsSvc)
 	analyticsH := public.NewAnalyticsHandler(dashboardSvc)
 	dashboardH := admin.NewDashboardHandler(dashboardSvc)
 	moderationH := admin.NewModerationHandler(moderationSvc)
 	friendsAdminH := admin.NewFriendsAdminHandler(moderationSvc)
+	siteSettingsAdminH := admin.NewSiteSettingsAdminHandler(siteSettingsSvc, moderationSvc)
 	postsH := public.NewPostsHandler(postsSvc)
 	postCommentsH := public.NewPostCommentsHandler(postCommentsSvc, moderationSvc)
 	postsAdminH := admin.NewPostsAdminHandler(postsSvc, moderationSvc)
@@ -125,6 +129,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 
 		// Friends
 		api.GET("/friends", friendsH.List)
+		api.GET("/site-settings/footer", siteSettingsH.GetFooter)
 		api.POST("/analytics/collect", middleware.RateLimit(rdb, "analytics:collect", 240, 1*time.Minute), analyticsH.Collect)
 		api.GET("/analytics/trend", analyticsH.Trend)
 
@@ -171,6 +176,9 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 			adm.PUT("/friends/:id", friendsAdminH.Update)
 			adm.DELETE("/friends/:id", friendsAdminH.Delete)
 
+			// Site settings
+			adm.PUT("/site-settings/footer", siteSettingsAdminH.UpdateFooter)
+
 			// Posts CRUD
 			adm.GET("/posts", postsAdminH.List)
 			adm.GET("/posts/:id", postsAdminH.Get)
@@ -196,12 +204,13 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	}
 
 	return &Services{
-		Auth:       authSvc,
-		Guestbook:  guestbookSvc,
-		Posts:      postsSvc,
-		Moments:    momentsSvc,
-		Friends:    friendsSvc,
-		Dashboard:  dashboardSvc,
-		Moderation: moderationSvc,
+		Auth:         authSvc,
+		Guestbook:    guestbookSvc,
+		Posts:        postsSvc,
+		Moments:      momentsSvc,
+		Friends:      friendsSvc,
+		SiteSettings: siteSettingsSvc,
+		Dashboard:    dashboardSvc,
+		Moderation:   moderationSvc,
 	}
 }

@@ -3,7 +3,7 @@
     <div class="mx-auto flex w-full max-w-[1320px] flex-col items-center gap-2 px-4 text-center text-xs text-slate-500 sm:px-6 lg:px-8">
       <p class="font-medium text-slate-600">{{ copyrightLine }}</p>
 
-      <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+      <div v-if="settings.icpText" class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
         <a
           v-if="settings.icpText && settings.icpLink"
           :href="settings.icpLink"
@@ -14,8 +14,7 @@
         >
           {{ settings.icpText }}
         </a>
-        <span v-else-if="settings.icpText" class="font-medium text-slate-600">{{ settings.icpText }}</span>
-        <span v-else>{{ copy.display.emptyIcpText }}</span>
+        <span v-else class="font-medium text-slate-600">{{ settings.icpText }}</span>
       </div>
 
       <ul
@@ -47,6 +46,6 @@ const copyrightLine = computed(() => {
 })
 
 onMounted(() => {
-  hydrateSiteFooterSettings()
+  void hydrateSiteFooterSettings()
 })
 </script>

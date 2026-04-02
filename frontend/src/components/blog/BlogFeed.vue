@@ -92,7 +92,7 @@
       <template v-else>
         <!-- Featured post -->
         <article v-if="visibleFeatured" class="blog-card group relative z-0 overflow-hidden rounded-3xl border border-white/65 bg-white/78 shadow-[0_20px_46px_rgba(15,23,42,0.14)] backdrop-blur">
-          <a :href="`/blog/post?slug=${visibleFeatured.slug}`" class="block lg:grid lg:grid-cols-[1.2fr_1fr]">
+          <a :href="`/blog/${visibleFeatured.slug}`" class="block lg:grid lg:grid-cols-[1.2fr_1fr]">
             <div class="relative min-h-[260px] overflow-hidden lg:min-h-full">
               <img
                 v-if="visibleFeatured.hero_image_url"
@@ -153,7 +153,7 @@
             ]"
           >
             <a
-              :href="`/blog/post?slug=${post.slug}`"
+              :href="`/blog/${post.slug}`"
               :class="[
                 'block h-full',
                 index > 0 && index % 4 === 0 && 'md:grid md:grid-cols-[320px_1fr] md:items-stretch',

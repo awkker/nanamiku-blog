@@ -1,14 +1,14 @@
 ---
-import { getCollection } from 'astro:content'
 import BaseHead from '../components/base/BaseHead.astro'
 import BlogTopNav from '../components/blog/BlogTopNav.astro'
 import SiteFooter from '../components/base/SiteFooter.vue'
 import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
 import AboutGithubProfile from '../components/about/AboutGithubProfile.vue'
 import { siteCopy } from '../content/copy'
+import { getPublishedPostCount } from '../lib/post-source'
 
 const copy = siteCopy.aboutPage
-const postCount = (await getCollection('blog')).length
+const postCount = await getPublishedPostCount()
 const heroActionClasses = [
   'inline-flex items-center rounded-xl border border-miku/40 bg-miku-soft px-4 py-2.5 text-sm font-semibold text-miku transition hover:-translate-y-0.5 hover:border-miku/60',
   'inline-flex items-center rounded-xl border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-[#c084fc]/45 hover:text-[#8b5cf6]',

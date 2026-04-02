@@ -55,7 +55,7 @@ nanamiku-blog/
 |------|------|
 | `/` | 开屏页，视差封面轮播 + 液态玻璃 Dock 导航 + 音乐播放器 + 标题特效 |
 | `/blog` | 博客首页，动态文章列表 + 作者统计卡片 + 站点趋势图 + 最新说说侧栏 |
-| `/blog/post?slug=xxx` | 博客文章详情（Markdown 渲染 + 点赞） |
+| `/blog/[slug]` | 博客文章详情（统一文章入口，服务端预取元数据 + 点赞/评论互动） |
 | `/about` | 关于页，GitHub 概览 + 创作者介绍 + 时间线 + 社交链接 |
 | `/moments` | 说说页，Twitter/X 风格动态流（仅展示，管理员通过后台发布） |
 | `/guestbook` | 留言板，Reddit 风格嵌套评论（投票、回复、排序） |
@@ -183,7 +183,7 @@ npm run dev                   # 启动开发服务器 :4321
 - **SiteTrend** -- 博客侧栏 SVG 趋势图（近 7 天访问热度）
 - **AboutGithubProfile** -- GitHub 数据可视化（ECharts）
 - **BlogFeed** -- 博客文章列表（从后端 API 动态加载，分页）
-- **BlogPostView** -- 博客文章详情（API 加载 + marked 渲染 Markdown）
+- **BlogPostView** -- 博客文章详情（统一 `/blog/[slug]` 路径，优先读取后端 CMS 数据并渲染 Markdown）
 
 ## 构建
 

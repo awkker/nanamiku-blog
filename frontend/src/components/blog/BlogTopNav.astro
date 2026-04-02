@@ -26,9 +26,20 @@ function isActive(href: string) {
   class="blog-top-nav fixed inset-x-0 top-0 z-50 border-b border-white/50 bg-white/62 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300"
 >
   <nav class="mx-auto flex h-14 w-full max-w-[1320px] items-center justify-between gap-2.5 px-3 text-sm text-slate-700 sm:gap-3 sm:px-4">
-    <a href="/" class="inline-flex shrink-0 items-center gap-2 font-semibold tracking-[0.18em]">
-      <img src="/picture/logo-64.webp" alt={siteCopy.brand.logoAlt} class="h-7 w-7 rounded-sm object-cover" width="28" height="28" loading="lazy" decoding="async" />
-      <span class="hidden sm:inline">{siteCopy.brand.text}</span>
+    <a
+      href="/"
+      class="inline-flex shrink-0 items-center gap-2 rounded-[18px] border border-white/70 bg-white/78 px-2.5 py-1.5 text-[15px] font-semibold tracking-[0.01em] text-slate-700 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:border-miku/35 hover:text-miku"
+    >
+      <img
+        src="/picture/logo-64.webp"
+        alt={siteCopy.brand.logoAlt}
+        class="h-7 w-7 rounded-xl object-cover"
+        width="28"
+        height="28"
+        loading="eager"
+        decoding="async"
+      />
+      <span class="whitespace-nowrap">{siteCopy.brand.text}</span>
     </a>
 
     <div class="hidden items-center gap-4 md:flex">
