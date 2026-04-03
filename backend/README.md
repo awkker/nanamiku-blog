@@ -8,7 +8,7 @@ Go + Hertz + PostgreSQL + Redis
 - **Database**: PostgreSQL (full-text search via GIN index)
 - **Cache/Rate Limit**: Redis (Lua script rate limiting)
 - **ORM**: [sqlc](https://sqlc.dev/) (type-safe SQL -> Go codegen)
-- **Auth**: JWT (access + refresh token rotation) + bcrypt
+- **Auth**: HttpOnly cookie session + JWT access token rotation + bcrypt
 
 ## Project Structure
 
@@ -49,9 +49,15 @@ docker-compose up -d
 
 ```bash
 cp .env.example .env
-# Edit .env as needed (especially JWT_SECRET for production)
+# Edit .env as needed (especially APP_ENV / JWT_SECRET / COOKIE_* for production)
 # Optional: set GEOIP_DB_PATH to GeoLite2-City.mmdb absolute path
 ```
+
+Production notes:
+- set `APP_ENV=production`
+- replace `JWT_SECRET`, `DB_PASSWORD`, `REDIS_PASSWORD`
+- keep `COOKIE_SECURE=true`
+- choose `COOKIE_SAME_SITE=lax|strict|none` based on deployment topology
 
 ### 3. Run migrations
 
@@ -109,9 +115,17 @@ Expected:
 ### 4. Seed admin user
 
 ```bash
-go run cmd/seed/main.go [password]
-# Default: username=admin, password=admin123
+# Option A: flags
+go run cmd/seed/main.go -username admin -email admin@example.com -password 'YourStrongPassword123'
+
+# Option B: env
+ADMIN_SEED_USERNAME=admin \
+ADMIN_SEED_EMAIL=admin@example.com \
+ADMIN_SEED_PASSWORD='YourStrongPassword123' \
+go run cmd/seed/main.go
 ```
+
+The seed command now requires explicit username, email, and password.
 
 ### Reset admin password (production recommended)
 
@@ -136,6 +150,35 @@ go run main.go
 
 Server runs at `http://localhost:8080`.
 
+### 6. Run API smoke checks
+
+The smoke command exercises the highest-value API paths without a browser:
+- admin login and `/auth/me`
+- dashboard/admin list probes
+- public guestbook submission plus admin approval
+- public friend application plus admin approval
+- logout and session invalidation
+
+```bash
+SMOKE_ADMIN_IDENTIFIER=admin \
+SMOKE_ADMIN_PASSWORD='YourAdminPassword123' \
+go run cmd/smoke/main.go
+```
+
+Optional flags:
+
+```bash
+go run cmd/smoke/main.go \
+  -base-url http://127.0.0.1:8080/api/v1 \
+  -identifier admin \
+  -password 'YourAdminPassword123'
+```
+
+Notes:
+- run this against a started backend with migrations already applied
+- smoke writes temporary guestbook and friend-application records
+- approved smoke friend links are cleaned up automatically; approved friend-application records remain as audit history
+
 ## API Endpoints
 
 ### Public
@@ -143,9 +186,9 @@ Server runs at `http://localhost:8080`.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/health` | Health check |
-| POST | `/api/v1/auth/login` | Admin login (username or email) |
-| POST | `/api/v1/auth/refresh` | Refresh token |
-| POST | `/api/v1/auth/logout` | Logout |
+| POST | `/api/v1/auth/login` | Admin login (writes HttpOnly access/refresh cookies) |
+| POST | `/api/v1/auth/refresh` | Refresh cookie session |
+| POST | `/api/v1/auth/logout` | Logout and clear session cookies |
 | GET | `/api/v1/guestbook/messages` | List guestbook messages |
 | POST | `/api/v1/guestbook/messages` | Create guestbook message |
 | POST | `/api/v1/guestbook/messages/:id/vote` | Vote on message |
@@ -157,6 +200,7 @@ Server runs at `http://localhost:8080`.
 | POST | `/api/v1/moments/:id/comments` | Comment on moment |
 | POST | `/api/v1/moments/comments/:id/like` | Like moment comment |
 | GET | `/api/v1/friends` | List friend links |
+| POST | `/api/v1/friends/applications` | Submit friend link application |
 | POST | `/api/v1/analytics/collect` | Collect pageview analytics |
 | GET | `/api/v1/posts` | List published posts |
 | GET | `/api/v1/posts/hot` | Hot posts |
@@ -166,7 +210,7 @@ Server runs at `http://localhost:8080`.
 | GET | `/api/v1/posts/:id/comments` | List post comments |
 | POST | `/api/v1/posts/:id/comments` | Create post comment |
 
-### Admin (requires `Authorization: Bearer <token>`)
+### Admin (requires session cookie; `Authorization: Bearer <token>` remains compatible)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -185,6 +229,11 @@ Server runs at `http://localhost:8080`.
 | GET | `/api/v1/admin/audit-logs` | Audit logs |
 | GET | `/api/v1/admin/friends` | List all friends |
 | POST | `/api/v1/admin/friends` | Create friend link |
+| GET | `/api/v1/admin/friends/applications` | List friend link applications |
+| POST | `/api/v1/admin/friends/applications/:id/approve` | Approve friend link application |
+| POST | `/api/v1/admin/friends/applications/:id/reject` | Reject friend link application |
+| POST | `/api/v1/admin/friends/:id/approve` | Approve pending friend link |
+| POST | `/api/v1/admin/friends/:id/reject` | Reject pending friend link |
 | PUT | `/api/v1/admin/friends/:id` | Update friend link |
 | DELETE | `/api/v1/admin/friends/:id` | Delete friend link |
 | GET | `/api/v1/admin/posts` | List all posts |
@@ -208,7 +257,7 @@ Server runs at `http://localhost:8080`.
 ### Regenerate sqlc code
 
 ```bash
-sqlc generate
+./bin/sqlc generate
 ```
 
 ### Build

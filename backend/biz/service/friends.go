@@ -51,6 +51,53 @@ func (s *FriendsService) ListApproved(ctx context.Context) ([]FriendLinkItem, er
 	return items, nil
 }
 
+type FriendApplicationSubmission struct {
+	ID        uuid.UUID `json:"id"`
+	Status    string    `json:"status"`
+	CreatedAt string    `json:"created_at"`
+}
+
+func (s *FriendsService) SubmitApplication(ctx context.Context, input FriendApplicationInput) (*FriendApplicationSubmission, error) {
+	normalized, err := normalizeFriendApplicationInput(input)
+	if err != nil {
+		return nil, err
+	}
+
+	exists, err := s.q.FriendLinkExistsByURL(ctx, normalized.SiteURL)
+	if err != nil {
+		return nil, fmt.Errorf("check existing friend link: %w", err)
+	}
+	if exists {
+		return nil, ErrFriendApplicationDuplicate
+	}
+
+	pendingExists, err := s.q.PendingFriendLinkApplicationExistsByURL(ctx, normalized.SiteURL)
+	if err != nil {
+		return nil, fmt.Errorf("check pending friend application: %w", err)
+	}
+	if pendingExists {
+		return nil, ErrFriendApplicationDuplicate
+	}
+
+	row, err := s.q.CreateFriendLinkApplication(ctx, query.CreateFriendLinkApplicationParams{
+		SiteName:     normalized.SiteName,
+		SiteUrl:      normalized.SiteURL,
+		AvatarUrl:    normalized.AvatarURL,
+		Description:  normalized.Description,
+		ContactEmail: normalized.ContactEmail,
+		ContactNote:  normalized.ContactNote,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create friend application: %w", err)
+	}
+
+	return &FriendApplicationSubmission{
+		ID:        row.ID,
+		Status:    string(row.Status),
+		CreatedAt: row.CreatedAt.Format(time.RFC3339),
+	}, nil
+}
+
 func (s *FriendsService) RunHealthChecks(ctx context.Context) {
 	links, err := s.q.ListFriendLinksForHealthCheck(ctx)
 	if err != nil {

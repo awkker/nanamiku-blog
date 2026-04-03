@@ -1,14 +1,16 @@
 import { atom, computed } from 'nanostores'
 
 import { api, ApiError } from '../lib/api'
+import {
+  emitAuthStateChanged,
+  ensureSessionUser,
+  type SessionUserPayload,
+} from '../lib/auth-session'
 
 // Centralized authentication state:
-// - hydrate from localStorage
+// - hydrate from HttpOnly cookie sessions
 // - real backend login/logout flows
 // - shared auth status for route guards and admin islands
-const TOKEN_KEY = 'miku_blog_token'
-const REFRESH_KEY = 'miku_blog_refresh'
-const USER_KEY = 'miku_blog_user'
 
 export interface AuthUser {
   id: string
@@ -21,23 +23,22 @@ export interface AuthUser {
 
 export interface AuthState {
   status: 'checking' | 'guest' | 'authenticated'
-  token: string | null
   user: AuthUser | null
 }
 
-interface TokenPair {
-  access_token: string
-  refresh_token: string
+interface LoginResponse {
   expires_at: number
 }
 
-interface MeResponse {
-  id: string
-  username: string
-  display_name?: string
-  avatar_url?: string
-  email: string
-  role: string
+interface MeResponse extends SessionUserPayload {}
+
+interface AccountResponse extends MeResponse {
+  session_revoked?: boolean
+}
+
+export interface AccountUpdateResult {
+  user: AuthUser
+  sessionRevoked: boolean
 }
 
 function normalizeAvatarURL(url?: string): string {
@@ -58,92 +59,98 @@ function toAuthUser(me: MeResponse): AuthUser {
 
 export const authState = atom<AuthState>({
   status: 'checking',
-  token: null,
   user: null,
 })
 
 export const isAuthenticated = computed(authState, (state) => state.status === 'authenticated')
 
+let hydratePromise: Promise<AuthUser | null> | null = null
+let hydrateVersion = 0
+
 function isBrowser() {
   return typeof window !== 'undefined'
 }
 
-function persistAuth(token: string, refreshToken: string, user: AuthUser) {
-  if (!isBrowser()) {
-    return
-  }
-
-  try {
-    window.localStorage.setItem(TOKEN_KEY, token)
-    window.localStorage.setItem(REFRESH_KEY, refreshToken)
-    window.localStorage.setItem(USER_KEY, JSON.stringify(user))
-  } catch {
-    throw new Error('浏览器阻止了本地存储，无法保持登录状态。请关闭无痕模式后重试。')
-  }
+function setGuestState() {
+  hydrateVersion += 1
+  authState.set({ status: 'guest', user: null })
+  emitAuthStateChanged()
 }
 
-function clearPersistedAuth() {
-  if (!isBrowser()) {
-    return
-  }
-
-  window.localStorage.removeItem(TOKEN_KEY)
-  window.localStorage.removeItem(REFRESH_KEY)
-  window.localStorage.removeItem(USER_KEY)
+function setAuthenticatedState(user: AuthUser) {
+  hydrateVersion += 1
+  authState.set({ status: 'authenticated', user })
+  emitAuthStateChanged()
 }
 
-export function hydrateAuth() {
+function commitHydrationGuest(version: number): AuthUser | null {
+  if (version !== hydrateVersion) {
+    return authState.get().user
+  }
+
+  authState.set({ status: 'guest', user: null })
+  emitAuthStateChanged()
+  return null
+}
+
+function commitHydrationUser(version: number, user: AuthUser): AuthUser {
+  if (version !== hydrateVersion) {
+    return authState.get().user ?? user
+  }
+
+  authState.set({ status: 'authenticated', user })
+  emitAuthStateChanged()
+  return user
+}
+
+export async function hydrateAuth(force = false): Promise<AuthUser | null> {
   if (!isBrowser()) {
-    return
+    return null
   }
 
-  let token: string | null = null
-  let rawUser: string | null = null
-
-  try {
-    token = window.localStorage.getItem(TOKEN_KEY)
-    rawUser = window.localStorage.getItem(USER_KEY)
-  } catch {
-    authState.set({ status: 'guest', token: null, user: null })
-    return
+  const current = authState.get()
+  if (!force && current.status === 'authenticated' && current.user) {
+    return current.user
+  }
+  if (!force && hydratePromise) {
+    return hydratePromise
   }
 
-  if (!token || !rawUser) {
-    authState.set({ status: 'guest', token: null, user: null })
-    return
-  }
+  const version = hydrateVersion + 1
+  hydrateVersion = version
+  authState.set({ status: 'checking', user: current.user })
 
-  try {
-    const parsed = JSON.parse(rawUser) as Partial<AuthUser> & { username?: string }
-    const user: AuthUser = {
-      id: parsed.id || '',
-      name: parsed.name || parsed.username || 'Admin',
-      username: parsed.username || parsed.name || 'admin',
-      email: parsed.email || '',
-      role: 'admin',
-      avatar: normalizeAvatarURL(parsed.avatar),
+  hydratePromise = (async () => {
+    try {
+      const me = await ensureSessionUser()
+      if (!me) {
+        return commitHydrationGuest(version)
+      }
+
+      return commitHydrationUser(version, toAuthUser(me))
+    } catch {
+      return commitHydrationGuest(version)
+    } finally {
+      if (version === hydrateVersion) {
+        hydratePromise = null
+      }
     }
-    authState.set({ status: 'authenticated', token, user })
-  } catch {
-    clearPersistedAuth()
-    authState.set({ status: 'guest', token: null, user: null })
-  }
+  })()
+
+  return hydratePromise
 }
 
 export async function loginWithPassword(identifier: string, password: string) {
   try {
-    const pair = await api.post<TokenPair>('/auth/login', {
+    await api.post<LoginResponse>('/auth/login', {
       identifier: identifier.trim(),
       password: password.trim(),
     })
 
-    const me = await fetchMe(pair.access_token)
-
-    const user = toAuthUser(me)
-
-    persistAuth(pair.access_token, pair.refresh_token, user)
-    authState.set({ status: 'authenticated', token: pair.access_token, user })
-
+    const user = await hydrateAuth(true)
+    if (!user) {
+      throw new Error('会话初始化失败')
+    }
     return user
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
@@ -154,35 +161,17 @@ export async function loginWithPassword(identifier: string, password: string) {
 }
 
 export async function logout() {
-  if (!isBrowser()) return
+  if (!isBrowser()) {
+    return
+  }
 
-  const refreshToken = window.localStorage.getItem(REFRESH_KEY)
   try {
-    await api.post('/auth/logout', { refresh_token: refreshToken || '' })
+    await api.post('/auth/logout')
   } catch {
     // ignore logout API errors
   }
 
-  clearPersistedAuth()
-  authState.set({ status: 'guest', token: null, user: null })
-}
-
-export function getStoredToken() {
-  if (!isBrowser()) {
-    return null
-  }
-
-  return window.localStorage.getItem(TOKEN_KEY)
-}
-
-async function fetchMe(token: string): Promise<MeResponse> {
-  const res = await fetch('/api/v1/auth/me', {
-    headers: { Authorization: `Bearer ${token}` },
-    credentials: 'include',
-  })
-  const body = await res.json()
-  if (!res.ok || body.code !== 0) throw new Error('fetch me failed')
-  return body.data as MeResponse
+  setGuestState()
 }
 
 export async function updateMyProfile(displayName: string, avatarURL: string) {
@@ -192,46 +181,28 @@ export async function updateMyProfile(displayName: string, avatarURL: string) {
   })
 
   const user = toAuthUser(me)
-  const current = authState.get()
-  authState.set({
-    status: current.status === 'authenticated' ? 'authenticated' : 'guest',
-    token: current.token,
-    user: current.status === 'authenticated' ? user : null,
-  })
-
-  if (isBrowser()) {
-    try {
-      window.localStorage.setItem(USER_KEY, JSON.stringify(user))
-    } catch {
-      // ignore storage write error
-    }
-  }
-
+  setAuthenticatedState(user)
   return user
 }
 
 export async function updateMyAccount(username: string, email: string, newPassword: string) {
-  const me = await api.put<MeResponse>('/auth/account', {
+  const me = await api.put<AccountResponse>('/auth/account', {
     username,
     email,
     new_password: newPassword,
   })
 
   const user = toAuthUser(me)
-  const current = authState.get()
-  authState.set({
-    status: current.status === 'authenticated' ? 'authenticated' : 'guest',
-    token: current.token,
-    user: current.status === 'authenticated' ? user : null,
-  })
+  const sessionRevoked = Boolean(me.session_revoked)
 
-  if (isBrowser()) {
-    try {
-      window.localStorage.setItem(USER_KEY, JSON.stringify(user))
-    } catch {
-      // ignore storage write error
-    }
+  if (sessionRevoked) {
+    setGuestState()
+  } else {
+    setAuthenticatedState(user)
   }
 
-  return user
+  return {
+    user,
+    sessionRevoked,
+  } satisfies AccountUpdateResult
 }

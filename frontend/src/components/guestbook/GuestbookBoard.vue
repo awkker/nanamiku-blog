@@ -94,7 +94,7 @@ import {
   submitGuestbookMessage,
 } from '../../stores/guestbook'
 import { showToast } from '../../stores/ui'
-import { authState } from '../../stores/auth'
+import { authState, hydrateAuth } from '../../stores/auth'
 import EmptyState from '../ui/EmptyState.vue'
 import ErrorState from '../ui/ErrorState.vue'
 import GuestbookMessageCard from './GuestbookMessageCard.vue'
@@ -175,6 +175,7 @@ async function handleReply(payload: { parentId: string; nickname: string; messag
 }
 
 onMounted(async () => {
+  void hydrateAuth()
   await loadMessages()
 })
 

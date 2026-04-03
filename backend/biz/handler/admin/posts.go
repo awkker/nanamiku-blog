@@ -82,7 +82,7 @@ func (h *PostsAdminHandler) Create(ctx context.Context, c *app.RequestContext) {
 			c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "scheduled_at required for scheduled posts"))
 			return
 		}
-		parsed, parseErr := time.Parse(time.RFC3339, req.ScheduledAt)
+		parsed, parseErr := parseScheduledAtRFC3339(req.ScheduledAt)
 		if parseErr != nil {
 			c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid scheduled_at format"))
 			return
@@ -200,7 +200,7 @@ func (h *PostsAdminHandler) Schedule(ctx context.Context, c *app.RequestContext)
 		return
 	}
 
-	at, err := time.Parse(time.RFC3339, req.ScheduledAt)
+	at, err := parseScheduledAtRFC3339(req.ScheduledAt)
 	if err != nil {
 		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid scheduled_at format"))
 		return

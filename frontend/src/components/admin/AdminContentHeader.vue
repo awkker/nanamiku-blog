@@ -60,6 +60,6 @@ const avatarLetter = computed(() => {
 
 onMounted(() => {
   mounted.value = true
-  hydrateAuth()
+  void hydrateAuth()
 })
 </script>

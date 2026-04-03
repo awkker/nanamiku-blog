@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"nanamiku-blog/backend/query"
@@ -16,8 +17,9 @@ import (
 )
 
 const (
-	siteSettingsFooterKey = "footer"
-	maxFooterCustomTexts  = 8
+	siteSettingsFooterKey      = "footer"
+	siteSettingsSiteProfileKey = "site_profile"
+	maxFooterCustomTexts       = 8
 )
 
 type SiteSettingsService struct {
@@ -39,6 +41,24 @@ type footerSettingsDoc struct {
 	ICPText     string   `json:"icp_text"`
 	ICPLink     string   `json:"icp_link"`
 	CustomTexts []string `json:"custom_texts"`
+}
+
+type SiteProfileSettings struct {
+	BrandText          string `json:"brand_text"`
+	LogoAlt            string `json:"logo_alt"`
+	SiteTitle          string `json:"site_title"`
+	SiteURL            string `json:"site_url"`
+	DefaultDescription string `json:"default_description"`
+	DefaultSocialImage string `json:"default_social_image"`
+}
+
+type siteProfileSettingsDoc struct {
+	BrandText          string `json:"brand_text"`
+	LogoAlt            string `json:"logo_alt"`
+	SiteTitle          string `json:"site_title"`
+	SiteURL            string `json:"site_url"`
+	DefaultDescription string `json:"default_description"`
+	DefaultSocialImage string `json:"default_social_image"`
 }
 
 func (s *SiteSettingsService) GetFooterSettings(ctx context.Context) (*FooterSettings, error) {
@@ -86,6 +106,54 @@ func (s *SiteSettingsService) SaveFooterSettings(ctx context.Context, input Foot
 	return settings, nil
 }
 
+func (s *SiteSettingsService) GetSiteProfileSettings(ctx context.Context) (*SiteProfileSettings, error) {
+	row, err := s.q.GetSiteSetting(ctx, siteSettingsSiteProfileKey)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get site profile settings: %w", err)
+	}
+
+	settings, err := decodeSiteProfileSettings(row.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode site profile settings: %w", err)
+	}
+
+	return settings, nil
+}
+
+func (s *SiteSettingsService) SaveSiteProfileSettings(ctx context.Context, input SiteProfileSettings, adminID uuid.UUID) (*SiteProfileSettings, error) {
+	normalized := normalizeSiteProfileSettings(input)
+	payload, err := json.Marshal(siteProfileSettingsDoc{
+		BrandText:          normalized.BrandText,
+		LogoAlt:            normalized.LogoAlt,
+		SiteTitle:          normalized.SiteTitle,
+		SiteURL:            normalized.SiteURL,
+		DefaultDescription: normalized.DefaultDescription,
+		DefaultSocialImage: normalized.DefaultSocialImage,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal site profile settings: %w", err)
+	}
+
+	row, err := s.q.UpsertSiteSetting(ctx, query.UpsertSiteSettingParams{
+		Key:       siteSettingsSiteProfileKey,
+		Value:     payload,
+		UpdatedBy: pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("save site profile settings: %w", err)
+	}
+
+	settings, err := decodeSiteProfileSettings(row.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode saved site profile settings: %w", err)
+	}
+
+	return settings, nil
+}
+
 func decodeFooterSettings(raw json.RawMessage) (*FooterSettings, error) {
 	if len(raw) == 0 {
 		return &FooterSettings{CustomTexts: []string{}}, nil
@@ -105,12 +173,93 @@ func decodeFooterSettings(raw json.RawMessage) (*FooterSettings, error) {
 	return &normalized, nil
 }
 
+func decodeSiteProfileSettings(raw json.RawMessage) (*SiteProfileSettings, error) {
+	if len(raw) == 0 {
+		return &SiteProfileSettings{}, nil
+	}
+
+	var doc siteProfileSettingsDoc
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+
+	normalized := normalizeSiteProfileSettings(SiteProfileSettings{
+		BrandText:          doc.BrandText,
+		LogoAlt:            doc.LogoAlt,
+		SiteTitle:          doc.SiteTitle,
+		SiteURL:            doc.SiteURL,
+		DefaultDescription: doc.DefaultDescription,
+		DefaultSocialImage: doc.DefaultSocialImage,
+	})
+
+	return &normalized, nil
+}
+
 func normalizeFooterSettings(input FooterSettings) FooterSettings {
 	return FooterSettings{
 		ICPText:     strings.TrimSpace(input.ICPText),
 		ICPLink:     strings.TrimSpace(input.ICPLink),
 		CustomTexts: sanitizeFooterCustomTexts(input.CustomTexts),
 	}
+}
+
+func normalizeSiteProfileSettings(input SiteProfileSettings) SiteProfileSettings {
+	brandText := strings.TrimSpace(input.BrandText)
+	siteTitle := strings.TrimSpace(input.SiteTitle)
+	if siteTitle == "" {
+		siteTitle = brandText
+	}
+
+	logoAlt := strings.TrimSpace(input.LogoAlt)
+	if logoAlt == "" && brandText != "" {
+		logoAlt = brandText + " logo"
+	}
+
+	return SiteProfileSettings{
+		BrandText:          brandText,
+		LogoAlt:            logoAlt,
+		SiteTitle:          siteTitle,
+		SiteURL:            normalizeSiteURL(input.SiteURL),
+		DefaultDescription: strings.TrimSpace(input.DefaultDescription),
+		DefaultSocialImage: normalizeSiteAssetURL(input.DefaultSocialImage),
+	}
+}
+
+func normalizeSiteURL(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(trimmed, "//") {
+		trimmed = "https:" + trimmed
+	} else if !strings.Contains(trimmed, "://") {
+		trimmed = "https://" + strings.TrimLeft(trimmed, "/")
+	}
+
+	parsed, err := url.Parse(trimmed)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ""
+	}
+
+	parsed.Path = strings.TrimRight(parsed.Path, "/")
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+
+	return strings.TrimRight(parsed.String(), "/")
+}
+
+func normalizeSiteAssetURL(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(trimmed, "/") {
+		return trimmed
+	}
+
+	return normalizeSiteURL(trimmed)
 }
 
 func sanitizeFooterCustomTexts(lines []string) []string {

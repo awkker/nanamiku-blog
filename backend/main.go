@@ -21,6 +21,11 @@ func main() {
 	})))
 
 	cfg := bootstrap.LoadConfig()
+	if err := cfg.ValidateForServer(); err != nil {
+		slog.Error("invalid server configuration", "error", err)
+		os.Exit(1)
+	}
+
 	ctx := context.Background()
 
 	db, err := bootstrap.NewDBPool(ctx, cfg.DB)

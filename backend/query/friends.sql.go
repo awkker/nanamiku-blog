@@ -29,6 +29,39 @@ func (q *Queries) ApproveFriendLink(ctx context.Context, arg ApproveFriendLinkPa
 	return err
 }
 
+const approveFriendLinkApplication = `-- name: ApproveFriendLinkApplication :exec
+UPDATE friend_link_applications
+SET status = 'approved',
+    reviewed_at = now(),
+    review_note = $2,
+    reviewed_by = $3
+WHERE id = $1
+`
+
+type ApproveFriendLinkApplicationParams struct {
+	ID         uuid.UUID   `json:"id"`
+	ReviewNote string      `json:"review_note"`
+	ReviewedBy pgtype.UUID `json:"reviewed_by"`
+}
+
+func (q *Queries) ApproveFriendLinkApplication(ctx context.Context, arg ApproveFriendLinkApplicationParams) error {
+	_, err := q.db.Exec(ctx, approveFriendLinkApplication, arg.ID, arg.ReviewNote, arg.ReviewedBy)
+	return err
+}
+
+const countAdminFriendLinkApplications = `-- name: CountAdminFriendLinkApplications :one
+SELECT count(*)
+FROM friend_link_applications
+WHERE ($1::friend_link_status IS NULL OR status = $1::friend_link_status)
+`
+
+func (q *Queries) CountAdminFriendLinkApplications(ctx context.Context, status NullFriendLinkStatus) (int64, error) {
+	row := q.db.QueryRow(ctx, countAdminFriendLinkApplications, status)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countAdminFriendLinks = `-- name: CountAdminFriendLinks :one
 SELECT count(*) FROM friend_links
 `
@@ -52,8 +85,8 @@ func (q *Queries) CountApprovedFriendLinks(ctx context.Context) (int64, error) {
 }
 
 const createFriendLink = `-- name: CreateFriendLink :one
-INSERT INTO friend_links (name, description, url, domain, avatar_url, status, sort_order, reviewed_by)
-VALUES ($1, $2, $3, $4, $5, 'approved', $6, $7)
+INSERT INTO friend_links (name, description, url, domain, avatar_url, status, sort_order, approved_at, reviewed_by)
+VALUES ($1, $2, $3, $4, $5, 'approved', $6, now(), $7)
 RETURNING id, created_at
 `
 
@@ -84,6 +117,48 @@ func (q *Queries) CreateFriendLink(ctx context.Context, arg CreateFriendLinkPara
 	)
 	var i CreateFriendLinkRow
 	err := row.Scan(&i.ID, &i.CreatedAt)
+	return i, err
+}
+
+const createFriendLinkApplication = `-- name: CreateFriendLinkApplication :one
+INSERT INTO friend_link_applications (
+    site_name,
+    site_url,
+    avatar_url,
+    description,
+    contact_email,
+    contact_note
+)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, created_at, status
+`
+
+type CreateFriendLinkApplicationParams struct {
+	SiteName     string `json:"site_name"`
+	SiteUrl      string `json:"site_url"`
+	AvatarUrl    string `json:"avatar_url"`
+	Description  string `json:"description"`
+	ContactEmail string `json:"contact_email"`
+	ContactNote  string `json:"contact_note"`
+}
+
+type CreateFriendLinkApplicationRow struct {
+	ID        uuid.UUID        `json:"id"`
+	CreatedAt time.Time        `json:"created_at"`
+	Status    FriendLinkStatus `json:"status"`
+}
+
+func (q *Queries) CreateFriendLinkApplication(ctx context.Context, arg CreateFriendLinkApplicationParams) (CreateFriendLinkApplicationRow, error) {
+	row := q.db.QueryRow(ctx, createFriendLinkApplication,
+		arg.SiteName,
+		arg.SiteUrl,
+		arg.AvatarUrl,
+		arg.Description,
+		arg.ContactEmail,
+		arg.ContactNote,
+	)
+	var i CreateFriendLinkApplicationRow
+	err := row.Scan(&i.ID, &i.CreatedAt, &i.Status)
 	return i, err
 }
 
@@ -118,6 +193,48 @@ func (q *Queries) DeleteFriendLink(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const friendLinkExistsByURL = `-- name: FriendLinkExistsByURL :one
+SELECT EXISTS(
+    SELECT 1
+    FROM friend_links
+    WHERE url = $1
+)
+`
+
+func (q *Queries) FriendLinkExistsByURL(ctx context.Context, url string) (bool, error) {
+	row := q.db.QueryRow(ctx, friendLinkExistsByURL, url)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const getFriendLinkApplicationByID = `-- name: GetFriendLinkApplicationByID :one
+SELECT id, site_name, site_url, avatar_url, description, contact_email, contact_note,
+       status, created_at, reviewed_at, review_note, reviewed_by
+FROM friend_link_applications
+WHERE id = $1
+`
+
+func (q *Queries) GetFriendLinkApplicationByID(ctx context.Context, id uuid.UUID) (FriendLinkApplication, error) {
+	row := q.db.QueryRow(ctx, getFriendLinkApplicationByID, id)
+	var i FriendLinkApplication
+	err := row.Scan(
+		&i.ID,
+		&i.SiteName,
+		&i.SiteUrl,
+		&i.AvatarUrl,
+		&i.Description,
+		&i.ContactEmail,
+		&i.ContactNote,
+		&i.Status,
+		&i.CreatedAt,
+		&i.ReviewedAt,
+		&i.ReviewNote,
+		&i.ReviewedBy,
+	)
+	return i, err
+}
+
 const getFriendLinkByID = `-- name: GetFriendLinkByID :one
 SELECT id, name, description, url, domain, avatar_url,
        status, health_status, sort_order,
@@ -145,6 +262,72 @@ func (q *Queries) GetFriendLinkByID(ctx context.Context, id uuid.UUID) (FriendLi
 		&i.LastCheckedAt,
 	)
 	return i, err
+}
+
+const listAdminFriendLinkApplications = `-- name: ListAdminFriendLinkApplications :many
+SELECT id, site_name, site_url, avatar_url, description, contact_email, contact_note,
+       status, created_at, reviewed_at, review_note
+FROM friend_link_applications
+WHERE ($3::friend_link_status IS NULL OR status = $3::friend_link_status)
+ORDER BY CASE status
+           WHEN 'pending' THEN 0
+           WHEN 'approved' THEN 1
+           ELSE 2
+         END,
+         created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListAdminFriendLinkApplicationsParams struct {
+	Limit  int32                `json:"limit"`
+	Offset int32                `json:"offset"`
+	Status NullFriendLinkStatus `json:"status"`
+}
+
+type ListAdminFriendLinkApplicationsRow struct {
+	ID           uuid.UUID          `json:"id"`
+	SiteName     string             `json:"site_name"`
+	SiteUrl      string             `json:"site_url"`
+	AvatarUrl    string             `json:"avatar_url"`
+	Description  string             `json:"description"`
+	ContactEmail string             `json:"contact_email"`
+	ContactNote  string             `json:"contact_note"`
+	Status       FriendLinkStatus   `json:"status"`
+	CreatedAt    time.Time          `json:"created_at"`
+	ReviewedAt   pgtype.Timestamptz `json:"reviewed_at"`
+	ReviewNote   string             `json:"review_note"`
+}
+
+func (q *Queries) ListAdminFriendLinkApplications(ctx context.Context, arg ListAdminFriendLinkApplicationsParams) ([]ListAdminFriendLinkApplicationsRow, error) {
+	rows, err := q.db.Query(ctx, listAdminFriendLinkApplications, arg.Limit, arg.Offset, arg.Status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAdminFriendLinkApplicationsRow{}
+	for rows.Next() {
+		var i ListAdminFriendLinkApplicationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SiteName,
+			&i.SiteUrl,
+			&i.AvatarUrl,
+			&i.Description,
+			&i.ContactEmail,
+			&i.ContactNote,
+			&i.Status,
+			&i.CreatedAt,
+			&i.ReviewedAt,
+			&i.ReviewNote,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listAdminFriendLinks = `-- name: ListAdminFriendLinks :many
@@ -283,6 +466,22 @@ func (q *Queries) ListFriendLinksForHealthCheck(ctx context.Context) ([]ListFrie
 	return items, nil
 }
 
+const pendingFriendLinkApplicationExistsByURL = `-- name: PendingFriendLinkApplicationExistsByURL :one
+SELECT EXISTS(
+    SELECT 1
+    FROM friend_link_applications
+    WHERE site_url = $1
+      AND status = 'pending'
+)
+`
+
+func (q *Queries) PendingFriendLinkApplicationExistsByURL(ctx context.Context, siteUrl string) (bool, error) {
+	row := q.db.QueryRow(ctx, pendingFriendLinkApplicationExistsByURL, siteUrl)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const rejectFriendLink = `-- name: RejectFriendLink :exec
 UPDATE friend_links
 SET status = 'rejected', reviewed_by = $2
@@ -296,6 +495,26 @@ type RejectFriendLinkParams struct {
 
 func (q *Queries) RejectFriendLink(ctx context.Context, arg RejectFriendLinkParams) error {
 	_, err := q.db.Exec(ctx, rejectFriendLink, arg.ID, arg.ReviewedBy)
+	return err
+}
+
+const rejectFriendLinkApplication = `-- name: RejectFriendLinkApplication :exec
+UPDATE friend_link_applications
+SET status = 'rejected',
+    reviewed_at = now(),
+    review_note = $2,
+    reviewed_by = $3
+WHERE id = $1
+`
+
+type RejectFriendLinkApplicationParams struct {
+	ID         uuid.UUID   `json:"id"`
+	ReviewNote string      `json:"review_note"`
+	ReviewedBy pgtype.UUID `json:"reviewed_by"`
+}
+
+func (q *Queries) RejectFriendLinkApplication(ctx context.Context, arg RejectFriendLinkApplicationParams) error {
+	_, err := q.db.Exec(ctx, rejectFriendLinkApplication, arg.ID, arg.ReviewNote, arg.ReviewedBy)
 	return err
 }
 

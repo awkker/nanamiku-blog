@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -8,13 +9,23 @@ import (
 )
 
 type Config struct {
+	App     AppConfig
 	Server  ServerConfig
 	DB      DBConfig
 	Redis   RedisConfig
 	JWT     JWTConfig
+	Session SessionConfig
 	CORS    CORSConfig
 	Weather WeatherConfig
 	GeoIP   GeoIPConfig
+}
+
+type AppConfig struct {
+	Env string
+}
+
+func (c AppConfig) IsProduction() bool {
+	return strings.EqualFold(strings.TrimSpace(c.Env), "production")
 }
 
 type WeatherConfig struct {
@@ -61,12 +72,23 @@ type JWTConfig struct {
 	RefreshTTL time.Duration
 }
 
+type SessionConfig struct {
+	CookieDomain   string
+	CookieSecure   bool
+	CookieSameSite string
+}
+
 type CORSConfig struct {
 	Origins []string
 }
 
 func LoadConfig() *Config {
+	app := AppConfig{
+		Env: envStr("APP_ENV", "development"),
+	}
+
 	return &Config{
+		App: app,
 		Server: ServerConfig{
 			Port: envStr("SERVER_PORT", "8080"),
 		},
@@ -86,8 +108,13 @@ func LoadConfig() *Config {
 		},
 		JWT: JWTConfig{
 			Secret:     envStr("JWT_SECRET", "change-me-in-production"),
-			AccessTTL:  envDuration("JWT_ACCESS_TTL", 30*24*time.Hour),
+			AccessTTL:  envDuration("JWT_ACCESS_TTL", 15*time.Minute),
 			RefreshTTL: envDuration("JWT_REFRESH_TTL", 30*24*time.Hour),
+		},
+		Session: SessionConfig{
+			CookieDomain:   envStr("COOKIE_DOMAIN", ""),
+			CookieSecure:   envBool("COOKIE_SECURE", app.IsProduction()),
+			CookieSameSite: envStr("COOKIE_SAME_SITE", "lax"),
 		},
 		CORS: CORSConfig{
 			Origins: strings.Split(envStr("CORS_ORIGINS", "http://localhost:4321"), ","),
@@ -101,6 +128,55 @@ func LoadConfig() *Config {
 	}
 }
 
+func (c *Config) ValidateForServer() error {
+	if c == nil {
+		return fmt.Errorf("config is nil")
+	}
+
+	var issues []string
+	if c.JWT.AccessTTL <= 0 {
+		issues = append(issues, "JWT_ACCESS_TTL must be greater than 0")
+	}
+	if c.JWT.RefreshTTL <= 0 {
+		issues = append(issues, "JWT_REFRESH_TTL must be greater than 0")
+	}
+	if c.JWT.AccessTTL >= c.JWT.RefreshTTL {
+		issues = append(issues, "JWT_ACCESS_TTL must be shorter than JWT_REFRESH_TTL")
+	}
+
+	sameSite := strings.ToLower(strings.TrimSpace(c.Session.CookieSameSite))
+	switch sameSite {
+	case "lax", "strict", "none":
+	default:
+		issues = append(issues, "COOKIE_SAME_SITE must be one of lax, strict, none")
+	}
+
+	if !c.App.IsProduction() {
+		if len(issues) > 0 {
+			return fmt.Errorf("%s", strings.Join(issues, "; "))
+		}
+		return nil
+	}
+
+	if c.JWT.Secret == "change-me-in-production" {
+		issues = append(issues, "JWT_SECRET is using the default placeholder")
+	}
+	if c.DB.Password == "miku_secret" {
+		issues = append(issues, "DB_PASSWORD is using the default development password")
+	}
+	if c.Redis.Password == "miku_redis" {
+		issues = append(issues, "REDIS_PASSWORD is using the default development password")
+	}
+	if !c.Session.CookieSecure {
+		issues = append(issues, "COOKIE_SECURE must be true in production")
+	}
+
+	if len(issues) > 0 {
+		return fmt.Errorf("%s", strings.Join(issues, "; "))
+	}
+	return nil
+}
+
 func envStr(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -112,6 +188,18 @@ func envInt(key string, fallback int) int {
 	if v := os.Getenv(key); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			return n
+		}
+	}
+	return fallback
+}
+
+func envBool(key string, fallback bool) bool {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		switch strings.ToLower(v) {
+		case "1", "true", "yes", "on":
+			return true
+		case "0", "false", "no", "off":
+			return false
 		}
 	}
 	return fallback

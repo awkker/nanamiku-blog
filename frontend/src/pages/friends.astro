@@ -5,12 +5,15 @@ import SiteFooter from '../components/base/SiteFooter.vue'
 import FriendsGrid from '../components/friends/FriendsGrid.vue'
 import GlobalToast from '../components/ui/GlobalToast.vue'
 import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
+import { siteCopy } from '../content/copy'
+
+const copy = siteCopy.friendsPage
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title="友情链接 | Miku Blog" description="Miku Blog 友情链接页面" />
+    <BaseHead title={copy.metaTitle} description={copy.metaDescription} />
   </head>
   <body class="min-h-screen bg-slate-50 text-slate-800">
     <BlogTopNav currentPath={Astro.url.pathname} />
@@ -28,31 +31,34 @@ import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
           <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.8]" aria-hidden="true">
             <path d="M10 13a5 5 0 007.07 0l2.12-2.12a5 5 0 00-7.07-7.07L10 5M14 11a5 5 0 00-7.07 0L4.81 13.12a5 5 0 007.07 7.07L14 19" />
           </svg>
-          FRIENDS
+          {copy.heroBadge}
         </div>
         <h1 class="bg-gradient-to-r from-[#c084fc] via-[#39c5bb] to-slate-800 bg-clip-text pt-1 text-4xl font-bold leading-[1.2] tracking-tight text-transparent sm:text-5xl sm:leading-[1.16]">
-          友情链接
+          {copy.title}
         </h1>
         <p class="mx-auto max-w-lg text-base leading-relaxed text-slate-500">
-          欢迎和本站交换友链。请保持站点长期可访问，内容积极、持续更新。
+          {copy.description}
         </p>
-        <nav class="flex flex-wrap items-center justify-center gap-2.5 pt-1.5" aria-label="页面导航">
-          <a
-            href="/blog"
-            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/60 px-3.5 py-2 text-sm text-slate-500 transition hover:border-miku/40 hover:text-miku"
-            aria-label="前往博客首页"
-          >
-            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.5]" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>
-            博客首页
-          </a>
-          <a
-            href="/guestbook"
-            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/60 px-3.5 py-2 text-sm text-slate-500 transition hover:border-[#c084fc]/40 hover:text-[#c084fc]"
-            aria-label="前往留言板"
-          >
-            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.5]" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
-            留言板
-          </a>
+        <nav class="flex flex-wrap items-center justify-center gap-2.5 pt-1.5" aria-label={copy.navAria}>
+          {copy.quickLinks.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                'inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/60 px-3.5 py-2 text-sm transition',
+                item.href === '/blog'
+                  ? 'text-slate-500 hover:border-miku/40 hover:text-miku'
+                  : 'text-slate-500 hover:border-[#c084fc]/40 hover:text-[#c084fc]',
+              ]}
+              aria-label={item.ariaLabel}
+            >
+              {item.href === '/blog' ? (
+                <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.5]" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.5]" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+              )}
+              {item.label}
+            </a>
+          ))}
         </nav>
       </header>
 
@@ -61,23 +67,23 @@ import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
           <div class="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <img
               src="/picture/author.jpg"
-              alt="NanaMiku Blog"
+              alt={copy.siteCard.avatarAlt}
               class="h-16 w-16 shrink-0 rounded-2xl border border-slate-200 object-cover"
             />
             <div class="flex-1 text-center sm:text-left">
               <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                <h2 class="text-base font-semibold text-slate-800">NanaMiku Blog</h2>
-                <span class="rounded-md bg-miku/10 px-2 py-0.5 text-[11px] font-medium text-miku">本站</span>
+                <h2 class="text-base font-semibold text-slate-800">{copy.siteCard.title}</h2>
+                <span class="rounded-md bg-miku/10 px-2 py-0.5 text-[11px] font-medium text-miku">{copy.siteCard.badge}</span>
               </div>
-              <p class="mt-1.5 text-sm leading-relaxed text-slate-500">在代码与日常之间写一点温柔的记录。</p>
+              <p class="mt-1.5 text-sm leading-relaxed text-slate-500">{copy.siteCard.description}</p>
               <div class="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-400 sm:justify-start">
                 <span class="inline-flex items-center gap-1">
                   <svg viewBox="0 0 24 24" class="h-3 w-3 fill-none stroke-current stroke-[1.8]" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>
-                  nanamiku.blog
+                  {copy.siteCard.domain}
                 </span>
                 <span class="inline-flex items-center gap-1">
                   <svg viewBox="0 0 24 24" class="h-3 w-3 fill-none stroke-current stroke-[1.8]" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
-                  若希望交换，请先添加本站链接
+                  {copy.siteCard.requirement}
                 </span>
               </div>
             </div>

@@ -35,17 +35,23 @@ import { computed, onMounted } from 'vue'
 
 import { siteCopy } from '../../content/copy'
 import { hydrateSiteFooterSettings, siteFooterSettings } from '../../stores/siteFooter'
+import { hydrateSiteProfileSettings, siteProfileSettings } from '../../stores/siteProfile'
 
 const copy = siteCopy.siteFooter
 const settings = useStore(siteFooterSettings)
+const siteProfile = useStore(siteProfileSettings)
 
 const currentYear = new Date().getFullYear()
+const footerSiteName = computed(() => (siteProfile.value.brandText || copy.display.siteName).toUpperCase())
 
 const copyrightLine = computed(() => {
-  return `${copy.display.copyrightPrefix}${currentYear} ${copy.display.siteName} ${copy.display.rightsText}`
+  return `${copy.display.copyrightPrefix}${currentYear} ${footerSiteName.value} ${copy.display.rightsText}`
 })
 
 onMounted(() => {
-  void hydrateSiteFooterSettings()
+  void Promise.all([
+    hydrateSiteFooterSettings(),
+    hydrateSiteProfileSettings(),
+  ])
 })
 </script>

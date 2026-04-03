@@ -1,3 +1,5 @@
+import { fetchWithSessionRetry } from './auth-session'
+
 const API_BASE = '/api/v1'
 
 export interface ApiResponse<T = unknown> {
@@ -13,15 +15,6 @@ export interface PagedData<T = unknown> {
   size: number
 }
 
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  try {
-    return window.localStorage.getItem('miku_blog_token')
-  } catch {
-    return null
-  }
-}
-
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -31,15 +24,9 @@ async function request<T>(
     ...(options.headers as Record<string, string>),
   }
 
-  const token = getToken()
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithSessionRetry(`${API_BASE}${path}`, {
     ...options,
     headers,
-    credentials: 'include',
   })
 
   const contentType = res.headers.get('content-type') || ''

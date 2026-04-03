@@ -115,8 +115,8 @@ const profileAvatarPreview = computed(() => {
 })
 
 async function loadProfile() {
-  hydrateAuth()
-  const current = auth.value.user
+  const hydratedUser = await hydrateAuth()
+  const current = hydratedUser ?? auth.value.user
   if (current) {
     profileDisplayName.value = current.name || current.username || ''
     profileAvatarURL.value = current.avatar || '/picture/author.jpg'
@@ -171,8 +171,16 @@ async function saveAccount() {
 
   accountSaving.value = true
   try {
-    await updateMyAccount(username, email, newPassword)
+    const result = await updateMyAccount(username, email, newPassword)
     accountPassword.value = ''
+    if (result.sessionRevoked) {
+      showToast(copy.account.sessionRevokedSuccess, 'success')
+      window.setTimeout(() => {
+        window.location.replace('/login')
+      }, 360)
+      return
+    }
+
     await loadProfile()
     showToast(copy.account.saveSuccess, 'success')
   } catch (err) {
@@ -184,6 +192,6 @@ async function saveAccount() {
 }
 
 onMounted(() => {
-  loadProfile()
+  void loadProfile()
 })
 </script>

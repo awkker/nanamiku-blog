@@ -87,8 +87,8 @@ frontend/
 开屏页标题文字拆分组件，鼠标滑过单个字符时触发 squash-stretch 弹跳动画（压扁 -> 弹起 -> 落回），配合薰衣草色光晕与变色。使用 `animationend` 事件防止动画期间重复触发。
 
 ## 关键说明
-- `src/lib/api.ts` — 统一 HTTP 客户端（JWT 认证、错误处理、类型安全）
-- `src/stores/auth.ts` — 登录态、登录/登出、localStorage 同步
+- `src/lib/api.ts` — 统一 HTTP 客户端（基于 HttpOnly cookie 会话、错误处理、类型安全）
+- `src/stores/auth.ts` — 登录态、登录/登出、基于 `/auth/me` 的会话同步
 - `src/stores/guestbook.ts` — 留言板状态（嵌套评论、投票、排序）
 - `src/stores/moments.ts` — 说说状态（加载、点赞、转发、评论）
 - `src/components/ui/LiquidGlassCard.vue` — 项目统一液态玻璃容器
@@ -102,6 +102,8 @@ npm install
 npm run dev
 ```
 
+后端默认通过 `frontend/astro.config.mjs` 的 `/api` 代理指向 `http://localhost:8080`，本地联调前请先启动后端。
+
 ## 构建
 
 ```bash
@@ -109,6 +111,18 @@ npm run build
 npm run preview
 ```
 
+## 浏览器级 Smoke
+
+```bash
+SMOKE_ADMIN_IDENTIFIER=你的管理员账号 \
+SMOKE_ADMIN_PASSWORD='你的管理员密码' \
+npm run test:e2e
+```
+
+- Playwright 会启动一个独立的 Astro dev server，默认端口为 `4322`，避免和你手工开的 `4321` 冲突。
+- 默认优先复用本机 Chrome 通道；如果当前环境没有 Chrome，可先执行 `npm run test:e2e:install`，再用 `PLAYWRIGHT_BROWSER_CHANNEL=chromium npm run test:e2e`。
+- 运行前请确保后端已启动、数据库迁移已执行、管理员账号已通过 `backend/cmd/seed` 显式创建。
+
 ## 登录凭据
-- 用户名: `admin`
-- 密码: 后端 seed 时设置（默认 `admin123`）
+
+- 管理员用户名和密码由后端 `seed` 命令显式指定，不再提供默认 `admin123`。

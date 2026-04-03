@@ -3,16 +3,19 @@ import BaseHead from '../../components/base/BaseHead.astro'
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
 import AdminFriendsManager from '../../components/admin/AdminFriendsManager.vue'
 import AdminLayout from '../../layouts/AdminLayout.astro'
+import { adminCopy } from '../../content/copy'
+
+const copy = adminCopy.friendsManager.page
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title="友链管理 | Miku Blog" description="后台友链管理" />
+    <BaseHead title={copy.metaTitle} description={copy.metaDescription} />
     <AdminRouteGuard />
   </head>
   <body>
-    <AdminLayout activeKey="friends" pageTitle="友链管理">
+    <AdminLayout activeKey="friends" pageTitle={copy.title}>
       <AdminFriendsManager client:load />
     </AdminLayout>
   </body>

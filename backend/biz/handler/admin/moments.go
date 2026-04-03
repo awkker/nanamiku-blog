@@ -179,7 +179,7 @@ func (h *MomentsAdminHandler) Schedule(ctx context.Context, c *app.RequestContex
 		return
 	}
 
-	at, err := time.Parse(time.RFC3339, req.ScheduledAt)
+	at, err := parseScheduledAtRFC3339(req.ScheduledAt)
 	if err != nil {
 		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid scheduled_at format"))
 		return
@@ -220,7 +220,7 @@ func parseMomentPublish(status, scheduledAt string) (string, *time.Time, bool) {
 	if scheduledAt == "" {
 		return "", nil, false
 	}
-	at, err := time.Parse(time.RFC3339, scheduledAt)
+	at, err := parseScheduledAtRFC3339(scheduledAt)
 	if err != nil {
 		return "", nil, false
 	}

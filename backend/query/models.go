@@ -378,6 +378,21 @@ type FriendLink struct {
 	LastCheckedAt pgtype.Timestamptz `json:"last_checked_at"`
 }
 
+type FriendLinkApplication struct {
+	ID           uuid.UUID          `json:"id"`
+	SiteName     string             `json:"site_name"`
+	SiteUrl      string             `json:"site_url"`
+	AvatarUrl    string             `json:"avatar_url"`
+	Description  string             `json:"description"`
+	ContactEmail string             `json:"contact_email"`
+	ContactNote  string             `json:"contact_note"`
+	Status       FriendLinkStatus   `json:"status"`
+	CreatedAt    time.Time          `json:"created_at"`
+	ReviewedAt   pgtype.Timestamptz `json:"reviewed_at"`
+	ReviewNote   string             `json:"review_note"`
+	ReviewedBy   pgtype.UUID        `json:"reviewed_by"`
+}
+
 type FriendLinkHealthLog struct {
 	ID           uuid.UUID    `json:"id"`
 	FriendLinkID uuid.UUID    `json:"friend_link_id"`

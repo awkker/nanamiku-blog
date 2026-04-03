@@ -156,8 +156,8 @@ const navGroups = [
 
 const mobileOpen = useStore(sidebarOpen)
 
-function handleLogout() {
-  logout()
+async function handleLogout() {
+  await logout()
   window.location.replace('/login')
 }
 </script>

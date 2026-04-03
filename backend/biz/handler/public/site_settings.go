@@ -28,3 +28,13 @@ func (h *SiteSettingsHandler) GetFooter(ctx context.Context, c *app.RequestConte
 
 	c.JSON(consts.StatusOK, dto.OK(settings))
 }
+
+func (h *SiteSettingsHandler) GetSiteProfile(ctx context.Context, c *app.RequestContext) {
+	settings, err := h.svc.GetSiteProfileSettings(ctx)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to get site profile settings"))
+		return
+	}
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}

@@ -17,6 +17,7 @@ type Querier interface {
 	AddPostTag(ctx context.Context, arg AddPostTagParams) error
 	ApproveComment(ctx context.Context, arg ApproveCommentParams) error
 	ApproveFriendLink(ctx context.Context, arg ApproveFriendLinkParams) error
+	ApproveFriendLinkApplication(ctx context.Context, arg ApproveFriendLinkApplicationParams) error
 	ApproveGuestbookMessage(ctx context.Context, arg ApproveGuestbookMessageParams) error
 	CheckBlockedIP(ctx context.Context, ipHash string) (int64, error)
 	CheckMomentCommentLike(ctx context.Context, arg CheckMomentCommentLikeParams) (int64, error)
@@ -25,6 +26,7 @@ type Querier interface {
 	CheckPostLike(ctx context.Context, arg CheckPostLikeParams) (int64, error)
 	CleanExpiredTokens(ctx context.Context) error
 	CountAdminComments(ctx context.Context, status NullModerationStatus) (int64, error)
+	CountAdminFriendLinkApplications(ctx context.Context, status NullFriendLinkStatus) (int64, error)
 	CountAdminFriendLinks(ctx context.Context) (int64, error)
 	CountAdminGuestbookMessages(ctx context.Context, status NullModerationStatus) (int64, error)
 	CountAdminMoments(ctx context.Context) (int64, error)
@@ -45,6 +47,7 @@ type Querier interface {
 	CreateAnalyticsPageview(ctx context.Context, arg CreateAnalyticsPageviewParams) error
 	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) error
 	CreateFriendLink(ctx context.Context, arg CreateFriendLinkParams) (CreateFriendLinkRow, error)
+	CreateFriendLinkApplication(ctx context.Context, arg CreateFriendLinkApplicationParams) (CreateFriendLinkApplicationRow, error)
 	CreateFriendLinkHealthLog(ctx context.Context, arg CreateFriendLinkHealthLogParams) error
 	CreateGuestbookMessage(ctx context.Context, arg CreateGuestbookMessageParams) (CreateGuestbookMessageRow, error)
 	CreateMoment(ctx context.Context, arg CreateMomentParams) (CreateMomentRow, error)
@@ -74,6 +77,7 @@ type Querier interface {
 	DeletePost(ctx context.Context, id uuid.UUID) error
 	DeletePostLike(ctx context.Context, arg DeletePostLikeParams) error
 	ExportBackupPayload(ctx context.Context) (json.RawMessage, error)
+	FriendLinkExistsByURL(ctx context.Context, url string) (bool, error)
 	GetAdminByID(ctx context.Context, id uuid.UUID) (GetAdminByIDRow, error)
 	GetAdminByIdentifier(ctx context.Context, username string) (GetAdminByIdentifierRow, error)
 	GetAdminByUsername(ctx context.Context, username string) (GetAdminByUsernameRow, error)
@@ -83,6 +87,7 @@ type Querier interface {
 	GetDailyCommentTrend(ctx context.Context, createdAt time.Time) ([]GetDailyCommentTrendRow, error)
 	GetDailyLikeTrend(ctx context.Context, createdAt time.Time) ([]GetDailyLikeTrendRow, error)
 	GetDailyViewTrend(ctx context.Context, day pgtype.Date) ([]GetDailyViewTrendRow, error)
+	GetFriendLinkApplicationByID(ctx context.Context, id uuid.UUID) (FriendLinkApplication, error)
 	GetFriendLinkByID(ctx context.Context, id uuid.UUID) (FriendLink, error)
 	GetGuestbookVote(ctx context.Context, arg GetGuestbookVoteParams) (VoteType, error)
 	GetMomentByID(ctx context.Context, id uuid.UUID) (GetMomentByIDRow, error)
@@ -111,6 +116,7 @@ type Querier interface {
 	IncrementPostLikeCount(ctx context.Context, id uuid.UUID) error
 	IncrementPostViewCount(ctx context.Context, id uuid.UUID) error
 	ListAdminComments(ctx context.Context, arg ListAdminCommentsParams) ([]ListAdminCommentsRow, error)
+	ListAdminFriendLinkApplications(ctx context.Context, arg ListAdminFriendLinkApplicationsParams) ([]ListAdminFriendLinkApplicationsRow, error)
 	ListAdminFriendLinks(ctx context.Context, arg ListAdminFriendLinksParams) ([]ListAdminFriendLinksRow, error)
 	ListAdminGuestbookMessages(ctx context.Context, arg ListAdminGuestbookMessagesParams) ([]ListAdminGuestbookMessagesRow, error)
 	ListAdminMoments(ctx context.Context, arg ListAdminMomentsParams) ([]ListAdminMomentsRow, error)
@@ -142,11 +148,13 @@ type Querier interface {
 	ListScheduledMomentsDue(ctx context.Context) ([]uuid.UUID, error)
 	ListScheduledPostsDue(ctx context.Context) ([]ListScheduledPostsDueRow, error)
 	ListSensitiveWords(ctx context.Context) ([]string, error)
+	PendingFriendLinkApplicationExistsByURL(ctx context.Context, siteUrl string) (bool, error)
 	PublishMoment(ctx context.Context, id uuid.UUID) error
 	PublishPost(ctx context.Context, arg PublishPostParams) error
 	RecalcGuestbookVoteScore(ctx context.Context, messageID uuid.UUID) error
 	RejectComment(ctx context.Context, arg RejectCommentParams) error
 	RejectFriendLink(ctx context.Context, arg RejectFriendLinkParams) error
+	RejectFriendLinkApplication(ctx context.Context, arg RejectFriendLinkApplicationParams) error
 	RejectGuestbookMessage(ctx context.Context, arg RejectGuestbookMessageParams) error
 	RevokeAllUserTokens(ctx context.Context, adminUserID uuid.UUID) error
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error

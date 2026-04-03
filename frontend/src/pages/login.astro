@@ -17,16 +17,20 @@ import BackToTopRocket from '../components/ui/BackToTopRocket.astro'
         transition: opacity 0.22s ease;
       }
     </style>
-    <script is:inline>
+    <script>
+      import { ensureSessionUser } from '../lib/auth-session';
+
       document.documentElement.classList.add('auth-checking');
-      try {
-        const token = window.localStorage.getItem('miku_blog_token');
-        if (token) {
-          window.location.replace('/admin');
+      (async () => {
+        try {
+          const user = await ensureSessionUser();
+          if (user) {
+            window.location.replace('/admin');
+          }
+        } finally {
+          document.documentElement.classList.remove('auth-checking');
         }
-      } finally {
-        document.documentElement.classList.remove('auth-checking');
-      }
+      })();
     </script>
   </head>
   <body class="min-h-screen text-slate-900">

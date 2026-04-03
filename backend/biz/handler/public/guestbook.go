@@ -174,11 +174,13 @@ func (h *GuestbookHandler) resolveAuthorIdentity(ctx context.Context, c *app.Req
 	}
 
 	header := strings.TrimSpace(string(c.GetHeader("Authorization")))
-	if !strings.HasPrefix(header, "Bearer ") {
-		return nil
+	token := ""
+	if strings.HasPrefix(header, "Bearer ") {
+		token = strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
 	}
-
-	token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+	if token == "" {
+		token = strings.TrimSpace(string(c.Cookie(service.AccessTokenCookieName)))
+	}
 	if token == "" {
 		return nil
 	}

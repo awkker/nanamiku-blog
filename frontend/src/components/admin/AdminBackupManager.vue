@@ -37,6 +37,7 @@
 import { ref } from 'vue'
 
 import { ApiError } from '../../lib/api'
+import { fetchWithSessionRetry } from '../../lib/auth-session'
 import { adminCopy } from '../../content/copy'
 import { showToast } from '../../stores/ui'
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
@@ -46,15 +47,6 @@ type BackupFormat = 'json' | 'sql'
 
 const copy = adminCopy.backup
 const loadingFormat = ref<BackupFormat | null>(null)
-
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  try {
-    return window.localStorage.getItem('miku_blog_token')
-  } catch {
-    return null
-  }
-}
 
 function resolveDownloadFilename(contentDisposition: string | null, fallback: string): string {
   if (!contentDisposition) return fallback
@@ -66,16 +58,8 @@ function resolveDownloadFilename(contentDisposition: string | null, fallback: st
 async function download(format: BackupFormat) {
   loadingFormat.value = format
   try {
-    const headers: Record<string, string> = {}
-    const token = getToken()
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-
-    const res = await fetch(`/api/v1/admin/backup/export?format=${format}`, {
+    const res = await fetchWithSessionRetry(`/api/v1/admin/backup/export?format=${format}`, {
       method: 'GET',
-      headers,
-      credentials: 'include',
     })
 
     if (!res.ok) {

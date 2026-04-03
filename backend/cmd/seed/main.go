@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"nanamiku-blog/backend/biz/bootstrap"
 	"nanamiku-blog/backend/biz/service"
@@ -26,12 +28,20 @@ func main() {
 
 	q := query.New(db)
 
-	username := "admin"
-	email := "admin@miku.blog"
-	password := "admin123"
+	usernameFlag := flag.String("username", "", "admin username (or set ADMIN_SEED_USERNAME)")
+	emailFlag := flag.String("email", "", "admin email (or set ADMIN_SEED_EMAIL)")
+	passwordFlag := flag.String("password", "", "admin password (or set ADMIN_SEED_PASSWORD)")
+	flag.Parse()
 
-	if len(os.Args) > 1 {
-		password = os.Args[1]
+	username := strings.TrimSpace(firstNonEmpty(*usernameFlag, os.Getenv("ADMIN_SEED_USERNAME")))
+	email := strings.TrimSpace(firstNonEmpty(*emailFlag, os.Getenv("ADMIN_SEED_EMAIL")))
+	password := strings.TrimSpace(firstNonEmpty(*passwordFlag, os.Getenv("ADMIN_SEED_PASSWORD")))
+
+	if username == "" || email == "" || password == "" {
+		log.Fatal("seed requires explicit username, email, and password via flags or ADMIN_SEED_* env vars")
+	}
+	if err := service.ValidateAdminPassword(password); err != nil {
+		log.Fatalf("invalid password: %v", err)
 	}
 
 	hash, err := service.HashPassword(password)
@@ -50,5 +60,14 @@ func main() {
 	}
 
 	fmt.Printf("Admin user created: id=%s username=%s email=%s\n", row.ID, username, email)
-	fmt.Printf("Password: %s (change this immediately)\n", password)
+	fmt.Println("Initial password accepted and stored successfully.")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }

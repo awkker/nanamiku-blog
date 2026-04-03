@@ -79,11 +79,11 @@ const userName = computed(() => {
 
 onMounted(() => {
   mounted.value = true
-  hydrateAuth()
+  void hydrateAuth()
 })
 
-function handleLogout() {
-  logout()
+async function handleLogout() {
+  await logout()
   window.location.replace('/login')
 }
 </script>

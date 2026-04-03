@@ -66,10 +66,14 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	}
 
 	healthH := public.NewHealthHandler(db, rdb)
-	authH := admin.NewAuthHandler(authSvc)
+	authH := admin.NewAuthHandler(authSvc, admin.AuthCookieConfig{
+		Domain:   cfg.Session.CookieDomain,
+		Secure:   cfg.Session.CookieSecure,
+		SameSite: cfg.Session.CookieSameSite,
+	})
 	guestbookH := public.NewGuestbookHandler(guestbookSvc, moderationSvc, authSvc)
 	momentsH := public.NewMomentsHandler(momentsSvc, moderationSvc)
-	friendsH := public.NewFriendsHandler(friendsSvc)
+	friendsH := public.NewFriendsHandler(friendsSvc, moderationSvc)
 	siteSettingsH := public.NewSiteSettingsHandler(siteSettingsSvc)
 	analyticsH := public.NewAnalyticsHandler(dashboardSvc)
 	dashboardH := admin.NewDashboardHandler(dashboardSvc)
@@ -129,7 +133,9 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 
 		// Friends
 		api.GET("/friends", friendsH.List)
+		api.POST("/friends/applications", middleware.RateLimit(rdb, "friend:apply", 3, 10*time.Minute), friendsH.CreateApplication)
 		api.GET("/site-settings/footer", siteSettingsH.GetFooter)
+		api.GET("/site-settings/site-profile", siteSettingsH.GetSiteProfile)
 		api.POST("/analytics/collect", middleware.RateLimit(rdb, "analytics:collect", 240, 1*time.Minute), analyticsH.Collect)
 		api.GET("/analytics/trend", analyticsH.Trend)
 
@@ -173,11 +179,17 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 			// Friends CRUD
 			adm.GET("/friends", friendsAdminH.List)
 			adm.POST("/friends", friendsAdminH.Create)
+			adm.GET("/friends/applications", friendsAdminH.ListApplications)
+			adm.POST("/friends/applications/:id/approve", friendsAdminH.ApproveApplication)
+			adm.POST("/friends/applications/:id/reject", friendsAdminH.RejectApplication)
+			adm.POST("/friends/:id/approve", friendsAdminH.Approve)
+			adm.POST("/friends/:id/reject", friendsAdminH.Reject)
 			adm.PUT("/friends/:id", friendsAdminH.Update)
 			adm.DELETE("/friends/:id", friendsAdminH.Delete)
 
 			// Site settings
 			adm.PUT("/site-settings/footer", siteSettingsAdminH.UpdateFooter)
+			adm.PUT("/site-settings/site-profile", siteSettingsAdminH.UpdateSiteProfile)
 
 			// Posts CRUD
 			adm.GET("/posts", postsAdminH.List)

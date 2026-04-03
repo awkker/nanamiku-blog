@@ -35,6 +35,7 @@ SELECT jsonb_build_object(
     'moment_comment_likes', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM moment_comment_likes t), '[]'::jsonb),
 
     'friend_links', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM friend_links t), '[]'::jsonb),
+    'friend_link_applications', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM friend_link_applications t), '[]'::jsonb),
     'friend_link_health_logs', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.checked_at) FROM friend_link_health_logs t), '[]'::jsonb),
 
     'sensitive_words', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM sensitive_words t), '[]'::jsonb),

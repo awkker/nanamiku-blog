@@ -43,6 +43,7 @@ var backupTableOrder = []string{
 	"moment_comments",
 	"moment_comment_likes",
 	"friend_links",
+	"friend_link_applications",
 	"friend_link_health_logs",
 	"sensitive_words",
 	"blocked_ips",

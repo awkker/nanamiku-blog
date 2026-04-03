@@ -15,11 +15,12 @@ import (
 )
 
 type AuthHandler struct {
-	authSvc *service.AuthService
+	authSvc      *service.AuthService
+	cookieConfig AuthCookieConfig
 }
 
-func NewAuthHandler(authSvc *service.AuthService) *AuthHandler {
-	return &AuthHandler{authSvc: authSvc}
+func NewAuthHandler(authSvc *service.AuthService, cookieConfig AuthCookieConfig) *AuthHandler {
+	return &AuthHandler{authSvc: authSvc, cookieConfig: cookieConfig}
 }
 
 type loginRequest struct {
@@ -58,7 +59,10 @@ func (h *AuthHandler) Login(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(consts.StatusOK, dto.OK(pair))
+	h.cookieConfig.writeSessionCookies(c, h.authSvc, pair)
+	c.JSON(consts.StatusOK, dto.OK(map[string]interface{}{
+		"expires_at": pair.ExpiresAt,
+	}))
 }
 
 type refreshRequest struct {
@@ -67,14 +71,18 @@ type refreshRequest struct {
 
 func (h *AuthHandler) Refresh(ctx context.Context, c *app.RequestContext) {
 	var req refreshRequest
-	if err := c.BindAndValidate(&req); err != nil {
+	_ = c.BindJSON(&req)
+
+	refreshToken := resolveRefreshToken(req.RefreshToken, string(c.Cookie(service.RefreshTokenCookieName)))
+	if refreshToken == "" {
 		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "refresh_token required"))
 		return
 	}
 
-	pair, err := h.authSvc.RefreshToken(ctx, req.RefreshToken)
+	pair, err := h.authSvc.RefreshToken(ctx, refreshToken)
 	if err != nil {
 		if errors.Is(err, service.ErrTokenExpired) {
+			h.cookieConfig.clearSessionCookies(c)
 			c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrTokenExpired, "refresh token expired"))
 			return
 		}
@@ -82,7 +90,10 @@ func (h *AuthHandler) Refresh(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(consts.StatusOK, dto.OK(pair))
+	h.cookieConfig.writeSessionCookies(c, h.authSvc, pair)
+	c.JSON(consts.StatusOK, dto.OK(map[string]interface{}{
+		"expires_at": pair.ExpiresAt,
+	}))
 }
 
 type logoutRequest struct {
@@ -93,7 +104,10 @@ func (h *AuthHandler) Logout(ctx context.Context, c *app.RequestContext) {
 	var req logoutRequest
 	_ = c.BindJSON(&req)
 
-	_ = h.authSvc.Logout(ctx, req.RefreshToken)
+	refreshToken := resolveRefreshToken(req.RefreshToken, string(c.Cookie(service.RefreshTokenCookieName)))
+
+	_ = h.authSvc.Logout(ctx, refreshToken)
+	h.cookieConfig.clearSessionCookies(c)
 	c.JSON(consts.StatusOK, dto.OK(nil))
 }
 
@@ -209,7 +223,7 @@ func (h *AuthHandler) UpdateAccount(ctx context.Context, c *app.RequestContext) 
 		return
 	}
 
-	admin, _, err := h.authSvc.UpdateAccount(ctx, adminID, service.UpdateAccountInput{
+	admin, sessionRevoked, err := h.authSvc.UpdateAccount(ctx, adminID, service.UpdateAccountInput{
 		Username:    req.Username,
 		Email:       req.Email,
 		NewPassword: req.NewPassword,
@@ -227,14 +241,28 @@ func (h *AuthHandler) UpdateAccount(ctx context.Context, c *app.RequestContext) 
 		return
 	}
 
+	if sessionRevoked {
+		h.cookieConfig.clearSessionCookies(c)
+	}
+
 	c.JSON(consts.StatusOK, dto.OK(map[string]interface{}{
-		"id":            admin.ID,
-		"username":      admin.Username,
-		"display_name":  admin.DisplayName,
-		"avatar_url":    admin.AvatarUrl,
-		"email":         admin.Email,
-		"role":          admin.Role,
-		"last_login_at": admin.LastLoginAt,
-		"created_at":    admin.CreatedAt,
+		"id":              admin.ID,
+		"username":        admin.Username,
+		"display_name":    admin.DisplayName,
+		"avatar_url":      admin.AvatarUrl,
+		"email":           admin.Email,
+		"role":            admin.Role,
+		"last_login_at":   admin.LastLoginAt,
+		"created_at":      admin.CreatedAt,
+		"session_revoked": sessionRevoked,
 	}))
+}
+
+func resolveRefreshToken(requestToken, cookieToken string) string {
+	token := strings.TrimSpace(requestToken)
+	if token != "" {
+		return token
+	}
+
+	return strings.TrimSpace(cookieToken)
 }

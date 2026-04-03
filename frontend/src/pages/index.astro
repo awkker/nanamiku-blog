@@ -42,6 +42,7 @@ const iconPaths: Record<string, string> = {
           <img
             src="/picture/logo-64.webp"
             alt={siteCopy.brand.logoAlt}
+            data-site-logo-alt
             class="h-5 w-5 rounded-lg object-cover"
             width="20"
             height="20"
@@ -49,7 +50,7 @@ const iconPaths: Record<string, string> = {
             decoding="async"
             fetchpriority="high"
           />
-          <span class="whitespace-nowrap">{siteCopy.brand.text}</span>
+          <span class="whitespace-nowrap" data-site-brand-text>{siteCopy.brand.text}</span>
         </a>
 
         <div class="flex items-center gap-1 text-[11px] min-[380px]:gap-1.5 sm:gap-3">
@@ -109,10 +110,11 @@ const iconPaths: Record<string, string> = {
   </body>
 </html>
 
-<script is:inline>
-  function updateAuthVisibleLinks() {
-    const token = window.localStorage.getItem('miku_blog_token');
-    const authed = Boolean(token);
+<script>
+  import { AUTH_STATE_CHANGED_EVENT, ensureSessionUser } from '../lib/auth-session';
+
+  async function updateAuthVisibleLinks() {
+    const authed = Boolean(await ensureSessionUser());
     const links = document.querySelectorAll('[data-auth-visible]');
 
     links.forEach((el) => {
@@ -122,8 +124,10 @@ const iconPaths: Record<string, string> = {
     });
   }
 
-  updateAuthVisibleLinks();
-  window.addEventListener('storage', updateAuthVisibleLinks);
+  void updateAuthVisibleLinks();
+  window.addEventListener(AUTH_STATE_CHANGED_EVENT, () => {
+    void updateAuthVisibleLinks();
+  });
 </script>
 
 <style>

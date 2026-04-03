@@ -2,40 +2,63 @@ package service
 
 import "testing"
 
-func TestNormalizeFooterSettings(t *testing.T) {
-	settings := normalizeFooterSettings(FooterSettings{
-		ICPText: "  沪ICP备12345678号-1  ",
-		ICPLink: " https://beian.miit.gov.cn/ ",
-		CustomTexts: []string{
-			"  第一行  ",
-			"",
-			"   ",
-			"第二行",
-		},
+func TestNormalizeSiteProfileSettings(t *testing.T) {
+	t.Parallel()
+
+	got := normalizeSiteProfileSettings(SiteProfileSettings{
+		BrandText:          "  NanaMiku Blog  ",
+		SiteTitle:          "",
+		LogoAlt:            "",
+		SiteURL:            "nanamiku.blog/",
+		DefaultDescription: "  hello world  ",
+		DefaultSocialImage: "cdn.nanamiku.blog/cover.png",
 	})
 
-	if settings.ICPText != "沪ICP备12345678号-1" {
-		t.Fatalf("unexpected icp text: %q", settings.ICPText)
+	if got.BrandText != "NanaMiku Blog" {
+		t.Fatalf("unexpected brand text: %q", got.BrandText)
 	}
-	if settings.ICPLink != "https://beian.miit.gov.cn/" {
-		t.Fatalf("unexpected icp link: %q", settings.ICPLink)
+
+	if got.SiteTitle != "NanaMiku Blog" {
+		t.Fatalf("unexpected site title: %q", got.SiteTitle)
 	}
-	if len(settings.CustomTexts) != 2 {
-		t.Fatalf("expected 2 custom texts, got %d", len(settings.CustomTexts))
+
+	if got.LogoAlt != "NanaMiku Blog logo" {
+		t.Fatalf("unexpected logo alt: %q", got.LogoAlt)
 	}
-	if settings.CustomTexts[0] != "第一行" || settings.CustomTexts[1] != "第二行" {
-		t.Fatalf("unexpected custom texts: %#v", settings.CustomTexts)
+
+	if got.SiteURL != "https://nanamiku.blog" {
+		t.Fatalf("unexpected site url: %q", got.SiteURL)
+	}
+
+	if got.DefaultDescription != "hello world" {
+		t.Fatalf("unexpected description: %q", got.DefaultDescription)
+	}
+
+	if got.DefaultSocialImage != "https://cdn.nanamiku.blog/cover.png" {
+		t.Fatalf("unexpected social image: %q", got.DefaultSocialImage)
 	}
 }
 
-func TestSanitizeFooterCustomTextsLimit(t *testing.T) {
-	lines := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9"}
-	result := sanitizeFooterCustomTexts(lines)
+func TestNormalizeSiteAssetURL(t *testing.T) {
+	t.Parallel()
 
-	if len(result) != maxFooterCustomTexts {
-		t.Fatalf("expected %d custom texts, got %d", maxFooterCustomTexts, len(result))
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "relative asset", raw: "/picture/logo-64.webp", want: "/picture/logo-64.webp"},
+		{name: "absolute asset without scheme", raw: "cdn.nanamiku.blog/cover.png", want: "https://cdn.nanamiku.blog/cover.png"},
+		{name: "invalid empty", raw: "   ", want: ""},
 	}
-	if result[maxFooterCustomTexts-1] != "8" {
-		t.Fatalf("unexpected last custom text: %q", result[maxFooterCustomTexts-1])
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := normalizeSiteAssetURL(tc.raw); got != tc.want {
+				t.Fatalf("normalizeSiteAssetURL(%q) = %q, want %q", tc.raw, got, tc.want)
+			}
+		})
 	}
 }

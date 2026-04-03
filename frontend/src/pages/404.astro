@@ -27,8 +27,8 @@ const copy = siteCopy.notFoundPage
           href="/"
           class="inline-flex items-center gap-2 rounded-xl border border-white/70 bg-white/62 px-3 py-2 text-xs font-semibold tracking-[0.16em] text-slate-600 shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
         >
-          <img src="/picture/logo-64.webp" alt={siteCopy.brand.logoAlt} class="h-4 w-4 rounded-sm object-cover" width="16" height="16" loading="eager" decoding="async" />
-          <span>{siteCopy.brand.text}</span>
+          <img src="/picture/logo-64.webp" alt={siteCopy.brand.logoAlt} data-site-logo-alt class="h-4 w-4 rounded-sm object-cover" width="16" height="16" loading="eager" decoding="async" />
+          <span data-site-brand-text>{siteCopy.brand.text}</span>
         </a>
       </header>
 

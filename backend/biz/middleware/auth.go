@@ -6,6 +6,7 @@ import (
 
 	"nanamiku-blog/backend/biz/dto"
 	"nanamiku-blog/backend/biz/errcode"
+	"nanamiku-blog/backend/biz/service"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -22,13 +23,14 @@ type TokenValidator func(tokenStr string) (*AdminClaims, error)
 
 func AdminAuth(validate TokenValidator) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
-		header := string(c.GetHeader("Authorization"))
-		if header == "" || !strings.HasPrefix(header, "Bearer ") {
-			c.AbortWithStatusJSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "missing or invalid authorization header"))
+		tokenStr := resolveAccessToken(
+			string(c.GetHeader("Authorization")),
+			string(c.Cookie(service.AccessTokenCookieName)),
+		)
+		if tokenStr == "" {
+			c.AbortWithStatusJSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "missing authentication credentials"))
 			return
 		}
-
-		tokenStr := strings.TrimPrefix(header, "Bearer ")
 		claims, err := validate(tokenStr)
 		if err != nil {
 			c.AbortWithStatusJSON(consts.StatusUnauthorized, dto.Err(errcode.ErrTokenInvalid, "invalid or expired token"))
@@ -40,4 +42,16 @@ func AdminAuth(validate TokenValidator) app.HandlerFunc {
 		c.Set("admin_role", claims.Role)
 		c.Next(ctx)
 	}
+}
+
+func resolveAccessToken(authorizationHeader, accessCookie string) string {
+	header := strings.TrimSpace(authorizationHeader)
+	if strings.HasPrefix(header, "Bearer ") {
+		token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+		if token != "" {
+			return token
+		}
+	}
+
+	return strings.TrimSpace(accessCookie)
 }

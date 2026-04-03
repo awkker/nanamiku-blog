@@ -1,3 +1,7 @@
 .DS_Store
 .agents/
 skills-lock.json
+
+# Playwright / smoke artifacts
+frontend/test-results/
+frontend/playwright-report/

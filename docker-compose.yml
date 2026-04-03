@@ -40,6 +40,7 @@ services:
       redis:
         condition: service_healthy
     environment:
+      APP_ENV: ${APP_ENV:-development}
       SERVER_PORT: 8080
       DB_HOST: postgres
       DB_PORT: 5432
@@ -52,8 +53,11 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-miku_redis}
       REDIS_DB: 0
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-720h}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-720h}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-lax}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4321}
       WEATHER_LOCATION: ${WEATHER_LOCATION:-Shanghai}
       GEOIP_DB_PATH: ${GEOIP_DB_PATH:-}

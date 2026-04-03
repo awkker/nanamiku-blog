@@ -355,7 +355,6 @@
 </template>
 
 <script setup lang="ts">
-import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -365,7 +364,7 @@ import { LegacyGridContainLabel } from 'echarts/features'
 import VChart from 'vue-echarts'
 
 import { api } from '../../lib/api'
-import { authState, hydrateAuth } from '../../stores/auth'
+import { hydrateAuth } from '../../stores/auth'
 import { setScopeStatus } from '../../stores/loading'
 import { adminCopy } from '../../content/copy'
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
@@ -469,7 +468,6 @@ interface DashboardStats {
   draft_count: number
 }
 
-const auth = useStore(authState)
 const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
 const analytics = ref<AnalyticsOverview | null>(null)
 const dashboardStats = ref<DashboardStats | null>(null)
@@ -481,6 +479,7 @@ const pathKeyword = ref('')
 
 const worldMapReady = ref(false)
 const worldMapLoading = ref(false)
+const WORLD_MAP_ASSET = '/data/geo/world.json'
 
 const pageTab = ref<PageTabKey>('path')
 const sourceTab = ref<SourceTabKey>('referrers')
@@ -886,7 +885,7 @@ async function ensureWorldMap() {
       ? (echarts as unknown as { getMap: (name: string) => unknown }).getMap('world')
       : null
     if (!hasMap) {
-      const response = await fetch('https://echarts.apache.org/examples/data/asset/geo/world.json')
+      const response = await fetch(WORLD_MAP_ASSET, { credentials: 'same-origin' })
       if (!response.ok) return
       const geoJson = await response.json()
       echarts.registerMap('world', geoJson)
@@ -1054,9 +1053,8 @@ function trafficDotTitle(dow: number, hour: number): string {
 }
 
 onMounted(async () => {
-  hydrateAuth()
-  const latestAuth = authState.get()
-  if (latestAuth.status !== 'authenticated') {
+  const user = await hydrateAuth()
+  if (!user) {
     window.location.replace('/login')
     return
   }

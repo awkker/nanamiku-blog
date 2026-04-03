@@ -31,6 +31,11 @@ var (
 
 const DefaultAdminAvatarURL = "/picture/author.jpg"
 
+const (
+	AccessTokenCookieName  = "miku_blog_access"
+	RefreshTokenCookieName = "miku_blog_refresh"
+)
+
 type JWTConfig struct {
 	Secret     string
 	AccessTTL  time.Duration
@@ -49,6 +54,14 @@ func NewAuthService(db *pgxpool.Pool, cfg JWTConfig) *AuthService {
 		db:  db,
 		cfg: cfg,
 	}
+}
+
+func (s *AuthService) AccessTTL() time.Duration {
+	return s.cfg.AccessTTL
+}
+
+func (s *AuthService) RefreshTTL() time.Duration {
+	return s.cfg.RefreshTTL
 }
 
 type TokenPair struct {
@@ -249,9 +262,10 @@ func (s *AuthService) UpdateAccount(ctx context.Context, adminID uuid.UUID, inpu
 	}()
 
 	qtx := s.q.WithTx(tx)
-	passwordChanged := false
+	sessionRevoked := false
 
 	if current.Username != nextUsername || current.Email != nextEmail {
+		sessionRevoked = true
 		if updateErr := qtx.UpdateAdminAccount(ctx, query.UpdateAdminAccountParams{
 			ID:       adminID,
 			Username: nextUsername,
@@ -265,6 +279,7 @@ func (s *AuthService) UpdateAccount(ctx context.Context, adminID uuid.UUID, inpu
 	}
 
 	if nextPassword != "" {
+		sessionRevoked = true
 		hash, hashErr := HashPassword(nextPassword)
 		if hashErr != nil {
 			return nil, false, fmt.Errorf("hash password: %w", hashErr)
@@ -275,10 +290,9 @@ func (s *AuthService) UpdateAccount(ctx context.Context, adminID uuid.UUID, inpu
 		}); updateErr != nil {
 			return nil, false, fmt.Errorf("update admin password: %w", updateErr)
 		}
-		passwordChanged = true
 	}
 
-	if passwordChanged || current.Username != nextUsername || current.Email != nextEmail {
+	if sessionRevoked {
 		if revokeErr := qtx.RevokeAllUserTokens(ctx, adminID); revokeErr != nil {
 			return nil, false, fmt.Errorf("revoke old sessions: %w", revokeErr)
 		}
@@ -293,7 +307,7 @@ func (s *AuthService) UpdateAccount(ctx context.Context, adminID uuid.UUID, inpu
 		return nil, false, err
 	}
 
-	return updated, passwordChanged, nil
+	return updated, sessionRevoked, nil
 }
 
 func (s *AuthService) ValidateAccessToken(tokenStr string) (*AdminClaims, error) {
@@ -361,6 +375,10 @@ func HashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(hash), nil
+}
+
+func ValidateAdminPassword(password string) error {
+	return validateAdminPassword(password)
 }
 
 func hashToken(raw string) string {

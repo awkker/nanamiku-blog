@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"nanamiku-blog/backend/query"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -75,6 +77,7 @@ func (s *ModerationService) FindSensitiveWord(ctx context.Context, texts ...stri
 
 var defaultRateLimitRules = []string{
 	"analytics:collect",
+	"friend:apply",
 	"gb:create",
 	"gb:vote",
 	"login",
@@ -471,12 +474,23 @@ func (s *ModerationService) ListAdminFriends(ctx context.Context, page, size int
 }
 
 func (s *ModerationService) CreateFriend(ctx context.Context, name, description, url, domain, avatarURL string, sortOrder int32, adminID uuid.UUID) (uuid.UUID, error) {
-	row, err := s.q.CreateFriendLink(ctx, query.CreateFriendLinkParams{
+	normalized, err := normalizeFriendLinkInput(FriendLinkInput{
 		Name:        name,
 		Description: description,
-		Url:         url,
+		URL:         url,
 		Domain:      domain,
-		AvatarUrl:   avatarURL,
+		AvatarURL:   avatarURL,
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	row, err := s.q.CreateFriendLink(ctx, query.CreateFriendLinkParams{
+		Name:        normalized.Name,
+		Description: normalized.Description,
+		Url:         normalized.URL,
+		Domain:      normalized.Domain,
+		AvatarUrl:   normalized.AvatarURL,
 		SortOrder:   sortOrder,
 		ReviewedBy:  pgtype.UUID{Bytes: adminID, Valid: true},
 	})
@@ -487,17 +501,187 @@ func (s *ModerationService) CreateFriend(ctx context.Context, name, description,
 }
 
 func (s *ModerationService) UpdateFriend(ctx context.Context, id uuid.UUID, name, description, url, domain, avatarURL string, sortOrder int32) error {
-	return s.q.UpdateFriendLink(ctx, query.UpdateFriendLinkParams{
-		ID:          id,
+	normalized, err := normalizeFriendLinkInput(FriendLinkInput{
 		Name:        name,
 		Description: description,
-		Url:         url,
+		URL:         url,
 		Domain:      domain,
-		AvatarUrl:   avatarURL,
+		AvatarURL:   avatarURL,
+	})
+	if err != nil {
+		return err
+	}
+
+	return s.q.UpdateFriendLink(ctx, query.UpdateFriendLinkParams{
+		ID:          id,
+		Name:        normalized.Name,
+		Description: normalized.Description,
+		Url:         normalized.URL,
+		Domain:      normalized.Domain,
+		AvatarUrl:   normalized.AvatarURL,
 		SortOrder:   sortOrder,
 	})
 }
 
 func (s *ModerationService) DeleteFriend(ctx context.Context, id uuid.UUID) error {
 	return s.q.DeleteFriendLink(ctx, id)
+}
+
+func (s *ModerationService) ApproveFriend(ctx context.Context, id uuid.UUID, adminID uuid.UUID) error {
+	return s.q.ApproveFriendLink(ctx, query.ApproveFriendLinkParams{
+		ID:         id,
+		ReviewedBy: pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
+	})
+}
+
+func (s *ModerationService) RejectFriend(ctx context.Context, id uuid.UUID, adminID uuid.UUID) error {
+	return s.q.RejectFriendLink(ctx, query.RejectFriendLinkParams{
+		ID:         id,
+		ReviewedBy: pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
+	})
+}
+
+type AdminFriendApplicationItem struct {
+	ID           uuid.UUID `json:"id"`
+	SiteName     string    `json:"site_name"`
+	SiteURL      string    `json:"site_url"`
+	AvatarURL    string    `json:"avatar_url"`
+	Description  string    `json:"description"`
+	ContactEmail string    `json:"contact_email"`
+	ContactNote  string    `json:"contact_note"`
+	Status       string    `json:"status"`
+	CreatedAt    string    `json:"created_at"`
+	ReviewedAt   string    `json:"reviewed_at,omitempty"`
+	ReviewNote   string    `json:"review_note"`
+}
+
+func (s *ModerationService) ListFriendApplications(ctx context.Context, status string, page, size int) ([]AdminFriendApplicationItem, int64, error) {
+	var statusParam query.NullFriendLinkStatus
+	if status == string(query.FriendLinkStatusPending) || status == string(query.FriendLinkStatusApproved) || status == string(query.FriendLinkStatusRejected) {
+		statusParam = query.NullFriendLinkStatus{
+			FriendLinkStatus: query.FriendLinkStatus(status),
+			Valid:            true,
+		}
+	}
+
+	total, err := s.q.CountAdminFriendLinkApplications(ctx, statusParam)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := s.q.ListAdminFriendLinkApplications(ctx, query.ListAdminFriendLinkApplicationsParams{
+		Status: statusParam,
+		Limit:  int32(size),
+		Offset: int32((page - 1) * size),
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	items := make([]AdminFriendApplicationItem, 0, len(rows))
+	for _, r := range rows {
+		item := AdminFriendApplicationItem{
+			ID:           r.ID,
+			SiteName:     r.SiteName,
+			SiteURL:      r.SiteUrl,
+			AvatarURL:    r.AvatarUrl,
+			Description:  r.Description,
+			ContactEmail: r.ContactEmail,
+			ContactNote:  r.ContactNote,
+			Status:       string(r.Status),
+			CreatedAt:    r.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			ReviewNote:   r.ReviewNote,
+		}
+		if r.ReviewedAt.Valid {
+			item.ReviewedAt = r.ReviewedAt.Time.Format("2006-01-02T15:04:05Z")
+		}
+		items = append(items, item)
+	}
+
+	return items, total, nil
+}
+
+func (s *ModerationService) ApproveFriendApplication(ctx context.Context, applicationID, adminID uuid.UUID, sortOrder int32, reviewNote string) (uuid.UUID, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("begin friend application tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := s.q.WithTx(tx)
+
+	application, err := qtx.GetFriendLinkApplicationByID(ctx, applicationID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, ErrFriendApplicationNotFound
+		}
+		return uuid.Nil, fmt.Errorf("get friend application: %w", err)
+	}
+	if application.Status != query.FriendLinkStatusPending {
+		return uuid.Nil, ErrFriendApplicationProcessed
+	}
+
+	normalized, err := normalizeFriendLinkInput(FriendLinkInput{
+		Name:        application.SiteName,
+		Description: application.Description,
+		URL:         application.SiteUrl,
+		AvatarURL:   application.AvatarUrl,
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	exists, err := qtx.FriendLinkExistsByURL(ctx, normalized.URL)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("check existing friend link: %w", err)
+	}
+	if exists {
+		return uuid.Nil, ErrFriendApplicationDuplicate
+	}
+
+	friendRow, err := qtx.CreateFriendLink(ctx, query.CreateFriendLinkParams{
+		Name:        normalized.Name,
+		Description: normalized.Description,
+		Url:         normalized.URL,
+		Domain:      normalized.Domain,
+		AvatarUrl:   normalized.AvatarURL,
+		SortOrder:   sortOrder,
+		ReviewedBy:  pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
+	})
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("create friend link from application: %w", err)
+	}
+
+	if err := qtx.ApproveFriendLinkApplication(ctx, query.ApproveFriendLinkApplicationParams{
+		ID:         applicationID,
+		ReviewNote: strings.TrimSpace(reviewNote),
+		ReviewedBy: pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
+	}); err != nil {
+		return uuid.Nil, fmt.Errorf("approve friend application: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return uuid.Nil, fmt.Errorf("commit friend application approval: %w", err)
+	}
+
+	return friendRow.ID, nil
+}
+
+func (s *ModerationService) RejectFriendApplication(ctx context.Context, applicationID, adminID uuid.UUID, reviewNote string) error {
+	application, err := s.q.GetFriendLinkApplicationByID(ctx, applicationID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrFriendApplicationNotFound
+		}
+		return fmt.Errorf("get friend application: %w", err)
+	}
+	if application.Status != query.FriendLinkStatusPending {
+		return ErrFriendApplicationProcessed
+	}
+
+	return s.q.RejectFriendLinkApplication(ctx, query.RejectFriendLinkApplicationParams{
+		ID:         applicationID,
+		ReviewNote: strings.TrimSpace(reviewNote),
+		ReviewedBy: pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
+	})
 }

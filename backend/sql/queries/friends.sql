@@ -23,8 +23,8 @@ FROM friend_links
 WHERE id = $1;
 
 -- name: CreateFriendLink :one
-INSERT INTO friend_links (name, description, url, domain, avatar_url, status, sort_order, reviewed_by)
-VALUES ($1, $2, $3, $4, $5, 'approved', $6, $7)
+INSERT INTO friend_links (name, description, url, domain, avatar_url, status, sort_order, approved_at, reviewed_by)
+VALUES ($1, $2, $3, $4, $5, 'approved', $6, now(), $7)
 RETURNING id, created_at;
 
 -- name: UpdateFriendLink :exec
@@ -62,3 +62,70 @@ VALUES ($1, $2, $3, $4);
 
 -- name: CountApprovedFriendLinks :one
 SELECT count(*) FROM friend_links WHERE status = 'approved';
+
+-- name: FriendLinkExistsByURL :one
+SELECT EXISTS(
+    SELECT 1
+    FROM friend_links
+    WHERE url = $1
+);
+
+-- name: PendingFriendLinkApplicationExistsByURL :one
+SELECT EXISTS(
+    SELECT 1
+    FROM friend_link_applications
+    WHERE site_url = $1
+      AND status = 'pending'
+);
+
+-- name: CreateFriendLinkApplication :one
+INSERT INTO friend_link_applications (
+    site_name,
+    site_url,
+    avatar_url,
+    description,
+    contact_email,
+    contact_note
+)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, created_at, status;
+
+-- name: ListAdminFriendLinkApplications :many
+SELECT id, site_name, site_url, avatar_url, description, contact_email, contact_note,
+       status, created_at, reviewed_at, review_note
+FROM friend_link_applications
+WHERE (sqlc.narg('status')::friend_link_status IS NULL OR status = sqlc.narg('status')::friend_link_status)
+ORDER BY CASE status
+           WHEN 'pending' THEN 0
+           WHEN 'approved' THEN 1
+           ELSE 2
+         END,
+         created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountAdminFriendLinkApplications :one
+SELECT count(*)
+FROM friend_link_applications
+WHERE (sqlc.narg('status')::friend_link_status IS NULL OR status = sqlc.narg('status')::friend_link_status);
+
+-- name: GetFriendLinkApplicationByID :one
+SELECT id, site_name, site_url, avatar_url, description, contact_email, contact_note,
+       status, created_at, reviewed_at, review_note, reviewed_by
+FROM friend_link_applications
+WHERE id = $1;
+
+-- name: ApproveFriendLinkApplication :exec
+UPDATE friend_link_applications
+SET status = 'approved',
+    reviewed_at = now(),
+    review_note = $2,
+    reviewed_by = $3
+WHERE id = $1;
+
+-- name: RejectFriendLinkApplication :exec
+UPDATE friend_link_applications
+SET status = 'rejected',
+    reviewed_at = now(),
+    review_note = $2,
+    reviewed_by = $3
+WHERE id = $1;

@@ -128,7 +128,7 @@
 import { useStore } from '@nanostores/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 
-import { authState, hydrateAuth, loginWithPassword } from '../../stores/auth'
+import { hydrateAuth, loginWithPassword } from '../../stores/auth'
 import { getScopeLoading, setScopeStatus } from '../../stores/loading'
 import MikuButton from '../ui/MikuButton.vue'
 import MikuInput from '../ui/MikuInput.vue'
@@ -146,15 +146,11 @@ const errors = reactive({
 })
 
 const submitting = useStore(getScopeLoading('loginSubmit'))
-const auth = useStore(authState)
 const hasAuthError = computed(() => Boolean(formError.value))
 
-onMounted(() => {
-  hydrateAuth()
-
-  const latestAuth = authState.get()
-
-  if (latestAuth.status === 'authenticated') {
+onMounted(async () => {
+  const user = await hydrateAuth()
+  if (user) {
     window.location.replace('/admin')
   }
 })
