@@ -157,6 +157,7 @@ The smoke command exercises the highest-value API paths without a browser:
 - dashboard/admin list probes
 - public guestbook submission plus admin approval
 - public friend application plus admin approval
+- admin create moment plus public like/repost/comment/comment-like verification
 - logout and session invalidation
 
 ```bash
@@ -176,8 +177,9 @@ go run cmd/smoke/main.go \
 
 Notes:
 - run this against a started backend with migrations already applied
-- smoke writes temporary guestbook and friend-application records
+- smoke writes temporary guestbook, friend-application, and moment interaction records
 - approved smoke friend links are cleaned up automatically; approved friend-application records remain as audit history
+- smoke-created moments are deleted automatically after verification
 
 ## API Endpoints
 

@@ -120,6 +120,8 @@ npm run test:e2e
 ```
 
 - Playwright 会启动一个独立的 Astro dev server，默认端口为 `4322`，避免和你手工开的 `4321` 冲突。
+- 浏览器 smoke 会优先读取真实后端 CMS 文章数据；如果后端不在 `http://127.0.0.1:8080`，可额外设置 `SMOKE_BACKEND_URL` 或 `SMOKE_CMS_API_ORIGIN`。
+- 文章评论相关 smoke 会自动挑选一篇已发布文章，因此运行前请确保后端至少存在一篇可公开访问的文章。
 - 默认优先复用本机 Chrome 通道；如果当前环境没有 Chrome，可先执行 `npm run test:e2e:install`，再用 `PLAYWRIGHT_BROWSER_CHANNEL=chromium npm run test:e2e`。
 - 运行前请确保后端已启动、数据库迁移已执行、管理员账号已通过 `backend/cmd/seed` 显式创建。
 

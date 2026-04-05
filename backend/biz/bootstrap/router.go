@@ -52,6 +52,11 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	postCommentsSvc := service.NewPostCommentsService(db)
 	backupSvc := service.NewBackupService(db)
 	weatherSvc := service.NewWeatherService(rdb, cfg.Weather.Location)
+	githubSvc := service.NewGitHubProfileService(rdb, service.GitHubProfileConfig{
+		APIToken:   cfg.GitHub.APIToken,
+		APIBaseURL: cfg.GitHub.APIBaseURL,
+		CacheTTL:   cfg.GitHub.CacheTTL,
+	})
 
 	tokenValidator := func(tokenStr string) (*middleware.AdminClaims, error) {
 		claims, err := authSvc.ValidateAccessToken(tokenStr)
@@ -86,12 +91,14 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	momentsAdminH := admin.NewMomentsAdminHandler(momentsSvc, moderationSvc, authSvc)
 	backupH := admin.NewBackupHandler(backupSvc)
 	weatherH := public.NewWeatherHandler(weatherSvc)
+	githubH := public.NewGitHubHandler(githubSvc)
 
 	api := h.Group("/api/v1")
 	api.Use(middleware.Visitor(db))
 	{
 		api.GET("/health", healthH.Check)
 		api.GET("/weather", weatherH.Current)
+		api.GET("/github/profile", githubH.Profile)
 
 		// Auth
 		auth := api.Group("/auth")

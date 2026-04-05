@@ -191,12 +191,11 @@ import VChart from 'vue-echarts'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
 import LoadingSpinner from '../ui/LoadingSpinner.vue'
 import { siteCopy } from '../../content/copy'
+import { api } from '../../lib/api'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
 
 const MIKU = '#39c5bb'
-const CACHE_KEY = computed(() => `miku-blog-github-cache-v2-${props.githubUsername}`)
-const CACHE_TTL = 3600000
 
 interface Props {
   githubUsername: string
@@ -242,6 +241,28 @@ interface RepoItem {
 
 const recentRepos = ref<RepoItem[]>([])
 const activityData = ref<number[]>(new Array(12).fill(0))
+
+interface GitHubProfilePayload {
+  profile: {
+    avatar_url: string
+    name: string
+    bio: string
+    html_url: string
+    total_repos: number
+    total_stars: number
+    followers: number
+  }
+  tech_stack: Array<{ name: string; count: number }>
+  recent_repos: Array<{
+    name: string
+    description: string
+    html_url: string
+    language: string
+    stars: number
+    pushed_at: string
+  }>
+  activity_data: number[]
+}
 
 function handleAvatarLoaded() {
   avatarReady.value = true
@@ -328,94 +349,6 @@ function formatDate(dateStr: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-async function fetchWithTimeout(url: string, timeout = 8000): Promise<Response> {
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeout)
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/vnd.github+json',
-      },
-    })
-    clearTimeout(id)
-    return res
-  } catch (err) {
-    clearTimeout(id)
-    throw err
-  }
-}
-
-async function fetchAllPublicRepos(username: string): Promise<any[]> {
-  const repos: any[] = []
-  const perPage = 100
-
-  for (let page = 1; page <= 10; page++) {
-    const res = await fetchWithTimeout(
-      `https://api.github.com/users/${username}/repos?sort=pushed&per_page=${perPage}&page=${page}`,
-    )
-    if (!res.ok) {
-      throw new Error('repos api error')
-    }
-
-    const items: any[] = await res.json()
-    repos.push(...items)
-
-    if (items.length < perPage) {
-      break
-    }
-  }
-
-  return repos
-}
-
-async function fetchCommitActivityByMonth(username: string): Promise<number[]> {
-  const counts = new Array(12).fill(0)
-  const now = new Date()
-  const perPage = 100
-
-  for (let page = 1; page <= 3; page++) {
-    const res = await fetchWithTimeout(
-      `https://api.github.com/users/${username}/events/public?per_page=${perPage}&page=${page}`,
-    )
-    if (!res.ok) {
-      break
-    }
-
-    const events: any[] = await res.json()
-    if (!Array.isArray(events) || events.length === 0) {
-      break
-    }
-
-    for (const ev of events) {
-      if (ev?.type !== 'PushEvent') {
-        continue
-      }
-
-      const d = new Date(ev?.created_at || '')
-      if (Number.isNaN(d.getTime())) {
-        continue
-      }
-
-      const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
-      if (diff < 0 || diff >= 12) {
-        continue
-      }
-
-      const payloadSize = Number(ev?.payload?.size)
-      const commitsLen = Array.isArray(ev?.payload?.commits) ? ev.payload.commits.length : 0
-      const increment = Number.isFinite(payloadSize) && payloadSize > 0 ? payloadSize : (commitsLen > 0 ? commitsLen : 1)
-      counts[11 - diff] += increment
-    }
-
-    if (events.length < perPage) {
-      break
-    }
-  }
-
-  return counts
-}
-
 async function fetchGitHubData() {
   const username = props.githubUsername
   if (!username) {
@@ -425,78 +358,35 @@ async function fetchGitHubData() {
   }
 
   try {
-    const cached = localStorage.getItem(CACHE_KEY.value)
-    if (cached) {
-      const parsed = JSON.parse(cached)
-      if (Date.now() - parsed.timestamp < CACHE_TTL) {
-        profile.value = parsed.profile
-        techStack.value = parsed.techStack
-        recentRepos.value = parsed.recentRepos
-        activityData.value = parsed.activityData
-        loading.value = false
-        return
-      }
-    }
-  } catch { /* cache miss */ }
-
-  try {
-    const userRes = await fetchWithTimeout(`https://api.github.com/users/${username}`)
-    if (!userRes.ok) throw new Error('user api error')
-
-    const reposData: any[] = await fetchAllPublicRepos(username)
-
-    const userData = await userRes.json()
-    const sortedRepos = [...reposData].sort((a, b) => {
-      const aTime = Date.parse(a?.pushed_at || '') || 0
-      const bTime = Date.parse(b?.pushed_at || '') || 0
-      return bTime - aTime
-    })
-
-    const totalStars = reposData.reduce(
-      (sum: number, r: any) => sum + (r.stargazers_count || 0), 0,
-    )
+    const data = await api.get<GitHubProfilePayload>(`/github/profile?username=${encodeURIComponent(username)}`)
 
     profile.value = {
-      avatarUrl: userData.avatar_url || '',
-      name: userData.name || username,
-      bio: userData.bio || '',
-      htmlUrl: userData.html_url || `https://github.com/${username}`,
-      totalRepos: Number(userData.public_repos) || reposData.length,
-      totalStars,
-      followers: userData.followers || 0,
+      avatarUrl: data.profile.avatar_url || '',
+      name: data.profile.name || username,
+      bio: data.profile.bio || '',
+      htmlUrl: data.profile.html_url || `https://github.com/${username}`,
+      totalRepos: Number(data.profile.total_repos) || 0,
+      totalStars: Number(data.profile.total_stars) || 0,
+      followers: Number(data.profile.followers) || 0,
     }
 
-    const langMap: Record<string, number> = {}
-    for (const repo of reposData) {
-      if (repo.language) langMap[repo.language] = (langMap[repo.language] || 0) + 1
-    }
-    techStack.value = Object.entries(langMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([name, count]) => ({ name, count }))
-
-    recentRepos.value = sortedRepos.slice(0, 6).map((r: any) => ({
-      name: r.name,
-      description: r.description || '',
-      htmlUrl: r.html_url,
-      language: r.language || '',
-      stars: r.stargazers_count || 0,
-      pushedAt: r.pushed_at || '',
+    techStack.value = (data.tech_stack || []).map((item) => ({
+      name: item.name,
+      count: Number(item.count) || 0,
     }))
 
-    try {
-      activityData.value = await fetchCommitActivityByMonth(username)
-    } catch { /* activity fetch failed, keep zeros */ }
+    recentRepos.value = (data.recent_repos || []).map((repo) => ({
+      name: repo.name,
+      description: repo.description || '',
+      htmlUrl: repo.html_url,
+      language: repo.language || '',
+      stars: Number(repo.stars) || 0,
+      pushedAt: repo.pushed_at || '',
+    }))
 
-    try {
-      localStorage.setItem(CACHE_KEY.value, JSON.stringify({
-        profile: profile.value,
-        techStack: techStack.value,
-        recentRepos: recentRepos.value,
-        activityData: activityData.value,
-        timestamp: Date.now(),
-      }))
-    } catch { /* cache write failed */ }
+    activityData.value = Array.isArray(data.activity_data) && data.activity_data.length === 12
+      ? data.activity_data
+      : new Array(12).fill(0)
 
     loading.value = false
   } catch {

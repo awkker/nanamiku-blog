@@ -18,6 +18,7 @@ type Config struct {
 	CORS    CORSConfig
 	Weather WeatherConfig
 	GeoIP   GeoIPConfig
+	GitHub  GitHubConfig
 }
 
 type AppConfig struct {
@@ -34,6 +35,12 @@ type WeatherConfig struct {
 
 type GeoIPConfig struct {
 	DBPath string
+}
+
+type GitHubConfig struct {
+	APIToken   string
+	APIBaseURL string
+	CacheTTL   time.Duration
 }
 
 type ServerConfig struct {
@@ -124,6 +131,11 @@ func LoadConfig() *Config {
 		},
 		GeoIP: GeoIPConfig{
 			DBPath: envStr("GEOIP_DB_PATH", ""),
+		},
+		GitHub: GitHubConfig{
+			APIToken:   envStr("GITHUB_TOKEN", ""),
+			APIBaseURL: envStr("GITHUB_API_BASE_URL", "https://api.github.com"),
+			CacheTTL:   envDuration("GITHUB_CACHE_TTL", 30*time.Minute),
 		},
 	}
 }

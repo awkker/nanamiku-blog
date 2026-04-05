@@ -1,11 +1,39 @@
 -- name: ListPublishedPosts :many
-SELECT id, slug, title, excerpt, hero_image_url, category, status,
-       published_at, view_count, like_count, comment_count, created_at
-FROM posts
-WHERE status = 'published'
-  AND published_at IS NOT NULL
-  AND published_at <= now()
-ORDER BY published_at DESC
+SELECT
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.status,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at,
+    COALESCE(array_agg(t.name ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_names,
+    COALESCE(array_agg(t.slug ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_slugs
+FROM posts p
+LEFT JOIN post_tags pt ON pt.post_id = p.id
+LEFT JOIN tags t ON t.id = pt.tag_id
+WHERE p.status = 'published'
+  AND p.published_at IS NOT NULL
+  AND p.published_at <= now()
+GROUP BY
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.status,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at
+ORDER BY p.published_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: CountPublishedPosts :one
@@ -38,14 +66,40 @@ ORDER BY rank DESC
 LIMIT $2 OFFSET $3;
 
 -- name: ListPostsByCategory :many
-SELECT id, slug, title, excerpt, hero_image_url, category,
-       published_at, view_count, like_count, comment_count, created_at
-FROM posts
-WHERE status = 'published'
-  AND published_at IS NOT NULL
-  AND published_at <= now()
-  AND category = $1
-ORDER BY published_at DESC
+SELECT
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at,
+    COALESCE(array_agg(t.name ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_names,
+    COALESCE(array_agg(t.slug ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_slugs
+FROM posts p
+LEFT JOIN post_tags pt ON pt.post_id = p.id
+LEFT JOIN tags t ON t.id = pt.tag_id
+WHERE p.status = 'published'
+  AND p.published_at IS NOT NULL
+  AND p.published_at <= now()
+  AND p.category = $1
+GROUP BY
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at
+ORDER BY p.published_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: ListHotPosts :many
@@ -138,6 +192,12 @@ FROM tags t
 JOIN post_tags pt ON pt.tag_id = t.id
 WHERE pt.post_id = $1;
 
+-- name: CreatePostViewVisitorDaily :one
+INSERT INTO post_view_daily_visitors (post_id, day, visitor_id)
+VALUES ($1, $2, $3)
+ON CONFLICT DO NOTHING
+RETURNING 1;
+
 -- name: UpsertTag :one
 INSERT INTO tags (name, slug) VALUES ($1, $2)
 ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
@@ -176,7 +236,7 @@ DELETE FROM post_likes WHERE post_id = $1 AND visitor_id = $2;
 
 -- name: UpsertPostViewDaily :exec
 INSERT INTO post_view_daily (post_id, day, pv, uv)
-VALUES ($1, $2, 1, 1)
+VALUES ($1, $2, 1, $3)
 ON CONFLICT (post_id, day) DO UPDATE
 SET pv = post_view_daily.pv + 1,
     uv = post_view_daily.uv + $3;

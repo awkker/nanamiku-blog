@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -10,6 +12,7 @@ import (
 	"nanamiku-blog/backend/query"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -107,7 +110,6 @@ func (s *PostsService) ListPublished(ctx context.Context, page, size int) ([]Pos
 
 	items := make([]PostListItem, 0, len(rows))
 	for _, r := range rows {
-		tags, _ := s.q.GetPostTagNames(ctx, r.ID)
 		item := PostListItem{
 			ID:           r.ID,
 			Slug:         r.Slug,
@@ -119,7 +121,7 @@ func (s *PostsService) ListPublished(ctx context.Context, page, size int) ([]Pos
 			LikeCount:    r.LikeCount,
 			CommentCount: r.CommentCount,
 			CreatedAt:    r.CreatedAt.Format(time.RFC3339),
-			Tags:         toTagItems(tags),
+			Tags:         toTagItemsFromArrays(r.TagNames, r.TagSlugs),
 		}
 		if r.PublishedAt.Valid {
 			item.PublishedAt = r.PublishedAt.Time.Format(time.RFC3339)
@@ -142,7 +144,6 @@ func (s *PostsService) ListByCategory(ctx context.Context, category string, page
 
 	items := make([]PostListItem, 0, len(rows))
 	for _, r := range rows {
-		tags, _ := s.q.GetPostTagNames(ctx, r.ID)
 		item := PostListItem{
 			ID:           r.ID,
 			Slug:         r.Slug,
@@ -154,7 +155,7 @@ func (s *PostsService) ListByCategory(ctx context.Context, category string, page
 			LikeCount:    r.LikeCount,
 			CommentCount: r.CommentCount,
 			CreatedAt:    r.CreatedAt.Format(time.RFC3339),
-			Tags:         toTagItems(tags),
+			Tags:         toTagItemsFromArrays(r.TagNames, r.TagSlugs),
 		}
 		if r.PublishedAt.Valid {
 			item.PublishedAt = r.PublishedAt.Time.Format(time.RFC3339)
@@ -237,14 +238,12 @@ func (s *PostsService) GetBySlug(ctx context.Context, slug string, visitorID uui
 		liked = cnt > 0
 	}
 
-	_ = s.q.IncrementPostViewCount(ctx, r.ID)
-	today := time.Now().Truncate(24 * time.Hour)
-	uvIncr := int64(1)
-	_ = s.q.UpsertPostViewDaily(ctx, query.UpsertPostViewDailyParams{
-		PostID: r.ID,
-		Day:    pgtype.Date{Time: today, Valid: true},
-		Uv:     uvIncr,
-	})
+	viewCount := r.ViewCount
+	if err := s.recordPostView(ctx, r.ID, visitorID); err != nil {
+		slog.Warn("failed to record post view", "post_id", r.ID, "error", err)
+	} else {
+		viewCount++
+	}
 
 	detail := &PostDetail{
 		ID:              r.ID,
@@ -255,7 +254,7 @@ func (s *PostsService) GetBySlug(ctx context.Context, slug string, visitorID uui
 		HeroImageURL:    r.HeroImageUrl,
 		Category:        r.Category,
 		Status:          string(r.Status),
-		ViewCount:       r.ViewCount + 1,
+		ViewCount:       viewCount,
 		LikeCount:       r.LikeCount,
 		CommentCount:    r.CommentCount,
 		CreatedAt:       r.CreatedAt.Format(time.RFC3339),
@@ -270,6 +269,61 @@ func (s *PostsService) GetBySlug(ctx context.Context, slug string, visitorID uui
 		detail.ScheduledAt = r.ScheduledAt.Time.Format(time.RFC3339)
 	}
 	return detail, nil
+}
+
+func (s *PostsService) recordPostView(ctx context.Context, postID, visitorID uuid.UUID) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin post view tx: %w", err)
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	qtx := s.q.WithTx(tx)
+	if err := qtx.IncrementPostViewCount(ctx, postID); err != nil {
+		return fmt.Errorf("increment post view count: %w", err)
+	}
+
+	now := time.Now().UTC()
+	day := pgtype.Date{
+		Time:  time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
+		Valid: true,
+	}
+
+	uvIncr := int64(0)
+	if visitorID != uuid.Nil {
+		_, err := qtx.CreatePostViewVisitorDaily(ctx, query.CreatePostViewVisitorDailyParams{
+			PostID:    postID,
+			Day:       day,
+			VisitorID: visitorID,
+		})
+		switch {
+		case err == nil:
+			uvIncr = 1
+		case errors.Is(err, pgx.ErrNoRows):
+		default:
+			return fmt.Errorf("track unique post view: %w", err)
+		}
+	}
+
+	if err := qtx.UpsertPostViewDaily(ctx, query.UpsertPostViewDailyParams{
+		PostID: postID,
+		Day:    day,
+		Uv:     uvIncr,
+	}); err != nil {
+		return fmt.Errorf("upsert post view daily: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit post view tx: %w", err)
+	}
+	committed = true
+	return nil
 }
 
 func (s *PostsService) GetByID(ctx context.Context, id uuid.UUID) (*PostDetail, error) {
@@ -589,6 +643,24 @@ func toTagItems(rows []query.GetPostTagNamesRow) []TagItem {
 	items := make([]TagItem, 0, len(rows))
 	for _, r := range rows {
 		items = append(items, TagItem{Name: r.Name, Slug: r.Slug})
+	}
+	return items
+}
+
+func toTagItemsFromArrays(names, slugs []string) []TagItem {
+	count := len(names)
+	if len(slugs) < count {
+		count = len(slugs)
+	}
+
+	items := make([]TagItem, 0, count)
+	for i := 0; i < count; i++ {
+		name := strings.TrimSpace(names[i])
+		slug := strings.TrimSpace(slugs[i])
+		if name == "" && slug == "" {
+			continue
+		}
+		items = append(items, TagItem{Name: name, Slug: slug})
 	}
 	return items
 }

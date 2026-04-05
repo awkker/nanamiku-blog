@@ -131,6 +131,26 @@ func (q *Queries) CreatePostLike(ctx context.Context, arg CreatePostLikeParams) 
 	return err
 }
 
+const createPostViewVisitorDaily = `-- name: CreatePostViewVisitorDaily :one
+INSERT INTO post_view_daily_visitors (post_id, day, visitor_id)
+VALUES ($1, $2, $3)
+ON CONFLICT DO NOTHING
+RETURNING 1
+`
+
+type CreatePostViewVisitorDailyParams struct {
+	PostID    uuid.UUID   `json:"post_id"`
+	Day       pgtype.Date `json:"day"`
+	VisitorID uuid.UUID   `json:"visitor_id"`
+}
+
+func (q *Queries) CreatePostViewVisitorDaily(ctx context.Context, arg CreatePostViewVisitorDailyParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createPostViewVisitorDaily, arg.PostID, arg.Day, arg.VisitorID)
+	var marker int32
+	err := row.Scan(&marker)
+	return marker, err
+}
+
 const createPostRevision = `-- name: CreatePostRevision :exec
 INSERT INTO post_revisions (post_id, title, excerpt, content_markdown, hero_image_url, category, editor_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -565,14 +585,40 @@ func (q *Queries) ListPostRevisions(ctx context.Context, arg ListPostRevisionsPa
 }
 
 const listPostsByCategory = `-- name: ListPostsByCategory :many
-SELECT id, slug, title, excerpt, hero_image_url, category,
-       published_at, view_count, like_count, comment_count, created_at
-FROM posts
-WHERE status = 'published'
-  AND published_at IS NOT NULL
-  AND published_at <= now()
-  AND category = $1
-ORDER BY published_at DESC
+SELECT
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at,
+    COALESCE(array_agg(t.name ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_names,
+    COALESCE(array_agg(t.slug ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_slugs
+FROM posts p
+LEFT JOIN post_tags pt ON pt.post_id = p.id
+LEFT JOIN tags t ON t.id = pt.tag_id
+WHERE p.status = 'published'
+  AND p.published_at IS NOT NULL
+  AND p.published_at <= now()
+  AND p.category = $1
+GROUP BY
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at
+ORDER BY p.published_at DESC
 LIMIT $2 OFFSET $3
 `
 
@@ -594,6 +640,8 @@ type ListPostsByCategoryRow struct {
 	LikeCount    int64              `json:"like_count"`
 	CommentCount int64              `json:"comment_count"`
 	CreatedAt    time.Time          `json:"created_at"`
+	TagNames     []string           `json:"tag_names"`
+	TagSlugs     []string           `json:"tag_slugs"`
 }
 
 func (q *Queries) ListPostsByCategory(ctx context.Context, arg ListPostsByCategoryParams) ([]ListPostsByCategoryRow, error) {
@@ -617,6 +665,8 @@ func (q *Queries) ListPostsByCategory(ctx context.Context, arg ListPostsByCatego
 			&i.LikeCount,
 			&i.CommentCount,
 			&i.CreatedAt,
+			&i.TagNames,
+			&i.TagSlugs,
 		); err != nil {
 			return nil, err
 		}
@@ -629,13 +679,41 @@ func (q *Queries) ListPostsByCategory(ctx context.Context, arg ListPostsByCatego
 }
 
 const listPublishedPosts = `-- name: ListPublishedPosts :many
-SELECT id, slug, title, excerpt, hero_image_url, category, status,
-       published_at, view_count, like_count, comment_count, created_at
-FROM posts
-WHERE status = 'published'
-  AND published_at IS NOT NULL
-  AND published_at <= now()
-ORDER BY published_at DESC
+SELECT
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.status,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at,
+    COALESCE(array_agg(t.name ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_names,
+    COALESCE(array_agg(t.slug ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), ARRAY[]::text[]) AS tag_slugs
+FROM posts p
+LEFT JOIN post_tags pt ON pt.post_id = p.id
+LEFT JOIN tags t ON t.id = pt.tag_id
+WHERE p.status = 'published'
+  AND p.published_at IS NOT NULL
+  AND p.published_at <= now()
+GROUP BY
+    p.id,
+    p.slug,
+    p.title,
+    p.excerpt,
+    p.hero_image_url,
+    p.category,
+    p.status,
+    p.published_at,
+    p.view_count,
+    p.like_count,
+    p.comment_count,
+    p.created_at
+ORDER BY p.published_at DESC
 LIMIT $1 OFFSET $2
 `
 
@@ -657,6 +735,8 @@ type ListPublishedPostsRow struct {
 	LikeCount    int64              `json:"like_count"`
 	CommentCount int64              `json:"comment_count"`
 	CreatedAt    time.Time          `json:"created_at"`
+	TagNames     []string           `json:"tag_names"`
+	TagSlugs     []string           `json:"tag_slugs"`
 }
 
 func (q *Queries) ListPublishedPosts(ctx context.Context, arg ListPublishedPostsParams) ([]ListPublishedPostsRow, error) {
@@ -681,6 +761,8 @@ func (q *Queries) ListPublishedPosts(ctx context.Context, arg ListPublishedPosts
 			&i.LikeCount,
 			&i.CommentCount,
 			&i.CreatedAt,
+			&i.TagNames,
+			&i.TagSlugs,
 		); err != nil {
 			return nil, err
 		}
@@ -880,7 +962,7 @@ func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) error {
 
 const upsertPostViewDaily = `-- name: UpsertPostViewDaily :exec
 INSERT INTO post_view_daily (post_id, day, pv, uv)
-VALUES ($1, $2, 1, 1)
+VALUES ($1, $2, 1, $3)
 ON CONFLICT (post_id, day) DO UPDATE
 SET pv = post_view_daily.pv + 1,
     uv = post_view_daily.uv + $3

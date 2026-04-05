@@ -94,6 +94,25 @@ type dashboardStats struct {
 	DraftCount      int64 `json:"draft_count"`
 }
 
+type momentItem struct {
+	ID           string          `json:"id"`
+	Content      string          `json:"content"`
+	LikeCount    int64           `json:"like_count"`
+	RepostCount  int64           `json:"repost_count"`
+	CommentCount int64           `json:"comment_count"`
+	Liked        bool            `json:"liked"`
+	Reposted     bool            `json:"reposted"`
+	Comments     []momentComment `json:"comments"`
+}
+
+type momentComment struct {
+	ID        string `json:"id"`
+	Author    string `json:"author_name"`
+	Content   string `json:"content"`
+	LikeCount int64  `json:"like_count"`
+	Liked     bool   `json:"liked"`
+}
+
 func main() {
 	_ = godotenv.Load()
 
@@ -189,6 +208,12 @@ func runSmoke(ctx context.Context, cfg *smokeConfig, runID string, adminAPI, pub
 		return err
 	}
 	log.Printf("smoke: friend application flow ok, friend_link_id=%s", friendLinkID)
+
+	momentID, err := exerciseMomentFlow(ctx, runID, adminAPI, publicAPI)
+	if err != nil {
+		return err
+	}
+	log.Printf("smoke: moments interaction flow ok, moment_id=%s", momentID)
 
 	if err := doNoData(ctx, adminAPI, http.MethodPost, "/auth/logout", map[string]string{}); err != nil {
 		return fmt.Errorf("logout: %w", err)
@@ -290,6 +315,111 @@ func exerciseFriendApplicationFlow(ctx context.Context, runID string, adminAPI, 
 	}
 
 	return approved.FriendLinkID, nil
+}
+
+func exerciseMomentFlow(ctx context.Context, runID string, adminAPI, publicAPI *apiClient) (string, error) {
+	content := "Smoke moment " + runID
+	created, err := doJSON[momentItem](ctx, adminAPI, http.MethodPost, "/admin/moments", map[string]any{
+		"content":        content,
+		"image_urls":     []string{},
+		"publish_status": "published",
+	})
+	if err != nil {
+		return "", fmt.Errorf("create moment: %w", err)
+	}
+	if strings.TrimSpace(created.ID) == "" {
+		return "", fmt.Errorf("create moment returned empty id")
+	}
+
+	cleanupErr := func(cause error) error {
+		if err := doNoData(ctx, adminAPI, http.MethodDelete, "/admin/moments/"+created.ID, nil); err != nil {
+			return fmt.Errorf("%w (cleanup moment %s failed: %v)", cause, created.ID, err)
+		}
+		return cause
+	}
+
+	listed, err := doPagedJSON[momentItem](ctx, publicAPI, http.MethodGet, "/moments?page=1&size=20", nil)
+	if err != nil {
+		return "", cleanupErr(fmt.Errorf("list public moments: %w", err))
+	}
+	moment, ok := findMoment(listed.Items, created.ID)
+	if !ok {
+		return "", cleanupErr(fmt.Errorf("public moments missing created moment %s", created.ID))
+	}
+	if moment.Content != content {
+		return "", cleanupErr(fmt.Errorf("public moment %s returned unexpected content %q", created.ID, moment.Content))
+	}
+
+	liked, err := doJSON[map[string]bool](ctx, publicAPI, http.MethodPost, "/moments/"+created.ID+"/like", map[string]string{})
+	if err != nil {
+		return "", cleanupErr(fmt.Errorf("like moment %s: %w", created.ID, err))
+	}
+	if !liked["liked"] {
+		return "", cleanupErr(fmt.Errorf("like moment %s did not return liked=true", created.ID))
+	}
+
+	reposted, err := doJSON[map[string]bool](ctx, publicAPI, http.MethodPost, "/moments/"+created.ID+"/repost", map[string]string{})
+	if err != nil {
+		return "", cleanupErr(fmt.Errorf("repost moment %s: %w", created.ID, err))
+	}
+	if !reposted["reposted"] {
+		return "", cleanupErr(fmt.Errorf("repost moment %s did not return reposted=true", created.ID))
+	}
+
+	commentContent := "Smoke moment comment " + runID
+	createdComment, err := doJSON[momentComment](ctx, publicAPI, http.MethodPost, "/moments/"+created.ID+"/comments", map[string]string{
+		"author_name": "Smoke Visitor " + runID,
+		"content":     commentContent,
+	})
+	if err != nil {
+		return "", cleanupErr(fmt.Errorf("create moment comment for %s: %w", created.ID, err))
+	}
+	if strings.TrimSpace(createdComment.ID) == "" {
+		return "", cleanupErr(fmt.Errorf("moment comment for %s returned empty id", created.ID))
+	}
+
+	commentLiked, err := doJSON[map[string]bool](ctx, publicAPI, http.MethodPost, "/moments/comments/"+createdComment.ID+"/like", map[string]string{})
+	if err != nil {
+		return "", cleanupErr(fmt.Errorf("like moment comment %s: %w", createdComment.ID, err))
+	}
+	if !commentLiked["liked"] {
+		return "", cleanupErr(fmt.Errorf("like moment comment %s did not return liked=true", createdComment.ID))
+	}
+
+	updated, err := doPagedJSON[momentItem](ctx, publicAPI, http.MethodGet, "/moments?page=1&size=20", nil)
+	if err != nil {
+		return "", cleanupErr(fmt.Errorf("reload public moments: %w", err))
+	}
+	moment, ok = findMoment(updated.Items, created.ID)
+	if !ok {
+		return "", cleanupErr(fmt.Errorf("updated public moments missing moment %s", created.ID))
+	}
+	if !moment.Liked || moment.LikeCount < 1 {
+		return "", cleanupErr(fmt.Errorf("moment %s like state not reflected in public list", created.ID))
+	}
+	if !moment.Reposted || moment.RepostCount < 1 {
+		return "", cleanupErr(fmt.Errorf("moment %s repost state not reflected in public list", created.ID))
+	}
+	if moment.CommentCount < 1 {
+		return "", cleanupErr(fmt.Errorf("moment %s comment count was not incremented", created.ID))
+	}
+
+	comment, ok := findMomentComment(moment.Comments, createdComment.ID)
+	if !ok {
+		return "", cleanupErr(fmt.Errorf("aggregated public moment %s missing comment %s", created.ID, createdComment.ID))
+	}
+	if comment.Content != commentContent {
+		return "", cleanupErr(fmt.Errorf("aggregated comment %s returned unexpected content %q", createdComment.ID, comment.Content))
+	}
+	if !comment.Liked || comment.LikeCount < 1 {
+		return "", cleanupErr(fmt.Errorf("aggregated comment %s like state not reflected", createdComment.ID))
+	}
+
+	if err := doNoData(ctx, adminAPI, http.MethodDelete, "/admin/moments/"+created.ID, nil); err != nil {
+		return "", fmt.Errorf("cleanup moment %s: %w", created.ID, err)
+	}
+
+	return created.ID, nil
 }
 
 func newAPIClient(baseURL string, timeout time.Duration) (*apiClient, error) {
@@ -447,6 +577,24 @@ func containsFriendLink(items []adminFriendLink, id, siteURL string) bool {
 		}
 	}
 	return false
+}
+
+func findMoment(items []momentItem, id string) (momentItem, bool) {
+	for _, item := range items {
+		if item.ID == id {
+			return item, true
+		}
+	}
+	return momentItem{}, false
+}
+
+func findMomentComment(items []momentComment, id string) (momentComment, bool) {
+	for _, item := range items {
+		if item.ID == id {
+			return item, true
+		}
+	}
+	return momentComment{}, false
 }
 
 func firstNonEmpty(values ...string) string {

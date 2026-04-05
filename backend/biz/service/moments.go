@@ -23,20 +23,21 @@ func NewMomentsService(db *pgxpool.Pool) *MomentsService {
 }
 
 type MomentItem struct {
-	ID            uuid.UUID `json:"id"`
-	AuthorName    string    `json:"author_name"`
-	AuthorAvatar  string    `json:"author_avatar_url"`
-	Content       string    `json:"content"`
-	ImageURLs     []string  `json:"image_urls"`
-	LikeCount     int64     `json:"like_count"`
-	RepostCount   int64     `json:"repost_count"`
-	CommentCount  int64     `json:"comment_count"`
-	PublishStatus string    `json:"publish_status,omitempty"`
-	PublishedAt   string    `json:"published_at,omitempty"`
-	ScheduledAt   string    `json:"scheduled_at,omitempty"`
-	CreatedAt     string    `json:"created_at"`
-	Liked         bool      `json:"liked"`
-	Reposted      bool      `json:"reposted"`
+	ID            uuid.UUID           `json:"id"`
+	AuthorName    string              `json:"author_name"`
+	AuthorAvatar  string              `json:"author_avatar_url"`
+	Content       string              `json:"content"`
+	ImageURLs     []string            `json:"image_urls"`
+	LikeCount     int64               `json:"like_count"`
+	RepostCount   int64               `json:"repost_count"`
+	CommentCount  int64               `json:"comment_count"`
+	PublishStatus string              `json:"publish_status,omitempty"`
+	PublishedAt   string              `json:"published_at,omitempty"`
+	ScheduledAt   string              `json:"scheduled_at,omitempty"`
+	CreatedAt     string              `json:"created_at"`
+	Liked         bool                `json:"liked"`
+	Reposted      bool                `json:"reposted"`
+	Comments      []MomentCommentItem `json:"comments,omitempty"`
 }
 
 type MomentCommentItem struct {
@@ -55,8 +56,9 @@ func (s *MomentsService) List(ctx context.Context, page, size int, visitorID uui
 	}
 
 	rows, err := s.q.ListMoments(ctx, query.ListMomentsParams{
-		Limit:  int32(size),
-		Offset: int32((page - 1) * size),
+		VisitorID: visitorID,
+		Limit:     int32(size),
+		Offset:    int32((page - 1) * size),
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("list moments: %w", err)
@@ -84,6 +86,7 @@ func (s *MomentsService) List(ctx context.Context, page, size int, visitorID uui
 			CreatedAt:     r.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			Liked:         likeSet[r.ID],
 			Reposted:      repostSet[r.ID],
+			Comments:      parseMomentComments(r.Comments),
 		}
 		if r.PublishedAt.Valid {
 			item.PublishedAt = r.PublishedAt.Time.Format(time.RFC3339)
@@ -422,4 +425,16 @@ func parseImageURLs(raw json.RawMessage) []string {
 		urls = []string{}
 	}
 	return urls
+}
+
+func parseMomentComments(raw json.RawMessage) []MomentCommentItem {
+	if len(raw) == 0 {
+		return []MomentCommentItem{}
+	}
+
+	var items []MomentCommentItem
+	if err := json.Unmarshal(raw, &items); err != nil || items == nil {
+		return []MomentCommentItem{}
+	}
+	return items
 }

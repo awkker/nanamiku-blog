@@ -1,20 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-const adminIdentifier = process.env.SMOKE_ADMIN_IDENTIFIER || ''
-const adminPassword = process.env.SMOKE_ADMIN_PASSWORD || ''
-const hasAdminCredentials = adminIdentifier !== '' && adminPassword !== ''
-
-async function loginAsAdmin(page: Page) {
-  await page.goto('/login')
-  await expect(page.getByRole('button', { name: '登录' })).toBeVisible()
-  await page.getByLabel('用户名或邮箱').fill(adminIdentifier)
-  await page.getByLabel('密码').fill(adminPassword)
-
-  await Promise.all([
-    page.waitForURL('**/admin'),
-    page.getByRole('button', { name: '登录' }).click(),
-  ])
-}
+import { hasAdminCredentials, loginAsAdmin, requireBackend } from './smoke-helpers'
 
 test.describe('admin smoke', () => {
   test.beforeEach(async ({ context }) => {
@@ -29,8 +15,9 @@ test.describe('admin smoke', () => {
     await expect(page.getByRole('button', { name: '登录' })).toBeVisible()
   })
 
-  test('admin can login, visit key pages, and logout', async ({ page }) => {
+  test('admin can login, visit key pages, and logout', async ({ page, request }) => {
     test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running authenticated smoke.')
+    await requireBackend(request)
 
     await loginAsAdmin(page)
 

@@ -23,6 +23,7 @@ SELECT jsonb_build_object(
     'post_revisions', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM post_revisions t), '[]'::jsonb),
     'post_likes', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM post_likes t), '[]'::jsonb),
     'post_view_daily', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.day) FROM post_view_daily t), '[]'::jsonb),
+    'post_view_daily_visitors', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.day, t.created_at) FROM post_view_daily_visitors t), '[]'::jsonb),
     'post_comments', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM post_comments t), '[]'::jsonb),
 
     'guestbook_messages', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.created_at) FROM guestbook_messages t), '[]'::jsonb),

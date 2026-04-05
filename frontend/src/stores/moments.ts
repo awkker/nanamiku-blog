@@ -53,6 +53,7 @@ interface ApiMoment {
   created_at: string
   liked: boolean
   reposted: boolean
+  comments?: ApiMomentComment[]
 }
 
 interface ApiMomentComment {
@@ -95,7 +96,7 @@ function mapComment(c: ApiMomentComment): MomentComment {
   }
 }
 
-function mapMoment(item: ApiMoment, comments: MomentComment[] = []): Moment {
+function mapMoment(item: ApiMoment): Moment {
   const avatar = (item.author_avatar_url || '').trim() || `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(item.author_name)}`
   return {
     id: item.id,
@@ -108,16 +109,7 @@ function mapMoment(item: ApiMoment, comments: MomentComment[] = []): Moment {
     liked: item.liked,
     reposts: Number(item.repost_count) || 0,
     reposted: item.reposted,
-    comments,
-  }
-}
-
-async function fetchComments(momentId: string): Promise<MomentComment[]> {
-  try {
-    const data = await api.get<PagedData<ApiMomentComment>>(`/moments/${momentId}/comments?size=50`)
-    return (data.items || []).map(mapComment)
-  } catch {
-    return []
+    comments: (item.comments || []).map(mapComment),
   }
 }
 
@@ -133,16 +125,7 @@ export async function loadMoments() {
 
   try {
     const data = await api.get<PagedData<ApiMoment>>('/moments?size=50')
-    const apiItems = data.items || []
-
-    // Fetch comments for each moment in parallel
-    const commentLists = await Promise.all(
-      apiItems.map((item) =>
-        item.comment_count > 0 ? fetchComments(item.id) : Promise.resolve([]),
-      ),
-    )
-
-    const mapped = apiItems.map((item, i) => mapMoment(item, commentLists[i]))
+    const mapped = (data.items || []).map(mapMoment)
     moments.set(mapped)
     momentsFetchStatus.set('success')
   } catch {

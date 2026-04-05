@@ -653,20 +653,53 @@ func (q *Queries) ListMomentComments(ctx context.Context, arg ListMomentComments
 }
 
 const listMoments = `-- name: ListMoments :many
-SELECT id, author_name, author_avatar_url, content, image_urls, like_count, repost_count,
-       comment_count, publish_status, published_at, scheduled_at, created_at
-FROM moments
-WHERE status = 'approved'
-  AND publish_status = 'published'
-  AND published_at IS NOT NULL
-  AND published_at <= now()
-ORDER BY published_at DESC, created_at DESC
-LIMIT $1 OFFSET $2
+SELECT
+    m.id,
+    m.author_name,
+    m.author_avatar_url,
+    m.content,
+    m.image_urls,
+    m.like_count,
+    m.repost_count,
+    m.comment_count,
+    m.publish_status,
+    m.published_at,
+    m.scheduled_at,
+    m.created_at,
+    COALESCE((
+        SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', mc.id,
+                'author_name', mc.author_name,
+                'content', mc.content,
+                'like_count', mc.like_count,
+                'created_at', to_char(mc.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+                'liked', EXISTS (
+                    SELECT 1
+                    FROM moment_comment_likes mcl
+                    WHERE mcl.comment_id = mc.id
+                      AND mcl.visitor_id = $1
+                )
+            )
+            ORDER BY mc.created_at ASC
+        )
+        FROM moment_comments mc
+        WHERE mc.moment_id = m.id
+          AND mc.status = 'approved'
+    ), '[]'::jsonb) AS comments
+FROM moments m
+WHERE m.status = 'approved'
+  AND m.publish_status = 'published'
+  AND m.published_at IS NOT NULL
+  AND m.published_at <= now()
+ORDER BY m.published_at DESC, m.created_at DESC
+LIMIT $2 OFFSET $3
 `
 
 type ListMomentsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	VisitorID uuid.UUID `json:"visitor_id"`
+	Limit     int32     `json:"limit"`
+	Offset    int32     `json:"offset"`
 }
 
 type ListMomentsRow struct {
@@ -682,10 +715,11 @@ type ListMomentsRow struct {
 	PublishedAt     pgtype.Timestamptz  `json:"published_at"`
 	ScheduledAt     pgtype.Timestamptz  `json:"scheduled_at"`
 	CreatedAt       time.Time           `json:"created_at"`
+	Comments        json.RawMessage     `json:"comments"`
 }
 
 func (q *Queries) ListMoments(ctx context.Context, arg ListMomentsParams) ([]ListMomentsRow, error) {
-	rows, err := q.db.Query(ctx, listMoments, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listMoments, arg.VisitorID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -706,6 +740,7 @@ func (q *Queries) ListMoments(ctx context.Context, arg ListMomentsParams) ([]Lis
 			&i.PublishedAt,
 			&i.ScheduledAt,
 			&i.CreatedAt,
+			&i.Comments,
 		); err != nil {
 			return nil, err
 		}

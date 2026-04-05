@@ -34,6 +34,7 @@ var backupTableOrder = []string{
 	"post_revisions",
 	"post_likes",
 	"post_view_daily",
+	"post_view_daily_visitors",
 	"post_comments",
 	"guestbook_messages",
 	"guestbook_votes",
