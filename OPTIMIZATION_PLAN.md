@@ -71,12 +71,58 @@
   - 2026-04-05 阶段五已补第五批评论审核闭环 smoke：
     - `frontend/e2e/public-smoke.spec.ts` 已新增“文章评论提交 -> 后台评论审核 -> 前台可见 -> 清理”的浏览器级闭环验证。
     - Playwright 公开文章 smoke 已改为动态读取真实已发布文章，不再依赖 fallback `first-post`，评论接口会命中真实 `post_id`。
+  - 2026-04-06 阶段五已补第六批自动化接线：
+    - `.github/workflows/ci.yml` 已新增 smoke job，会自动拉起 PostgreSQL / Redis、执行 migration、seed 管理员、启动后端，并串行运行 `backend/cmd/smoke` 与 Playwright 浏览器 smoke。
+    - `frontend/e2e/smoke-helpers.ts` 已支持在无现成公开文章时自动创建临时已发布文章，并在测试完成后清理，浏览器 smoke 不再依赖预置 CMS 数据。
+    - `frontend/e2e/public-smoke.spec.ts` 已新增公开说说互动链路，覆盖说说展示、点赞、转发、评论、评论点赞与临时数据清理。
+    - `frontend/e2e/admin-smoke.spec.ts` 已补“文章管理”页面访问验证，后台最小主链路与计划书目标进一步对齐。
+  - 2026-04-06 阶段五已补第七批浏览器闭环与文案收口：
+    - `frontend/e2e/public-smoke.spec.ts` 已新增“留言板留言提交 -> 后台审核通过 -> 前台可见 -> 清理”浏览器级闭环。
+    - `frontend/e2e/public-smoke.spec.ts` 已新增“友链申请提交 -> 后台审核通过 -> 前台友链墙可见 -> 删除正式友链”浏览器级闭环。
+    - 登录页与评论审核页的可见文案、页面 metadata 已收敛到 `frontend/src/content/copy/admin.ts`；`LoginForm.vue`、`admin/comments.astro`、`AdminCommentsManager.vue` 不再继续写死主要运营文案。
+    - `frontend/src/stores/friends.ts` 的错误提示已复用 `siteCopy.friendsPage.grid.errorFallback`，友链页错误文案口径进一步统一。
+  - 2026-04-06 阶段五已补第八批后台文章管理闭环：
+    - `frontend/e2e/admin-smoke.spec.ts` 已新增“后台创建草稿文章 -> 前台不可见 -> 后台发布 -> 前台可见 -> 后台编辑 -> 后台转草稿 -> 前台下线 -> 清理”的浏览器级闭环。
+    - `frontend/e2e/smoke-helpers.ts` 已新增后台资源清理辅助，文章类 smoke 在中途失败时也能尽量自动清理临时数据。
+    - `frontend/src/components/admin/AdminPostsManager.vue` 已补最小 `data-testid` 锚点，便于后续继续补说说管理与更多后台内容链路 smoke。
+  - 2026-04-06 阶段五已补第九批后台说说管理闭环：
+    - `frontend/e2e/admin-smoke.spec.ts` 已新增“后台创建草稿说说 -> 前台不可见 -> 后台设为定时发布 -> 立即发布 -> 前台可见 -> 后台编辑 -> 后台转草稿 -> 前台下线 -> 删除”的浏览器级闭环。
+    - `frontend/src/components/admin/AdminMomentsManager.vue` 已补最小 `data-testid` 锚点，避免说说管理相关 smoke 继续依赖脆弱的样式或纯文本定位。
   - 阶段四的实机联调、阶段五更完整的内容与互动 E2E、阶段六性能口径修正仍待继续。
   - 2026-04-05 阶段六已完成第一批性能与口径修正：
     - 文章列表与分类列表已改为聚合标签查询，移除逐篇补拉标签的后端 N+1。
     - 文章 UV 已改为按“文章 + 日期 + 访客”去重入库，`post_view_daily` 不再按每次访问直接累加 UV。
     - 说说公开列表已聚合返回评论数据，前端不再逐条二次拉取评论。
     - About 页 GitHub 数据已迁移到后端代理与缓存接口，前端不再直连 GitHub API。
+
+### 2.5 截至 2026-04-06 的明确未完成项
+
+为方便下次继续，当前剩余工作明确收敛为以下几类：
+
+1. 阶段四实机联调仍未完成
+   - 需要在更接近生产的环境里跑一轮真实联调，重点确认 `HttpOnly cookie` 登录、自动刷新、登出失效、后台守卫、导出接口、`COOKIE_*` 与 `CORS` 配置在非本地开发场景下是否稳定。
+   - 需要观察一次 GitHub Actions 中新增 smoke job 的真实执行结果；若首跑暴露环境兼容或时序问题，再按日志补修。
+
+2. 阶段五仍缺更完整的内容与互动 E2E
+   - 后台文章管理基础闭环已补齐，但“定时发布”路径仍未进入浏览器级自动验证。
+   - 后台说说管理基础闭环已补齐，并已覆盖草稿、定时、发布、编辑、转草稿与前台可见性联动；但更细的图片、多记录并发与异常态回归仍主要依赖手工验证。
+   - 留言板回复、投票，友链申请拒绝等次级互动仍主要依赖手工回归。
+
+3. 阶段六还剩第二批性能与口径修正
+   - 还需要把热点数据、趋势数据、第三方依赖数据的缓存策略继续收口，补齐更明确的缓存 key、TTL 与失效条件。
+   - 还需要复查后台统计面板中的 PV / UV / 互动指标口径，确认是否还有 SQL 或 service 层统计偏差。
+   - 还需要继续排查是否仍存在新的公开页或后台接口 N+1、重复请求或可合并查询链路。
+
+4. 文案系统仍未完全收口
+   - 计划书第 5 节中提到的文案专项仍应继续执行，尤其是 `frontend/src/pages/friends.astro`、`frontend/src/components/friends/FriendsGrid.vue` 以及若干 admin 页面的 `BaseHead` 文案统一。
+   - 原则仍是“页面和组件只消费 copy，不继续新增运营向硬编码文案”。
+
+### 2.6 下次建议直接开工顺序
+
+1. 先跑一轮 CI / smoke 实机结果，处理最先暴露的问题。
+2. 再补后台文章“定时发布”浏览器级路径，优先覆盖创建定时文章、前台不可见、到点前状态确认与清理。
+3. 然后推进阶段六第二批缓存与统计口径修正。
+4. 最后继续做零散文案收口。
 
 ## 3. 优先级总览
 

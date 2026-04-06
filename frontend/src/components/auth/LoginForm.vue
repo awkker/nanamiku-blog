@@ -1,35 +1,35 @@
 <template>
   <LiquidGlassCard width="100%" maxWidth="28rem" padding="28px" class="mx-auto">
     <div class="text-center">
-      <p class="text-xs uppercase tracking-[0.28em] text-slate-700">Miku Blog Console</p>
+      <p class="text-xs uppercase tracking-[0.28em] text-slate-700">{{ copy.hero.consoleLabel }}</p>
       <img
         src="/picture/author.jpg"
-        alt="管理员头像"
+        :alt="copy.hero.avatarAlt"
         class="mx-auto mt-5 h-20 w-20 rounded-full border border-miku/70 object-cover shadow-[0_0_24px_rgba(57,197,187,0.45)] transition duration-300 hover:scale-105"
       />
-      <h1 class="mt-4 text-2xl font-semibold text-slate-900">欢迎回来</h1>
-      <p class="mt-1 text-sm text-slate-700">仅管理员可访问后台系统</p>
+      <h1 class="mt-4 text-2xl font-semibold text-slate-900">{{ copy.hero.title }}</h1>
+      <p class="mt-1 text-sm text-slate-700">{{ copy.hero.subtitle }}</p>
       <div class="mt-4 flex flex-wrap justify-center gap-2">
         <a
-          href="/blog"
+          :href="copy.quickLinks[0].href"
           class="rounded-xl border border-slate-300/80 bg-white/55 px-3 py-1 text-xs text-slate-900 transition hover:border-miku/40 hover:text-miku"
-          aria-label="前往博客首页"
+          :aria-label="copy.quickLinks[0].ariaLabel"
         >
-          博客首页
+          {{ copy.quickLinks[0].label }}
         </a>
         <a
-          href="/guestbook"
+          :href="copy.quickLinks[1].href"
           class="rounded-xl border border-slate-300/80 bg-white/55 px-3 py-1 text-xs text-slate-900 transition hover:border-miku/40 hover:text-miku"
-          aria-label="前往留言板"
+          :aria-label="copy.quickLinks[1].ariaLabel"
         >
-          留言板
+          {{ copy.quickLinks[1].label }}
         </a>
         <a
-          href="/friends"
+          :href="copy.quickLinks[2].href"
           class="rounded-xl border border-slate-300/80 bg-white/55 px-3 py-1 text-xs text-slate-900 transition hover:border-miku/40 hover:text-miku"
-          aria-label="前往友链页面"
+          :aria-label="copy.quickLinks[2].ariaLabel"
         >
-          友情链接
+          {{ copy.quickLinks[2].label }}
         </a>
       </div>
     </div>
@@ -41,11 +41,11 @@
     >
       <MikuInput
         v-model="identifier"
-        label="用户名或邮箱"
-        placeholder="admin 或 admin@miku.blog"
+        :label="copy.form.identifierLabel"
+        :placeholder="copy.form.identifierPlaceholder"
         autocomplete="username"
         :error="errors.identifier"
-        aria-label="用户名或邮箱"
+        :aria-label="copy.form.identifierAria"
         @focus="clearAuthError"
         required
       />
@@ -53,11 +53,11 @@
       <MikuInput
         v-model="password"
         :type="showPassword ? 'text' : 'password'"
-        label="密码"
-        placeholder="请输入密码"
+        :label="copy.form.passwordLabel"
+        :placeholder="copy.form.passwordPlaceholder"
         autocomplete="current-password"
         :error="errors.password"
-        aria-label="密码"
+        :aria-label="copy.form.passwordAria"
         @focus="clearAuthError"
         required
       >
@@ -65,7 +65,7 @@
           <button
             type="button"
             class="rounded-lg p-1 text-slate-600 transition duration-300 hover:bg-white/30 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-miku/70"
-            :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+            :aria-label="showPassword ? copy.form.hidePasswordAria : copy.form.showPasswordAria"
             @click="showPassword = !showPassword"
           >
             <svg v-if="showPassword" viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[1.8]">
@@ -112,13 +112,13 @@
         :loading="submitting"
         :disabled="submitting"
         :full-width="true"
-        aria-label="登录"
+        :aria-label="copy.form.submitAria"
       >
-        {{ submitting ? '登录中...' : '登录' }}
+        {{ submitting ? copy.form.submittingButton : copy.form.submitButton }}
       </MikuButton>
 
       <p class="text-center text-xs text-slate-700" aria-live="polite">
-        {{ submitting ? '正在验证账号信息…' : '请使用有效管理员账号登录后台' }}
+        {{ submitting ? copy.form.submittingHint : copy.form.idleHint }}
       </p>
     </form>
   </LiquidGlassCard>
@@ -129,11 +129,13 @@ import { useStore } from '@nanostores/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import { hydrateAuth, loginWithPassword } from '../../stores/auth'
+import { adminCopy } from '../../content/copy'
 import { getScopeLoading, setScopeStatus } from '../../stores/loading'
 import MikuButton from '../ui/MikuButton.vue'
 import MikuInput from '../ui/MikuInput.vue'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
 
+const copy = adminCopy.loginForm
 const identifier = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -156,8 +158,8 @@ onMounted(async () => {
 })
 
 function validate() {
-  errors.identifier = identifier.value.trim() ? '' : '账号不能为空'
-  errors.password = password.value.trim() ? '' : '密码不能为空'
+  errors.identifier = identifier.value.trim() ? '' : copy.form.emptyIdentifierError
+  errors.password = password.value.trim() ? '' : copy.form.emptyPasswordError
   return !errors.identifier && !errors.password
 }
 
@@ -165,11 +167,11 @@ function clearAuthError() {
   formError.value = ''
   successMessage.value = ''
 
-  if (errors.identifier === '账号或密码错误，请重新输入') {
+  if (errors.identifier === copy.form.invalidCredentialsError) {
     errors.identifier = ''
   }
 
-  if (errors.password === '账号或密码错误，请重新输入') {
+  if (errors.password === copy.form.invalidCredentialsError) {
     errors.password = ''
   }
 }
@@ -187,15 +189,15 @@ async function handleSubmit() {
   try {
     await loginWithPassword(identifier.value, password.value)
     setScopeStatus('loginSubmit', 'success')
-    successMessage.value = '登录成功，正在进入后台...'
+    successMessage.value = copy.form.successMessage
     window.setTimeout(() => {
       window.location.assign('/admin')
     }, 250)
   } catch (error) {
     setScopeStatus('loginSubmit', 'error')
-    formError.value = error instanceof Error ? error.message : '登录失败，请稍后重试。'
-    errors.identifier = '账号或密码错误，请重新输入'
-    errors.password = '账号或密码错误，请重新输入'
+    formError.value = error instanceof Error ? error.message : copy.form.fallbackError
+    errors.identifier = copy.form.invalidCredentialsError
+    errors.password = copy.form.invalidCredentialsError
   }
 }
 </script>

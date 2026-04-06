@@ -2,12 +2,15 @@
 import BaseHead from '../components/base/BaseHead.astro'
 import LoginForm from '../components/auth/LoginForm.vue'
 import BackToTopRocket from '../components/ui/BackToTopRocket.astro'
+import { adminCopy } from '../content/copy'
+
+const copy = adminCopy.loginForm
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title="登录 | Miku Blog" description="Miku Blog 后台登录入口" />
+    <BaseHead title={copy.page.metaTitle} description={copy.page.metaDescription} />
     <style>
       html.auth-checking body {
         opacity: 0;

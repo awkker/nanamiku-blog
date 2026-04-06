@@ -7,17 +7,18 @@
           <h1 class="text-2xl font-semibold text-slate-900">说说管理</h1>
           <p class="mt-1 text-sm text-slate-600">发布和管理说说动态。</p>
         </div>
-        <MikuButton variant="solid" aria-label="发布说说" @click="toggleCreateForm">+ 发布说说</MikuButton>
+        <MikuButton variant="solid" aria-label="发布说说" data-testid="admin-moment-create-toggle" @click="toggleCreateForm">+ 发布说说</MikuButton>
       </div>
     </AdminPlainCard>
 
     <!-- ===== Compose Card (Create) ===== -->
     <AdminPlainCard v-if="showCreateForm" padding="0px">
-      <form @submit.prevent="createMoment">
+      <form data-testid="admin-moment-create-form" @submit.prevent="createMoment">
         <!-- Content zone -->
         <div class="compose-content-zone">
           <textarea
             v-model="newMoment.content"
+            data-testid="admin-moment-create-content"
             placeholder="此刻的想法..."
             class="compose-editor"
           />
@@ -46,7 +47,7 @@
             </p>
             <div class="compose-meta-row">
               <label class="compose-meta-label">发布状态</label>
-              <select v-model="newMoment.publish_status" class="compose-meta-input">
+              <select v-model="newMoment.publish_status" data-testid="admin-moment-create-status" class="compose-meta-input">
                 <option value="draft">草稿</option>
                 <option value="published">立即发布</option>
                 <option value="scheduled">定时发布</option>
@@ -54,7 +55,7 @@
             </div>
             <div v-if="newMoment.publish_status === 'scheduled'" class="compose-meta-row">
               <label class="compose-meta-label">发布时间</label>
-              <input v-model="newMoment.scheduled_at" type="datetime-local" class="compose-meta-input" />
+              <input v-model="newMoment.scheduled_at" data-testid="admin-moment-create-scheduled-at" type="datetime-local" class="compose-meta-input" />
             </div>
             <div class="compose-meta-row">
               <label class="compose-meta-label">图片</label>
@@ -71,7 +72,7 @@
           </div>
           <div class="flex items-center gap-3">
             <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeCreateForm">取消</button>
-            <MikuButton type="submit" variant="solid" :disabled="creating">{{ creating ? '发布中...' : '发布说说' }}</MikuButton>
+            <MikuButton type="submit" variant="solid" data-testid="admin-moment-create-submit" :disabled="creating">{{ creating ? '发布中...' : '发布说说' }}</MikuButton>
           </div>
         </div>
       </form>
@@ -79,11 +80,12 @@
 
     <!-- ===== Compose Card (Edit) ===== -->
     <AdminPlainCard v-if="showEditForm" padding="0px">
-      <form @submit.prevent="updateMoment">
+      <form data-testid="admin-moment-edit-form" @submit.prevent="updateMoment">
         <div class="compose-content-zone">
           <p class="mb-1 text-xs tracking-wide text-slate-400">编辑中</p>
           <textarea
             v-model="editMoment.content"
+            data-testid="admin-moment-edit-content"
             placeholder="此刻的想法..."
             class="compose-editor"
           />
@@ -110,7 +112,7 @@
             </p>
             <div class="compose-meta-row">
               <label class="compose-meta-label">发布状态</label>
-              <select v-model="editMoment.publish_status" class="compose-meta-input">
+              <select v-model="editMoment.publish_status" data-testid="admin-moment-edit-status" class="compose-meta-input">
                 <option value="draft">草稿</option>
                 <option value="published">立即发布</option>
                 <option value="scheduled">定时发布</option>
@@ -118,7 +120,7 @@
             </div>
             <div v-if="editMoment.publish_status === 'scheduled'" class="compose-meta-row">
               <label class="compose-meta-label">发布时间</label>
-              <input v-model="editMoment.scheduled_at" type="datetime-local" class="compose-meta-input" />
+              <input v-model="editMoment.scheduled_at" data-testid="admin-moment-edit-scheduled-at" type="datetime-local" class="compose-meta-input" />
             </div>
             <div class="compose-meta-row">
               <label class="compose-meta-label">图片</label>
@@ -134,7 +136,7 @@
           </div>
           <div class="flex items-center gap-3">
             <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeEditForm">取消</button>
-            <MikuButton type="submit" variant="solid" :disabled="editing">{{ editing ? '保存中...' : '保存修改' }}</MikuButton>
+            <MikuButton type="submit" variant="solid" data-testid="admin-moment-edit-submit" :disabled="editing">{{ editing ? '保存中...' : '保存修改' }}</MikuButton>
           </div>
         </div>
       </form>
@@ -169,6 +171,7 @@
         <div
           v-for="item in momentsList"
           :key="item.id"
+          data-testid="admin-moment-row"
           class="group px-5 py-4 transition-colors hover:bg-white/40"
         >
           <div class="flex items-start justify-between gap-3">
@@ -202,6 +205,7 @@
               <div class="flex items-center gap-2">
                 <button
                   type="button"
+                  data-testid="admin-moment-edit-button"
                   class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-700 transition hover:border-miku/40 hover:text-miku"
                   aria-label="编辑说说"
                   @click="startEditMoment(item)"
@@ -211,6 +215,7 @@
                 <button
                   v-if="item.publishStatus !== 'published'"
                   type="button"
+                  data-testid="admin-moment-publish-button"
                   class="rounded-xl border border-emerald-200/80 bg-white/50 px-2.5 py-1 text-xs text-emerald-600 transition hover:bg-emerald-50"
                   aria-label="发布说说"
                   @click="publishMoment(item.id)"
@@ -219,6 +224,7 @@
                 </button>
                 <button
                   type="button"
+                  data-testid="admin-moment-schedule-button"
                   class="rounded-xl border border-[#e9d5ff]/80 bg-white/50 px-2.5 py-1 text-xs text-[#9333ea] transition hover:bg-[#faf5ff]"
                   aria-label="定时发布说说"
                   @click="scheduleMoment(item.id)"
@@ -228,6 +234,7 @@
                 <button
                   v-if="item.publishStatus !== 'draft'"
                   type="button"
+                  data-testid="admin-moment-unpublish-button"
                   class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-50"
                   aria-label="转为草稿"
                   @click="unpublishMoment(item.id)"
@@ -236,6 +243,7 @@
                 </button>
                 <button
                   type="button"
+                  data-testid="admin-moment-delete-button"
                   class="rounded-xl border border-red-200/85 bg-white/50 px-2.5 py-1 text-xs text-red-600 transition hover:bg-red-50"
                   :aria-label="copy.actions.deleteAria"
                   @click="deleteMoment(item.id)"

@@ -34,3 +34,109 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - frontend
+    env:
+      APP_ENV: development
+      SERVER_PORT: 8080
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: miku
+      DB_PASSWORD: miku_secret
+      DB_NAME: miku_blog
+      DB_SSLMODE: disable
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: miku_redis
+      REDIS_DB: 0
+      JWT_SECRET: ci-smoke-secret
+      COOKIE_SECURE: 'false'
+      COOKIE_SAME_SITE: lax
+      CORS_ORIGINS: http://127.0.0.1:4322,http://localhost:4322
+      SMOKE_ADMIN_IDENTIFIER: ci-admin
+      SMOKE_ADMIN_PASSWORD: SmokePass123
+      SMOKE_ADMIN_EMAIL: ci-admin@example.com
+      SMOKE_BACKEND_URL: http://127.0.0.1:8080
+      SMOKE_CMS_API_ORIGIN: http://127.0.0.1:8080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Start Postgres
+        run: docker run -d --name miku-smoke-postgres -e POSTGRES_USER=miku -e POSTGRES_PASSWORD=miku_secret -e POSTGRES_DB=miku_blog -p 5432:5432 postgres:16-alpine
+      - name: Wait for Postgres
+        run: |
+          for attempt in {1..30}; do
+            if docker exec miku-smoke-postgres pg_isready -U miku -d miku_blog; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs miku-smoke-postgres
+          exit 1
+      - name: Start Redis
+        run: docker run -d --name miku-smoke-redis -p 6379:6379 redis:7-alpine redis-server --requirepass miku_redis
+      - name: Wait for Redis
+        run: |
+          for attempt in {1..30}; do
+            if docker exec miku-smoke-redis redis-cli -a miku_redis ping; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs miku-smoke-redis
+          exit 1
+      - name: Run migrations
+        working-directory: backend
+        run: go run cmd/migrate/main.go
+      - name: Seed admin
+        working-directory: backend
+        run: go run cmd/seed/main.go -username "$SMOKE_ADMIN_IDENTIFIER" -email "$SMOKE_ADMIN_EMAIL" -password "$SMOKE_ADMIN_PASSWORD"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Start backend
+        working-directory: backend
+        run: |
+          nohup go run main.go > /tmp/miku-backend.log 2>&1 &
+          echo $! > /tmp/miku-backend.pid
+      - name: Wait for backend health
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8080/api/v1/health > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/miku-backend.log
+          exit 1
+      - name: Run backend smoke
+        working-directory: backend
+        run: go run cmd/smoke/main.go
+      - name: Run frontend smoke
+        working-directory: frontend
+        run: npm run test:e2e
+      - name: Dump backend log on failure
+        if: failure()
+        run: cat /tmp/miku-backend.log
+      - name: Cleanup smoke services
+        if: always()
+        run: |
+          if [ -f /tmp/miku-backend.pid ]; then
+            kill "$(cat /tmp/miku-backend.pid)" || true
+          fi
+          docker rm -f miku-smoke-postgres miku-smoke-redis || true

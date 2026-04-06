@@ -41,6 +41,7 @@
         <!-- Comment -->
         <button
           type="button"
+          data-testid="moment-comment-toggle"
           class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition"
           :class="showComments ? 'bg-miku/10 text-miku' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'"
           @click="showComments = !showComments"
@@ -54,6 +55,7 @@
         <!-- Repost -->
         <button
           type="button"
+          data-testid="moment-repost-button"
           class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition"
           :class="moment.reposted ? 'bg-emerald-50 text-emerald-500' : 'text-slate-400 hover:bg-slate-100 hover:text-emerald-500'"
           @click="handleRepost"
@@ -67,6 +69,7 @@
         <!-- Like -->
         <button
           type="button"
+          data-testid="moment-like-button"
           class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition"
           :class="moment.liked ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:bg-slate-100 hover:text-red-500'"
           @click="handleLike"
@@ -93,7 +96,7 @@
       <div v-if="showComments" class="space-y-3 border-t border-slate-100 pt-3">
         <!-- Comment List -->
         <div v-if="moment.comments.length > 0" class="space-y-2.5">
-          <div v-for="comment in moment.comments" :key="comment.id" class="flex gap-2.5">
+          <div v-for="comment in moment.comments" :key="comment.id" data-testid="moment-comment-item" class="flex gap-2.5">
             <img
               :src="comment.avatar"
               :alt="comment.nickname"
@@ -110,6 +113,7 @@
               </div>
               <button
                 type="button"
+                data-testid="moment-comment-like-button"
                 class="mt-1 inline-flex items-center gap-1 px-1 text-[11px] transition"
                 :class="comment.liked ? 'text-red-400' : 'text-slate-400 hover:text-red-400'"
                 @click="handleLikeComment(comment.id)"
@@ -129,6 +133,7 @@
           <div class="min-w-0 flex-1 space-y-2">
             <input
               v-model="commentNickname"
+              data-testid="moment-comment-nickname"
               type="text"
               :placeholder="copy.nicknamePlaceholder"
               class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-miku/50 focus:ring-1 focus:ring-miku/30"
@@ -136,6 +141,7 @@
             <div class="flex gap-2">
               <input
                 v-model="commentContent"
+                data-testid="moment-comment-content"
                 type="text"
                 :placeholder="copy.commentPlaceholder"
                 class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-miku/50 focus:ring-1 focus:ring-miku/30"
@@ -143,6 +149,7 @@
               />
               <button
                 type="button"
+                data-testid="moment-comment-submit"
                 class="shrink-0 rounded-lg bg-miku px-3 py-1.5 text-xs font-medium text-white transition hover:bg-miku/85 disabled:opacity-50"
                 :disabled="!commentNickname.trim() || !commentContent.trim()"
                 @click="submitComment"

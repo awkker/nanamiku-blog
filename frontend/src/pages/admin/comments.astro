@@ -3,16 +3,19 @@ import BaseHead from '../../components/base/BaseHead.astro'
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
 import AdminCommentsManager from '../../components/admin/AdminCommentsManager.vue'
 import AdminLayout from '../../layouts/AdminLayout.astro'
+import { adminCopy } from '../../content/copy'
+
+const copy = adminCopy.commentsManager
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title="评论审核 | Miku Blog" description="后台评论审核" />
+    <BaseHead title={copy.page.metaTitle} description={copy.page.metaDescription} />
     <AdminRouteGuard />
   </head>
   <body>
-    <AdminLayout activeKey="comments" pageTitle="评论审核">
+    <AdminLayout activeKey="comments" pageTitle={copy.page.title}>
       <AdminCommentsManager client:load />
     </AdminLayout>
   </body>

@@ -3,8 +3,8 @@
     <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-semibold text-slate-900">评论审核</h1>
-          <p class="mt-1 text-sm text-slate-600">管理文章评论与留言板留言的审核队列。</p>
+          <h1 class="text-2xl font-semibold text-slate-900">{{ copy.page.title }}</h1>
+          <p class="mt-1 text-sm text-slate-600">{{ copy.page.subtitle }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <div class="flex items-center gap-1 rounded-xl border border-slate-200/80 bg-white/60 p-1">
@@ -19,7 +19,7 @@
               {{ tab.label }}
             </button>
           </div>
-          <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">{{ pendingCount }} 条待审核</span>
+          <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">{{ pendingCount }}{{ copy.page.pendingSuffix }}</span>
         </div>
       </div>
     </AdminPlainCard>
@@ -93,12 +93,12 @@
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="border-b border-slate-200/60">
-              <th class="px-5 py-3.5 font-semibold text-slate-700">评论者</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700">内容</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700">来源</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700">状态</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700">提交时间</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700 text-center">操作</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ copy.table.author }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ copy.table.content }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ copy.table.source }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ copy.table.status }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ copy.table.createdAt }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700 text-center">{{ copy.table.actions }}</th>
             </tr>
           </thead>
           <tbody>
@@ -133,40 +133,40 @@
                     v-if="comment.status === 'pending'"
                     type="button"
                     class="rounded-xl border border-emerald-200/80 bg-white/50 px-2.5 py-1 text-xs text-emerald-600 transition hover:bg-emerald-50"
-                    aria-label="通过评论"
+                    :aria-label="copy.buttons.approveAria"
                     @click="approveComment(comment)"
                   >
-                    通过
+                    {{ copy.buttons.approve }}
                   </button>
                   <button
                     v-if="comment.status === 'pending'"
                     type="button"
                     class="rounded-xl border border-red-200/80 bg-white/50 px-2.5 py-1 text-xs text-red-600 transition hover:bg-red-50"
-                    aria-label="驳回评论"
+                    :aria-label="copy.buttons.rejectAria"
                     @click="rejectComment(comment)"
                   >
-                    驳回
+                    {{ copy.buttons.reject }}
                   </button>
                   <button
                     v-if="comment.status !== 'pending'"
                     type="button"
                     class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-50"
-                    aria-label="删除评论"
+                    :aria-label="copy.buttons.deleteAria"
                     @click="deleteComment(comment)"
                   >
-                    删除
+                    {{ copy.buttons.delete }}
                   </button>
                 </div>
               </td>
             </tr>
             <tr v-if="comments.length === 0 && !loading">
-              <td colspan="6" class="px-5 py-8 text-center text-sm text-slate-500">暂无数据</td>
+              <td colspan="6" class="px-5 py-8 text-center text-sm text-slate-500">{{ copy.table.empty }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/60 px-5 py-3 text-xs text-slate-500">
-        <span>第 {{ page }} / {{ totalPages }} 页，共 {{ total }} 条</span>
+        <span>{{ paginationText }}</span>
         <div class="flex items-center gap-2">
           <button
             type="button"
@@ -174,7 +174,7 @@
             :disabled="loading || page <= 1"
             @click="changePage(page - 1)"
           >
-            上一页
+            {{ copy.buttons.prev }}
           </button>
           <button
             type="button"
@@ -182,7 +182,7 @@
             :disabled="loading || page >= totalPages"
             @click="changePage(page + 1)"
           >
-            下一页
+            {{ copy.buttons.next }}
           </button>
         </div>
       </div>
@@ -264,9 +264,10 @@ interface RateLimitMetrics {
   trend: RateLimitTrendPoint[]
 }
 
+const copy = adminCopy.commentsManager
 const sourceTabs: Array<{ label: string; value: SourceType }> = [
-  { label: '文章评论', value: 'post' },
-  { label: '留言板留言', value: 'guestbook' },
+  { label: copy.sourceTabs.post, value: 'post' },
+  { label: copy.sourceTabs.guestbook, value: 'guestbook' },
 ]
 const rateCopy = adminCopy.moderation.rateLimit
 
@@ -305,10 +306,10 @@ function mapPostComment(item: ApiPostComment): ModerationItem {
   return {
     id: item.id,
     source: 'post',
-    author: item.author_name || '匿名用户',
-    secondary: item.author_email || '--',
+    author: item.author_name || copy.context.anonymous,
+    secondary: item.author_email || copy.context.secondaryFallback,
     content: item.content,
-    context: item.post_title || '--',
+    context: item.post_title || copy.context.sourceFallback,
     contextHint: '',
     status: mapStatus(item.status),
     createdAt: formatDate(item.created_at),
@@ -316,16 +317,16 @@ function mapPostComment(item: ApiPostComment): ModerationItem {
 }
 
 function mapGuestbook(item: ApiGuestbookMessage): ModerationItem {
-  const context = item.parent_id ? '留言板回复' : '留言板主留言'
+  const context = item.parent_id ? copy.context.guestbookReply : copy.context.guestbookRoot
   const contextHint = item.parent_id
-    ? `回复 ${item.parent_author_name ? `@${item.parent_author_name}` : '上一条留言'}`
-    : `热度分 ${Number(item.vote_score || 0)}`
+    ? `${copy.context.replyToPrefix}${item.parent_author_name ? `@${item.parent_author_name}` : copy.context.replyToFallback}`
+    : `${copy.context.voteScorePrefix}${Number(item.vote_score || 0)}`
 
   return {
     id: item.id,
     source: 'guestbook',
-    author: item.author_name || '匿名用户',
-    secondary: item.author_website || '--',
+    author: item.author_name || copy.context.anonymous,
+    secondary: item.author_website || copy.context.secondaryFallback,
     content: item.content,
     context,
     contextHint,
@@ -350,9 +351,9 @@ async function loadComments() {
   } catch (err) {
     console.error('[AdminComments] loadComments failed:', err)
     if (err instanceof ApiError && err.status === 404 && activeSource.value === 'guestbook') {
-      showToast('后端缺少留言审核接口，请重启并更新 backend 服务', 'error')
+      showToast(copy.toasts.missingGuestbookEndpoint, 'error')
     } else {
-      showToast('加载评论列表失败', 'error')
+      showToast(copy.toasts.loadCommentsFailed, 'error')
     }
     comments.value = []
     total.value = 0
@@ -366,7 +367,7 @@ async function loadRateLimitMetrics() {
   try {
     rateMetrics.value = await api.get<RateLimitMetrics>('/admin/moderation/rate-limit-metrics?minutes=60')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '加载限流指标失败'
+    const msg = err instanceof ApiError ? err.message : copy.toasts.loadRateLimitFailed
     console.error('[AdminComments] loadRateLimitMetrics failed:', err)
     showToast(msg, 'error')
     rateMetrics.value = null
@@ -397,9 +398,9 @@ async function approveComment(item: ModerationItem) {
     await api.post(endpoint)
     comments.value = comments.value.map((c) => c.id === item.id ? { ...c, status: 'approved' as const } : c)
     await loadComments()
-    showToast('评论已通过', 'success')
+    showToast(copy.toasts.approveSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '操作失败'
+    const msg = err instanceof ApiError ? err.message : copy.toasts.actionFailed
     console.error('[AdminComments] approveComment failed:', err)
     showToast(msg, 'error')
   }
@@ -414,9 +415,9 @@ async function rejectComment(item: ModerationItem) {
     await api.post(endpoint)
     comments.value = comments.value.map((c) => c.id === item.id ? { ...c, status: 'rejected' as const } : c)
     await loadComments()
-    showToast('评论已驳回', 'success')
+    showToast(copy.toasts.rejectSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '操作失败'
+    const msg = err instanceof ApiError ? err.message : copy.toasts.actionFailed
     console.error('[AdminComments] rejectComment failed:', err)
     showToast(msg, 'error')
   }
@@ -434,9 +435,9 @@ async function deleteComment(item: ModerationItem) {
       page.value -= 1
     }
     await loadComments()
-    showToast('评论已删除', 'success')
+    showToast(copy.toasts.deleteSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '删除失败'
+    const msg = err instanceof ApiError ? err.message : copy.toasts.deleteFailed
     console.error('[AdminComments] deleteComment failed:', err)
     showToast(msg, 'error')
   }
@@ -449,6 +450,9 @@ onMounted(() => {
 
 const pendingCount = computed(() => comments.value.filter((c) => c.status === 'pending').length)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+const paginationText = computed(() => (
+  `${copy.pagination.prefix}${page.value}${copy.pagination.pageSeparator}${totalPages.value}${copy.pagination.totalPrefix}${total.value}${copy.pagination.suffix}`
+))
 const totalAllowed = computed(() => Number(rateMetrics.value?.total_allowed || 0))
 const totalBlocked = computed(() => Number(rateMetrics.value?.total_blocked || 0))
 const rateRules = computed(() => rateMetrics.value?.rules || [])
@@ -503,8 +507,8 @@ function statusClass(status: CommentStatus) {
 }
 
 function statusLabel(status: CommentStatus) {
-  if (status === 'approved') return '已通过'
-  if (status === 'rejected') return '已驳回'
-  return '待审核'
+  if (status === 'approved') return copy.status.approved
+  if (status === 'rejected') return copy.status.rejected
+  return copy.status.pending
 }
 </script>

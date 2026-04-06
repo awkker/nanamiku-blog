@@ -27,6 +27,18 @@ interface SmokePost {
   title: string
 }
 
+interface SmokeMoment {
+  id: string
+  content: string
+}
+
+interface SmokeResource<T> {
+  item: T
+  cleanup: () => Promise<void>
+}
+
+const noopCleanup = async () => {}
+
 export async function requireBackend(request: APIRequestContext) {
   let available = false
 
@@ -57,18 +69,132 @@ export function createSmokeText(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-export async function getPublishedSmokePost(request: APIRequestContext): Promise<SmokePost> {
+async function listPublishedSmokePosts(request: APIRequestContext) {
   const response = await request.get(`${backendURL}/api/v1/posts?page=1&size=10`, {
     timeout: 8_000,
   })
 
-  test.skip(!response.ok(), `Unable to load published posts from backend: ${backendURL}`)
+  if (!response.ok()) {
+    throw new Error(`Unable to load published posts from backend: ${backendURL}`)
+  }
 
   const body = await response.json() as ApiEnvelope<PagedData<SmokePost>>
-  const items = Array.isArray(body?.data?.items) ? body.data.items : []
-  const post = items.find((item) => uuidPattern.test(item.id || '') && String(item.slug || '').trim() !== '')
+  return Array.isArray(body?.data?.items) ? body.data.items : []
+}
 
-  test.skip(!post, 'Seed at least one published CMS post with a UUID id before running blog smoke.')
+async function loginAdminAPI(request: APIRequestContext) {
+  test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running authenticated smoke.')
 
-  return post!
+  const response = await request.post(`${backendURL}/api/v1/auth/login`, {
+    data: {
+      identifier: adminIdentifier,
+      password: adminPassword,
+    },
+    timeout: 8_000,
+  })
+
+  if (!response.ok()) {
+    throw new Error(`Unable to login via admin API: ${backendURL}`)
+  }
+}
+
+async function deleteAdminResource(request: APIRequestContext, path: string) {
+  const response = await request.delete(`${backendURL}/api/v1${path}`, {
+    timeout: 8_000,
+  })
+
+  if (!response.ok() && response.status() !== 404) {
+    throw new Error(`Unable to cleanup smoke resource via ${path}: ${response.status()}`)
+  }
+}
+
+export async function cleanupAdminResource(request: APIRequestContext, path: string) {
+  await loginAdminAPI(request)
+  await deleteAdminResource(request, path)
+}
+
+export async function acquirePublishedSmokePost(request: APIRequestContext): Promise<SmokeResource<SmokePost>> {
+  const items = await listPublishedSmokePosts(request)
+  const existing = items.find((item) => uuidPattern.test(item.id || '') && String(item.slug || '').trim() !== '')
+
+  if (existing) {
+    return { item: existing, cleanup: noopCleanup }
+  }
+
+  await loginAdminAPI(request)
+
+  const slug = createSmokeText('playwright-post')
+  const title = createSmokeText('playwright-post-title')
+  const response = await request.post(`${backendURL}/api/v1/admin/posts`, {
+    data: {
+      slug,
+      title,
+      excerpt: 'Playwright smoke post',
+      content_markdown: `# ${title}\n\nThis post is created automatically for smoke validation.`,
+      hero_image_url: '/picture/logo-64.webp',
+      category: 'Smoke',
+      status: 'published',
+      tags: ['smoke', 'playwright'],
+    },
+    timeout: 8_000,
+  })
+
+  if (!response.ok()) {
+    throw new Error(`Unable to create published smoke post via admin API: ${backendURL}`)
+  }
+
+  const body = await response.json() as ApiEnvelope<{ id: string }>
+  const post = {
+    id: String(body?.data?.id || ''),
+    slug,
+    title,
+  }
+
+  if (!uuidPattern.test(post.id)) {
+    throw new Error('Admin API did not return a valid smoke post id.')
+  }
+
+  return {
+    item: post,
+    cleanup: async () => {
+      await cleanupAdminResource(request, `/admin/posts/${post.id}`)
+    },
+  }
+}
+
+export async function createSmokeMoment(request: APIRequestContext): Promise<SmokeResource<SmokeMoment>> {
+  const content = createSmokeText('playwright-moment-content')
+  const response = await request.post(`${backendURL}/api/v1/moments`, {
+    data: {
+      author_name: createSmokeText('playwright-moment-author'),
+      content,
+      image_urls: [],
+    },
+    timeout: 8_000,
+  })
+
+  if (!response.ok()) {
+    throw new Error(`Unable to create public smoke moment: ${backendURL}`)
+  }
+
+  const body = await response.json() as ApiEnvelope<{ id: string }>
+  const moment = {
+    id: String(body?.data?.id || ''),
+    content,
+  }
+
+  if (!uuidPattern.test(moment.id)) {
+    throw new Error('Public moments API did not return a valid smoke moment id.')
+  }
+
+  if (!hasAdminCredentials) {
+    return { item: moment, cleanup: noopCleanup }
+  }
+
+  return {
+    item: moment,
+    cleanup: async () => {
+      await cleanupAdminResource(request, `/admin/moments/${moment.id}`)
+    },
+  }
 }

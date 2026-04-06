@@ -7,17 +7,18 @@
           <h1 class="text-2xl font-semibold text-slate-900">文章管理</h1>
           <p class="mt-1 text-sm text-slate-600">管理博客文章的发布、草稿与分类。</p>
         </div>
-        <MikuButton variant="solid" aria-label="新建文章" @click="toggleCreateForm">+ 新建文章</MikuButton>
+        <MikuButton variant="solid" aria-label="新建文章" data-testid="admin-post-create-toggle" @click="toggleCreateForm">+ 新建文章</MikuButton>
       </div>
     </AdminPlainCard>
 
     <!-- ===== Writing Studio (Create) ===== -->
     <AdminPlainCard v-if="showCreateForm" padding="0px">
-      <form @submit.prevent="createPost">
+      <form data-testid="admin-post-create-form" @submit.prevent="createPost">
         <!-- Title zone -->
         <div class="writing-title-zone">
           <input
             v-model="newPost.title"
+            data-testid="admin-post-create-title"
             type="text"
             placeholder="无题..."
             class="writing-title-input"
@@ -65,6 +66,7 @@
         <div class="writing-editor-zone">
           <textarea
             v-model="newPost.content_markdown"
+            data-testid="admin-post-create-content"
             placeholder="在此撰写你的想法..."
             class="writing-editor"
           />
@@ -77,7 +79,7 @@
             {{ charCount(newPost.content_markdown) }}
           </div>
           <div class="flex items-center gap-3">
-            <select v-model="newPost.status" class="meta-input cursor-pointer py-1.5 pr-7 text-xs">
+            <select v-model="newPost.status" data-testid="admin-post-create-status" class="meta-input cursor-pointer py-1.5 pr-7 text-xs">
               <option value="draft">草稿</option>
               <option value="published">直接发布</option>
               <option value="scheduled">定时发布</option>
@@ -85,11 +87,12 @@
             <input
               v-if="newPost.status === 'scheduled'"
               v-model="newPost.scheduled_at"
+              data-testid="admin-post-create-scheduled-at"
               type="datetime-local"
               class="meta-input py-1.5 text-xs"
             />
             <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeCreateForm">取消</button>
-            <MikuButton type="submit" variant="solid" :disabled="creating">{{ creating ? '创建中...' : '创建文章' }}</MikuButton>
+            <MikuButton type="submit" variant="solid" data-testid="admin-post-create-submit" :disabled="creating">{{ creating ? '创建中...' : '创建文章' }}</MikuButton>
           </div>
         </div>
       </form>
@@ -97,10 +100,11 @@
 
     <!-- ===== Writing Studio (Edit) ===== -->
     <AdminPlainCard v-if="showEditForm" padding="0px">
-      <form @submit.prevent="updatePost">
+      <form data-testid="admin-post-edit-form" @submit.prevent="updatePost">
         <div class="writing-title-zone">
           <input
             v-model="editPost.title"
+            data-testid="admin-post-edit-title"
             type="text"
             placeholder="无题..."
             class="writing-title-input"
@@ -146,6 +150,7 @@
         <div class="writing-editor-zone">
           <textarea
             v-model="editPost.content_markdown"
+            data-testid="admin-post-edit-content"
             placeholder="在此撰写你的想法..."
             class="writing-editor"
           />
@@ -158,7 +163,7 @@
           </div>
           <div class="flex items-center gap-3">
             <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeEditForm">取消</button>
-            <MikuButton type="submit" variant="solid" :disabled="editing">{{ editing ? '保存中...' : '保存修改' }}</MikuButton>
+            <MikuButton type="submit" variant="solid" data-testid="admin-post-edit-submit" :disabled="editing">{{ editing ? '保存中...' : '保存修改' }}</MikuButton>
           </div>
         </div>
       </form>
@@ -189,6 +194,7 @@
             <tr
               v-for="post in posts"
               :key="post.id"
+              data-testid="admin-post-row"
               class="group border-b border-slate-100/60 transition-colors hover:bg-white/40"
             >
               <td class="px-5 py-3.5 font-medium text-slate-900">{{ post.title }}</td>
@@ -207,6 +213,7 @@
                 <div class="flex items-center justify-center gap-2">
                   <button
                     type="button"
+                    data-testid="admin-post-edit-button"
                     class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-700 transition hover:border-miku/40 hover:text-miku"
                     aria-label="编辑文章"
                     @click="startEditPost(post.id)"
@@ -216,6 +223,7 @@
                   <button
                     v-if="post.status !== 'published'"
                     type="button"
+                    data-testid="admin-post-publish-button"
                     class="rounded-xl border border-emerald-200/80 bg-white/50 px-2.5 py-1 text-xs text-emerald-600 transition hover:bg-emerald-50"
                     aria-label="发布文章"
                     @click="publishPost(post.id)"
@@ -224,6 +232,7 @@
                   </button>
                   <button
                     type="button"
+                    data-testid="admin-post-schedule-button"
                     class="rounded-xl border border-[#e9d5ff]/80 bg-white/50 px-2.5 py-1 text-xs text-[#9333ea] transition hover:bg-[#faf5ff]"
                     aria-label="定时发布文章"
                     @click="schedulePost(post.id)"
@@ -233,6 +242,7 @@
                   <button
                     v-if="post.status !== 'draft'"
                     type="button"
+                    data-testid="admin-post-unpublish-button"
                     class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-50"
                     aria-label="转为草稿"
                     @click="unpublishPost(post.id)"
@@ -241,6 +251,7 @@
                   </button>
                   <button
                     type="button"
+                    data-testid="admin-post-delete-button"
                     class="rounded-xl border border-red-200/80 bg-white/50 px-2.5 py-1 text-xs text-red-600 transition hover:bg-red-50 opacity-0 group-hover:opacity-100"
                     aria-label="删除文章"
                     @click="deletePost(post.id)"

@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 const frontendPort = Number(process.env.SMOKE_FRONTEND_PORT || '4322')
 const frontendURL = process.env.SMOKE_FRONTEND_URL || `http://127.0.0.1:${frontendPort}`
-const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL || 'chrome'
+const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL?.trim() || undefined
 const cmsOrigin = process.env.SMOKE_CMS_API_ORIGIN || process.env.SMOKE_BACKEND_URL || 'http://127.0.0.1:8080'
 
 export default defineConfig({

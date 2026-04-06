@@ -1,6 +1,7 @@
 import { atom } from 'nanostores'
 
 import { api } from '../lib/api'
+import { siteCopy } from '../content/copy'
 
 // Friends-link domain store:
 // encapsulates loading state + list data for the friends page.
@@ -44,6 +45,7 @@ function mapFriend(item: ApiFriendLink): FriendLink {
 export const friendLinks = atom<FriendLink[]>([])
 export const friendFetchStatus = atom<'idle' | 'loading' | 'success' | 'error'>('idle')
 export const friendError = atom('')
+const copy = siteCopy.friendsPage.grid
 
 export async function loadFriendLinks() {
   friendFetchStatus.set('loading')
@@ -55,6 +57,6 @@ export async function loadFriendLinks() {
     friendFetchStatus.set('success')
   } catch {
     friendFetchStatus.set('error')
-    friendError.set('友链加载失败，请稍后再试。')
+    friendError.set(copy.errorFallback)
   }
 }
