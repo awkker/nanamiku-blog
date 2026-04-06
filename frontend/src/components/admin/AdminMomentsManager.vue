@@ -26,7 +26,7 @@
 
         <!-- Image preview -->
         <div v-if="createImagePreviews.length > 0" class="flex gap-2 px-7 pb-3">
-          <div v-for="(url, idx) in createImagePreviews" :key="idx" class="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200/50">
+          <div v-for="(url, idx) in createImagePreviews" :key="idx" data-testid="admin-moment-create-image-preview" class="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200/50">
             <img :src="url" alt="" class="h-full w-full object-cover" @error="($event.target as HTMLImageElement).style.display='none'" />
           </div>
         </div>
@@ -59,7 +59,7 @@
             </div>
             <div class="compose-meta-row">
               <label class="compose-meta-label">图片</label>
-              <input v-model="newMoment.image_urls" type="text" placeholder="贴入图片链接, 用逗号分隔 (最多4张)" class="compose-meta-input" />
+              <input v-model="newMoment.image_urls" data-testid="admin-moment-create-image-input" type="text" placeholder="贴入图片链接, 用逗号分隔 (最多4张)" class="compose-meta-input" />
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@
         </div>
 
         <div v-if="editImagePreviews.length > 0" class="flex gap-2 px-7 pb-3">
-          <div v-for="(url, idx) in editImagePreviews" :key="idx" class="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200/50">
+          <div v-for="(url, idx) in editImagePreviews" :key="idx" data-testid="admin-moment-edit-image-preview" class="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200/50">
             <img :src="url" alt="" class="h-full w-full object-cover" @error="($event.target as HTMLImageElement).style.display='none'" />
           </div>
         </div>
@@ -124,7 +124,7 @@
             </div>
             <div class="compose-meta-row">
               <label class="compose-meta-label">图片</label>
-              <input v-model="editMoment.image_urls" type="text" placeholder="贴入图片链接, 用逗号分隔 (最多4张)" class="compose-meta-input" />
+              <input v-model="editMoment.image_urls" data-testid="admin-moment-edit-image-input" type="text" placeholder="贴入图片链接, 用逗号分隔 (最多4张)" class="compose-meta-input" />
             </div>
           </div>
         </div>
@@ -191,6 +191,7 @@
                   :key="idx"
                   :src="img"
                   :alt="`图片 ${idx + 1}`"
+                  data-testid="admin-moment-row-image"
                   class="h-16 w-16 rounded-xl border border-slate-100/80 object-cover transition-transform hover:scale-105"
                   loading="lazy"
                 />

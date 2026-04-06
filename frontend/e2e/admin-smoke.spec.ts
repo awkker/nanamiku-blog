@@ -81,7 +81,10 @@ test.describe('admin smoke', () => {
     expect(documentCookie).not.toContain('miku_blog_access')
     expect(documentCookie).not.toContain('miku_blog_refresh')
 
-    await page.context().clearCookies({ name: 'miku_blog_access' })
+    await page.context().addCookies([{
+      ...accessCookie!,
+      value: 'invalid-access-token-for-refresh-smoke',
+    }])
 
     const refreshResponse = page.waitForResponse((response) =>
       response.url().includes('/api/v1/auth/refresh')
@@ -449,6 +452,114 @@ test.describe('admin smoke', () => {
     } finally {
       if (momentID) {
         await cleanupAdminResource(request, `/admin/moments/${momentID}`)
+      }
+    }
+  })
+
+  test('admin validates moment image limits and keeps multiple moments isolated', async ({ page, request }) => {
+    test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running authenticated smoke.')
+    await requireBackend(request)
+
+    const invalidContent = createSmokeText('admin-moment-invalid-images')
+    const draftContent = createSmokeText('admin-moment-draft-images')
+    const publishedContent = createSmokeText('admin-moment-published-images')
+    const validImages = ['/picture/logo-64.webp', '/picture/author.jpg']
+    const invalidImages = [
+      ...validImages,
+      '/picture/fengmian/1.webp',
+      '/picture/fengmian/2.webp',
+      '/picture/fengmian/3.webp',
+    ]
+    const validImageValue = validImages.join(', ')
+    const invalidImageValue = invalidImages.join(', ')
+    const createdMomentIDs: string[] = []
+
+    try {
+      await loginAsAdmin(page)
+      await page.goto('/admin/moments')
+      await expect(page.getByTestId('admin-moment-create-toggle')).toBeVisible()
+
+      await page.getByTestId('admin-moment-create-toggle').click()
+      await expect(page.getByTestId('admin-moment-create-form')).toBeVisible()
+      await page.getByRole('button', { name: '发布设置' }).click()
+
+      await page.getByTestId('admin-moment-create-content').fill(invalidContent)
+      await page.getByTestId('admin-moment-create-image-input').fill(invalidImageValue)
+      await expect(page.getByTestId('admin-moment-create-image-preview')).toHaveCount(4)
+
+      const invalidResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/admin/moments')
+        && response.request().method() === 'POST',
+      )
+      await page.getByTestId('admin-moment-create-submit').click()
+
+      const rejected = await invalidResponse
+      expect(rejected.status()).toBe(400)
+      await expect(page.getByRole('status').filter({ hasText: 'max 4 images allowed' })).toBeVisible()
+      await expect(page.getByTestId('admin-moment-row').filter({ hasText: invalidContent })).toHaveCount(0)
+
+      await page.getByTestId('admin-moment-create-content').fill(draftContent)
+      await page.getByTestId('admin-moment-create-image-input').fill(validImageValue)
+      await page.getByTestId('admin-moment-create-status').selectOption('draft')
+      await expect(page.getByTestId('admin-moment-create-image-preview')).toHaveCount(2)
+
+      const draftResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/admin/moments')
+        && response.request().method() === 'POST',
+      )
+      await page.getByTestId('admin-moment-create-submit').click()
+
+      const createdDraft = await draftResponse
+      await expectPageResponseOK(createdDraft)
+      createdMomentIDs.push(String((await createdDraft.json()).data?.id || ''))
+
+      const draftRow = page.getByTestId('admin-moment-row').filter({ hasText: draftContent }).first()
+      await expect(draftRow).toBeVisible()
+      await expect(draftRow.getByText('草稿')).toBeVisible()
+      await expect(draftRow.getByTestId('admin-moment-row-image')).toHaveCount(2)
+
+      await page.getByTestId('admin-moment-create-toggle').click()
+      await expect(page.getByTestId('admin-moment-create-form')).toBeVisible()
+      await expect(page.getByTestId('admin-moment-create-status')).toBeVisible()
+
+      await page.getByTestId('admin-moment-create-content').fill(publishedContent)
+      await page.getByTestId('admin-moment-create-image-input').fill(validImageValue)
+      await page.getByTestId('admin-moment-create-status').selectOption('published')
+      await expect(page.getByTestId('admin-moment-create-image-preview')).toHaveCount(2)
+
+      const publishedResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/admin/moments')
+        && response.request().method() === 'POST',
+      )
+      await page.getByTestId('admin-moment-create-submit').click()
+
+      const createdPublished = await publishedResponse
+      await expectPageResponseOK(createdPublished)
+      createdMomentIDs.push(String((await createdPublished.json()).data?.id || ''))
+
+      const publishedRow = page.getByTestId('admin-moment-row').filter({ hasText: publishedContent }).first()
+      await expect(publishedRow).toBeVisible()
+      await expect(publishedRow.getByText('已发布')).toBeVisible()
+      await expect(publishedRow.getByTestId('admin-moment-row-image')).toHaveCount(2)
+
+      await expect(page.getByTestId('admin-moment-row').filter({ hasText: draftContent }).first().getByText('草稿')).toBeVisible()
+
+      await page.goto('/moments')
+      await expect(page.getByText(draftContent)).toHaveCount(0)
+
+      const publicCard = page.getByTestId('moment-card').filter({ hasText: publishedContent }).first()
+      await expect(publicCard).toBeVisible()
+      await expect(publicCard.getByTestId('moment-image')).toHaveCount(2)
+
+      await publicCard.getByTestId('moment-image').first().click()
+      await expect(page.getByTestId('moment-image-preview')).toBeVisible()
+      await page.getByTestId('moment-image-preview-close').click()
+      await expect(page.getByTestId('moment-image-preview')).toHaveCount(0)
+    } finally {
+      for (const momentID of createdMomentIDs) {
+        if (momentID) {
+          await cleanupAdminResource(request, `/admin/moments/${momentID}`)
+        }
       }
     }
   })

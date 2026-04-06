@@ -1,6 +1,6 @@
 <template>
   <LiquidGlassCard padding="20px 24px" class="transition duration-300">
-    <article class="space-y-3">
+    <article class="space-y-3" data-testid="moment-card">
       <!-- Author Header -->
       <div class="flex items-center gap-3">
         <img
@@ -29,6 +29,7 @@
           <img
             :src="img"
             :alt="`${copy.imageAltPrefix}${idx + 1}`"
+            data-testid="moment-image"
             class="h-full w-full object-cover transition duration-300 group-hover/img:scale-105"
             :class="moment.images.length === 1 ? 'max-h-[400px]' : 'aspect-square'"
             loading="lazy"
@@ -166,11 +167,13 @@
     <Teleport to="body">
       <div
         v-if="previewIndex !== null"
+        data-testid="moment-image-preview"
         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
         @click.self="previewIndex = null"
       >
         <button
           type="button"
+          data-testid="moment-image-preview-close"
           class="absolute right-4 top-4 rounded-full bg-white/20 p-2 text-white transition hover:bg-white/30"
           @click="previewIndex = null"
         >
