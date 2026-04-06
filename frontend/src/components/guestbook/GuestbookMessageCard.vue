@@ -1,6 +1,6 @@
 <template>
   <LiquidGlassCard padding="16px 20px" class="transition duration-300">
-    <article class="flex gap-3">
+    <article class="flex gap-3" data-testid="guestbook-message-card">
       <!-- Vote Column -->
       <div class="flex shrink-0 flex-col items-center gap-0.5 pt-0.5">
         <button
@@ -8,16 +8,18 @@
           class="rounded p-0.5 transition hover:bg-miku/10"
           :class="message.myVote === 1 ? 'text-miku' : 'text-slate-400'"
           :aria-label="copy.upvoteAria"
+          data-testid="guestbook-upvote-button"
           @click="vote(1)"
         >
           <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current"><path d="M12 4l-8 8h5v8h6v-8h5z" /></svg>
         </button>
-        <span class="min-w-[20px] text-center text-xs font-semibold" :class="voteColor">{{ message.votes }}</span>
+        <span class="min-w-[20px] text-center text-xs font-semibold" :class="voteColor" data-testid="guestbook-vote-score">{{ message.votes }}</span>
         <button
           type="button"
           class="rounded p-0.5 transition hover:bg-red-50"
           :class="message.myVote === -1 ? 'text-red-500' : 'text-slate-400'"
           :aria-label="copy.downvoteAria"
+          data-testid="guestbook-downvote-button"
           @click="vote(-1)"
         >
           <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current"><path d="M12 20l8-8h-5V4H9v8H4z" /></svg>
@@ -63,6 +65,7 @@
           <button
             type="button"
             class="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            data-testid="guestbook-reply-toggle"
             @click="showReplyForm = !showReplyForm"
           >
             <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.8]" aria-hidden="true">
@@ -76,13 +79,14 @@
         </div>
 
         <!-- Inline Reply Form -->
-        <div v-if="showReplyForm" class="guestbook-reply-form mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+        <div v-if="showReplyForm" class="guestbook-reply-form mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3" data-testid="guestbook-reply-form">
           <div class="mb-2">
             <input
               v-model="replyNickname"
               type="text"
               :placeholder="isAuthorMode ? copy.nicknameAuthorPlaceholder : copy.nicknamePlaceholder"
               :disabled="isAuthorMode"
+              data-testid="guestbook-reply-nickname"
               class="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-miku/50 focus:ring-1 focus:ring-miku/30"
             />
           </div>
@@ -90,6 +94,7 @@
             v-model="replyContent"
             rows="2"
             :placeholder="copy.contentPlaceholder"
+            data-testid="guestbook-reply-content"
             class="w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-miku/50 focus:ring-1 focus:ring-miku/30"
           />
           <div class="mt-2">
@@ -99,6 +104,7 @@
             <button
               type="button"
               class="rounded-lg px-3 py-1.5 text-xs text-slate-500 transition hover:bg-slate-200"
+              data-testid="guestbook-reply-cancel"
               @click="showReplyForm = false"
             >
               {{ copy.cancel }}
@@ -107,6 +113,7 @@
               type="button"
               class="rounded-lg bg-miku px-3 py-1.5 text-xs font-medium text-white transition hover:bg-miku/85 disabled:opacity-50"
               :disabled="!effectiveReplyNickname || !replyContent.trim()"
+              data-testid="guestbook-reply-submit"
               @click="submitReply"
             >
               {{ copy.submitReply }}
@@ -116,7 +123,7 @@
 
         <!-- Nested Replies -->
         <div v-if="message.replies.length > 0" class="guestbook-reply-thread mt-3 space-y-2 border-l-2 border-slate-200 pl-4">
-          <div v-for="reply in message.replies" :key="reply.id" class="guestbook-reply-item rounded-lg bg-slate-50/60 px-3 py-2.5">
+          <div v-for="reply in message.replies" :key="reply.id" class="guestbook-reply-item rounded-lg bg-slate-50/60 px-3 py-2.5" data-testid="guestbook-reply-item">
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
               <img :src="reply.avatar" :alt="reply.nickname" class="h-4 w-4 rounded-full object-cover" loading="lazy" />
               <span class="text-xs font-semibold text-slate-600">{{ reply.nickname }}</span>
@@ -140,15 +147,17 @@
                 type="button"
                 class="inline-flex items-center gap-0.5 rounded p-0.5 text-[11px] transition"
                 :class="reply.myVote === 1 ? 'text-miku' : 'text-slate-400 hover:text-miku'"
+                data-testid="guestbook-reply-upvote-button"
                 @click="voteReply(reply.id, 1)"
               >
                 <svg viewBox="0 0 24 24" class="h-3 w-3 fill-current"><path d="M12 4l-8 8h5v8h6v-8h5z" /></svg>
-                {{ reply.votes }}
+                <span data-testid="guestbook-reply-vote-score">{{ reply.votes }}</span>
               </button>
               <button
                 type="button"
                 class="rounded p-0.5 text-[11px] transition"
                 :class="reply.myVote === -1 ? 'text-red-500' : 'text-slate-400 hover:text-red-400'"
+                data-testid="guestbook-reply-downvote-button"
                 @click="voteReply(reply.id, -1)"
               >
                 <svg viewBox="0 0 24 24" class="h-3 w-3 fill-current"><path d="M12 20l8-8h-5V4H9v8H4z" /></svg>

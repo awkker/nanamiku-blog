@@ -11,9 +11,12 @@ import (
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"nanamiku-blog/backend/biz/service"
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -25,12 +28,21 @@ type smokeConfig struct {
 	BaseURL         string
 	AdminIdentifier string
 	AdminPassword   string
+	AllowedOrigin   string
+	CookieSameSite  string
+	CookieSecure    bool
 	Timeout         time.Duration
 }
 
 type apiClient struct {
 	baseURL string
 	client  *http.Client
+}
+
+type responseSnapshot struct {
+	StatusCode int
+	Header     http.Header
+	Body       []byte
 }
 
 type apiEnvelope[T any] struct {
@@ -152,6 +164,9 @@ func loadConfig() (*smokeConfig, error) {
 		BaseURL:         normalizeBaseURL(firstNonEmpty(*baseURLFlag, os.Getenv("SMOKE_BASE_URL"), defaultSmokeBaseURL)),
 		AdminIdentifier: strings.TrimSpace(firstNonEmpty(*identifierFlag, os.Getenv("SMOKE_ADMIN_IDENTIFIER"))),
 		AdminPassword:   strings.TrimSpace(firstNonEmpty(*passwordFlag, os.Getenv("SMOKE_ADMIN_PASSWORD"))),
+		AllowedOrigin:   strings.TrimSpace(firstNonEmpty(os.Getenv("SMOKE_ALLOWED_ORIGIN"), firstCSV(os.Getenv("CORS_ORIGINS")))),
+		CookieSameSite:  strings.ToLower(strings.TrimSpace(firstNonEmpty(os.Getenv("COOKIE_SAME_SITE"), "lax"))),
+		CookieSecure:    strings.EqualFold(strings.TrimSpace(firstNonEmpty(os.Getenv("COOKIE_SECURE"), "false")), "true"),
 		Timeout:         *timeoutFlag,
 	}
 
@@ -166,14 +181,22 @@ func loadConfig() (*smokeConfig, error) {
 
 func runSmoke(ctx context.Context, cfg *smokeConfig, runID string, adminAPI, publicAPI *apiClient) error {
 	log.Printf("smoke: login as %s", cfg.AdminIdentifier)
-	loginData, err := doJSON[loginResponse](ctx, adminAPI, http.MethodPost, "/auth/login", map[string]string{
+	loginData, loginResp, err := doJSONDetailed[loginResponse](ctx, adminAPI, http.MethodPost, "/auth/login", map[string]string{
 		"identifier": cfg.AdminIdentifier,
 		"password":   cfg.AdminPassword,
 	})
 	if err != nil {
 		return fmt.Errorf("login: %w", err)
 	}
+	if err := assertSessionCookieHeaders(loginResp.Header, cfg); err != nil {
+		return fmt.Errorf("login session cookies: %w", err)
+	}
 	log.Printf("smoke: login ok, expires_at=%d", loginData.ExpiresAt)
+
+	if err := exerciseCORSFlow(ctx, cfg, publicAPI); err != nil {
+		return err
+	}
+	log.Printf("smoke: cors preflight ok, origin=%s", cfg.AllowedOrigin)
 
 	me, err := doJSON[meResponse](ctx, adminAPI, http.MethodGet, "/auth/me", nil)
 	if err != nil {
@@ -183,6 +206,16 @@ func runSmoke(ctx context.Context, cfg *smokeConfig, runID string, adminAPI, pub
 		return fmt.Errorf("current admin response missing username")
 	}
 	log.Printf("smoke: /auth/me ok, username=%s", me.Username)
+
+	if err := exerciseRefreshFlow(ctx, cfg, adminAPI); err != nil {
+		return err
+	}
+	log.Printf("smoke: refresh cookie recovery ok")
+
+	if err := exerciseBackupExportFlow(ctx, adminAPI); err != nil {
+		return err
+	}
+	log.Printf("smoke: backup export flow ok")
 
 	if _, err := doJSON[dashboardStats](ctx, adminAPI, http.MethodGet, "/admin/dashboard/stats", nil); err != nil {
 		return fmt.Errorf("dashboard stats probe: %w", err)
@@ -222,6 +255,97 @@ func runSmoke(ctx context.Context, cfg *smokeConfig, runID string, adminAPI, pub
 		return fmt.Errorf("post-logout auth check: %w", err)
 	}
 	log.Printf("smoke: logout invalidated session")
+
+	return nil
+}
+
+func exerciseCORSFlow(ctx context.Context, cfg *smokeConfig, publicAPI *apiClient) error {
+	if strings.TrimSpace(cfg.AllowedOrigin) == "" {
+		return nil
+	}
+
+	resp, err := doRequest(ctx, publicAPI, http.MethodOptions, "/auth/login", nil, map[string]string{
+		"Origin":                        cfg.AllowedOrigin,
+		"Access-Control-Request-Method": http.MethodPost,
+		"Access-Control-Request-Headers": "Content-Type",
+	})
+	if err != nil {
+		return fmt.Errorf("cors preflight: %w", err)
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("cors preflight returned %d", resp.StatusCode)
+	}
+	if got := strings.TrimSpace(resp.Header.Get("Access-Control-Allow-Origin")); got != cfg.AllowedOrigin {
+		return fmt.Errorf("cors allow-origin mismatch: got %q want %q", got, cfg.AllowedOrigin)
+	}
+	if got := strings.TrimSpace(resp.Header.Get("Access-Control-Allow-Credentials")); got != "true" {
+		return fmt.Errorf("cors allow-credentials mismatch: got %q", got)
+	}
+	if got := strings.TrimSpace(resp.Header.Get("Access-Control-Allow-Methods")); !strings.Contains(got, http.MethodPost) {
+		return fmt.Errorf("cors allow-methods missing POST: %q", got)
+	}
+
+	return nil
+}
+
+func exerciseRefreshFlow(ctx context.Context, cfg *smokeConfig, sourceAPI *apiClient) error {
+	refreshOnlyAPI, err := newAPIClient(cfg.BaseURL, cfg.Timeout)
+	if err != nil {
+		return fmt.Errorf("create refresh-only api client: %w", err)
+	}
+	if err := copyRefreshCookie(sourceAPI, refreshOnlyAPI); err != nil {
+		return err
+	}
+
+	if err := expectStatus(ctx, refreshOnlyAPI, http.MethodGet, "/auth/me", http.StatusUnauthorized); err != nil {
+		return fmt.Errorf("missing access cookie should reject /auth/me: %w", err)
+	}
+
+	_, refreshResp, err := doJSONDetailed[loginResponse](ctx, refreshOnlyAPI, http.MethodPost, "/auth/refresh", map[string]string{})
+	if err != nil {
+		return fmt.Errorf("refresh session with cookie: %w", err)
+	}
+	if err := assertSessionCookieHeaders(refreshResp.Header, cfg); err != nil {
+		return fmt.Errorf("refresh session cookies: %w", err)
+	}
+
+	if _, err := doJSON[meResponse](ctx, refreshOnlyAPI, http.MethodGet, "/auth/me", nil); err != nil {
+		return fmt.Errorf("refreshed session /auth/me: %w", err)
+	}
+
+	return nil
+}
+
+func exerciseBackupExportFlow(ctx context.Context, adminAPI *apiClient) error {
+	type backupProbe struct {
+		format      string
+		contentType string
+		suffix      string
+	}
+
+	probes := []backupProbe{
+		{format: "json", contentType: "application/json", suffix: ".json"},
+		{format: "sql", contentType: "application/sql", suffix: ".sql"},
+	}
+
+	for _, probe := range probes {
+		resp, err := doRequest(ctx, adminAPI, http.MethodGet, "/admin/backup/export?format="+probe.format, nil, nil)
+		if err != nil {
+			return fmt.Errorf("export %s backup: %w", probe.format, err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("export %s backup returned %d", probe.format, resp.StatusCode)
+		}
+		if got := strings.TrimSpace(resp.Header.Get("Content-Type")); !strings.Contains(got, probe.contentType) {
+			return fmt.Errorf("export %s content-type mismatch: got %q", probe.format, got)
+		}
+		if got := strings.TrimSpace(resp.Header.Get("Content-Disposition")); !strings.Contains(got, probe.suffix) {
+			return fmt.Errorf("export %s content-disposition mismatch: got %q", probe.format, got)
+		}
+		if len(bytes.TrimSpace(resp.Body)) == 0 {
+			return fmt.Errorf("export %s returned empty body", probe.format)
+		}
+	}
 
 	return nil
 }
@@ -436,49 +560,34 @@ func newAPIClient(baseURL string, timeout time.Duration) (*apiClient, error) {
 	}, nil
 }
 
-func doJSON[T any](ctx context.Context, api *apiClient, method, path string, payload any) (T, error) {
+func doJSONDetailed[T any](ctx context.Context, api *apiClient, method, path string, payload any) (T, *responseSnapshot, error) {
 	var zero T
 
-	requestBody, err := marshalBody(payload)
+	resp, err := doRequest(ctx, api, method, path, payload, nil)
 	if err != nil {
-		return zero, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, api.baseURL+normalizePath(path), requestBody)
-	if err != nil {
-		return zero, fmt.Errorf("build request %s %s: %w", method, path, err)
-	}
-	req.Header.Set("Accept", "application/json")
-	if requestBody != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	resp, err := api.client.Do(req)
-	if err != nil {
-		return zero, fmt.Errorf("request %s %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return zero, fmt.Errorf("read response %s %s: %w", method, path, err)
+		return zero, nil, err
 	}
 
 	var envelope apiEnvelope[T]
-	if len(body) > 0 {
-		if err := json.Unmarshal(body, &envelope); err != nil {
-			return zero, fmt.Errorf("decode response %s %s: %w (body=%s)", method, path, err, strings.TrimSpace(string(body)))
+	if len(resp.Body) > 0 {
+		if err := json.Unmarshal(resp.Body, &envelope); err != nil {
+			return zero, resp, fmt.Errorf("decode response %s %s: %w (body=%s)", method, path, err, strings.TrimSpace(string(resp.Body)))
 		}
 	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return zero, fmt.Errorf("%s %s returned %d: %s", method, path, resp.StatusCode, nonEmpty(envelope.Message, strings.TrimSpace(string(body))))
+		return zero, resp, fmt.Errorf("%s %s returned %d: %s", method, path, resp.StatusCode, nonEmpty(envelope.Message, strings.TrimSpace(string(resp.Body))))
 	}
 	if envelope.Code != 0 {
-		return zero, fmt.Errorf("%s %s returned code=%d: %s", method, path, envelope.Code, envelope.Message)
+		return zero, resp, fmt.Errorf("%s %s returned code=%d: %s", method, path, envelope.Code, envelope.Message)
 	}
 
-	return envelope.Data, nil
+	return envelope.Data, resp, nil
+}
+
+func doJSON[T any](ctx context.Context, api *apiClient, method, path string, payload any) (T, error) {
+	data, _, err := doJSONDetailed[T](ctx, api, method, path, payload)
+	return data, err
 }
 
 func doPagedJSON[T any](ctx context.Context, api *apiClient, method, path string, payload any) (*pagedData[T], error) {
@@ -495,22 +604,57 @@ func doNoData(ctx context.Context, api *apiClient, method, path string, payload 
 }
 
 func expectStatus(ctx context.Context, api *apiClient, method, path string, wantStatus int) error {
-	req, err := http.NewRequestWithContext(ctx, method, api.baseURL+normalizePath(path), nil)
+	resp, err := doRequest(ctx, api, method, path, nil, nil)
 	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != wantStatus {
+		return fmt.Errorf("expected %d from %s %s, got %d: %s", wantStatus, method, path, resp.StatusCode, strings.TrimSpace(string(resp.Body)))
+	}
+	return nil
+}
+
+func doRequest(
+	ctx context.Context,
+	api *apiClient,
+	method, path string,
+	payload any,
+	extraHeaders map[string]string,
+) (*responseSnapshot, error) {
+	requestBody, err := marshalBody(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, api.baseURL+normalizePath(path), requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("build request %s %s: %w", method, path, err)
+	}
+	req.Header.Set("Accept", "application/json")
+	if requestBody != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	for key, value := range extraHeaders {
+		req.Header.Set(key, value)
 	}
 
 	resp, err := api.client.Do(req)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("request %s %s: %w", method, path, err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != wantStatus {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("expected %d from %s %s, got %d: %s", wantStatus, method, path, resp.StatusCode, strings.TrimSpace(string(body)))
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response %s %s: %w", method, path, err)
 	}
-	return nil
+
+	return &responseSnapshot{
+		StatusCode: resp.StatusCode,
+		Header:     resp.Header.Clone(),
+		Body:       body,
+	}, nil
 }
 
 func marshalBody(payload any) (io.Reader, error) {
@@ -606,6 +750,16 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+func firstCSV(value string) string {
+	for _, item := range strings.Split(value, ",") {
+		trimmed := strings.TrimSpace(item)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
 func nonEmpty(values ...string) string {
 	for _, value := range values {
 		if strings.TrimSpace(value) != "" {
@@ -616,3 +770,63 @@ func nonEmpty(values ...string) string {
 }
 
 var errUnexpectedStatus = errors.New("unexpected status")
+
+func copyRefreshCookie(sourceAPI, targetAPI *apiClient) error {
+	baseURL, err := url.Parse(sourceAPI.baseURL)
+	if err != nil {
+		return fmt.Errorf("parse base url: %w", err)
+	}
+
+	for _, cookie := range sourceAPI.client.Jar.Cookies(baseURL) {
+		if cookie.Name != service.RefreshTokenCookieName {
+			continue
+		}
+		targetAPI.client.Jar.SetCookies(baseURL, []*http.Cookie{{
+			Name:  cookie.Name,
+			Value: cookie.Value,
+			Path:  "/",
+		}})
+		return nil
+	}
+
+	return fmt.Errorf("missing %s cookie in session jar", service.RefreshTokenCookieName)
+}
+
+func assertSessionCookieHeaders(headers http.Header, cfg *smokeConfig) error {
+	required := map[string]bool{
+		service.AccessTokenCookieName:  false,
+		service.RefreshTokenCookieName: false,
+	}
+	wantSameSite := strings.ToLower(strings.TrimSpace(cfg.CookieSameSite))
+
+	for _, raw := range headers.Values("Set-Cookie") {
+		lower := strings.ToLower(raw)
+		for name := range required {
+			if !strings.HasPrefix(raw, name+"=") {
+				continue
+			}
+			if !strings.Contains(lower, "httponly") {
+				return fmt.Errorf("%s missing HttpOnly attribute", name)
+			}
+			if wantSameSite != "" && !strings.Contains(lower, "samesite="+wantSameSite) {
+				return fmt.Errorf("%s missing SameSite=%s attribute", name, cfg.CookieSameSite)
+			}
+			hasSecure := strings.Contains(lower, "secure")
+			if cfg.CookieSecure && !hasSecure {
+				return fmt.Errorf("%s missing Secure attribute", name)
+			}
+			if !cfg.CookieSecure && hasSecure {
+				return fmt.Errorf("%s unexpectedly set Secure attribute", name)
+			}
+			required[name] = true
+		}
+	}
+
+	for name, ok := range required {
+		if !ok {
+			return fmt.Errorf("missing Set-Cookie header for %s", name)
+		}
+	}
+
+	return nil
+}

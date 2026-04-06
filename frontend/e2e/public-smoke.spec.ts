@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 import {
   acquirePublishedSmokePost,
+  cleanupAdminResource,
   createSmokeMoment,
   createSmokeText,
   expectPageResponseOK,
@@ -153,60 +154,99 @@ test.describe('public smoke', () => {
 
     const nickname = createSmokeText('guestbook-author')
     const content = createSmokeText('guestbook-message')
+    const replyContent = createSmokeText('guestbook-reply')
+    let messageID = ''
 
-    await page.goto('/guestbook')
-    await expect(page.getByRole('heading', { name: '发布留言' })).toBeVisible()
+    try {
+      await page.goto('/guestbook')
+      await expect(page.getByRole('heading', { name: '发布留言' })).toBeVisible()
 
-    await page.getByLabel('昵称').fill(nickname)
-    await page.getByLabel('留言内容').fill(content)
+      await page.getByLabel('昵称').fill(nickname)
+      await page.getByLabel('留言内容').fill(content)
 
-    const submitResponse = page.waitForResponse((response) =>
-      response.url().includes('/api/v1/guestbook/messages')
-      && response.request().method() === 'POST',
-    )
+      const submitResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/guestbook/messages')
+        && response.request().method() === 'POST',
+      )
 
-    await page.getByRole('button', { name: '发送留言' }).click()
+      await page.getByRole('button', { name: '发送留言' }).click()
 
-    await expectPageResponseOK(submitResponse)
-    await expect(page.getByRole('status').filter({ hasText: '留言已提交，等待审核' })).toBeVisible()
+      const submitted = await expectPageResponseOK(submitResponse)
+      messageID = String((await submitted.json()).data?.id || '')
+      await expect(page.getByRole('status').filter({ hasText: '留言已提交，等待审核' })).toBeVisible()
 
-    await loginAsAdmin(page)
-    await page.goto('/admin/comments')
-    await page.getByRole('button', { name: '留言板留言' }).click()
+      await loginAsAdmin(page)
+      await page.goto('/admin/comments')
+      await page.getByRole('button', { name: '留言板留言' }).click()
 
-    const pendingRow = page.locator('tbody tr').filter({ hasText: content }).first()
-    await expect(pendingRow).toBeVisible()
-    await expect(pendingRow.getByText('待审核')).toBeVisible()
+      const pendingRow = page.locator('tbody tr').filter({ hasText: content }).first()
+      await expect(pendingRow).toBeVisible()
+      await expect(pendingRow.getByText('待审核')).toBeVisible()
 
-    const approveResponse = page.waitForResponse((response) =>
-      response.url().includes('/api/v1/admin/guestbook/messages/')
-      && response.url().includes('/approve')
-      && response.request().method() === 'POST',
-    )
+      const approveResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/admin/guestbook/messages/')
+        && response.url().includes('/approve')
+        && response.request().method() === 'POST',
+      )
 
-    await pendingRow.getByRole('button', { name: '通过评论' }).click()
+      await pendingRow.getByRole('button', { name: '通过评论' }).click()
 
-    await expectPageResponseOK(approveResponse)
-    await expect(pendingRow.getByText('已通过')).toBeVisible()
+      await expectPageResponseOK(approveResponse)
+      await expect(pendingRow.getByText('已通过')).toBeVisible()
 
-    await page.goto('/guestbook')
-    await page.getByRole('button', { name: '最新' }).click()
-    await expect(page.getByText(content)).toBeVisible()
+      await page.context().clearCookies()
+      await page.goto('/guestbook')
+      await page.getByRole('button', { name: '最新' }).click()
 
-    await page.goto('/admin/comments')
-    await page.getByRole('button', { name: '留言板留言' }).click()
-    const approvedRow = page.locator('tbody tr').filter({ hasText: content }).first()
-    await expect(approvedRow).toBeVisible()
+      const publicCard = page.getByTestId('guestbook-message-card').filter({ hasText: content }).first()
+      await expect(publicCard).toBeVisible()
 
-    const deleteResponse = page.waitForResponse((response) =>
-      response.url().includes('/api/v1/admin/guestbook/messages/')
-      && response.request().method() === 'DELETE',
-    )
+      const upvoteResponse = page.waitForResponse((response) =>
+        response.url().includes(`/api/v1/guestbook/messages/${messageID}/vote`)
+        && response.request().method() === 'POST',
+      )
+      await publicCard.getByTestId('guestbook-upvote-button').click()
+      await expectPageResponseOK(upvoteResponse)
+      await expect(publicCard.getByTestId('guestbook-vote-score')).toHaveText('1')
 
-    await approvedRow.getByRole('button', { name: '删除评论' }).click()
+      await loginAsAdmin(page)
+      await page.goto('/guestbook')
+      await page.getByRole('button', { name: '最新' }).click()
 
-    await expectPageResponseOK(deleteResponse)
-    await expect(page.locator('tbody tr').filter({ hasText: content })).toHaveCount(0)
+      const authorCard = page.getByTestId('guestbook-message-card').filter({ hasText: content }).first()
+      await expect(authorCard).toBeVisible()
+      await authorCard.getByTestId('guestbook-reply-toggle').click()
+      await authorCard.getByTestId('guestbook-reply-content').fill(replyContent)
+
+      const replyResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/guestbook/messages')
+        && response.request().method() === 'POST',
+      )
+      await authorCard.getByTestId('guestbook-reply-submit').click()
+
+      await expectPageResponseOK(replyResponse)
+      await expect(page.getByText('作者回复已发布')).toBeVisible()
+
+      await page.goto('/guestbook')
+      await page.getByRole('button', { name: '最新' }).click()
+      const repliedCard = page.getByTestId('guestbook-message-card').filter({ hasText: content }).first()
+      const replyItem = repliedCard.getByTestId('guestbook-reply-item').filter({ hasText: replyContent }).first()
+      await expect(replyItem).toBeVisible()
+      await expect(replyItem.getByText('作者')).toBeVisible()
+
+      const replyVoteResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/guestbook/messages/')
+        && response.url().includes('/vote')
+        && response.request().method() === 'POST',
+      )
+      await replyItem.getByTestId('guestbook-reply-upvote-button').click()
+      await expectPageResponseOK(replyVoteResponse)
+      await expect(replyItem.getByTestId('guestbook-reply-vote-score')).toHaveText('1')
+    } finally {
+      if (messageID) {
+        await cleanupAdminResource(request, `/admin/guestbook/messages/${messageID}`)
+      }
+    }
   })
 
   test('friend application can be approved in admin and becomes visible publicly', async ({ page, request }) => {
@@ -268,6 +308,53 @@ test.describe('public smoke', () => {
 
     await expectPageResponseOK(deleteResponse)
     await expect(page.locator('table').last().locator('tbody tr').filter({ hasText: siteURL })).toHaveCount(0)
+  })
+
+  test('friend application can be rejected in admin and stays hidden publicly', async ({ page, request }) => {
+    test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running moderation smoke.')
+    await requireBackend(request)
+
+    const siteName = createSmokeText('friend-reject-site')
+    const siteURL = `https://${createSmokeText('friend-reject')}.example.com`
+
+    await page.goto('/friends')
+    await page.getByRole('button', { name: '申请交换友链' }).click()
+
+    await page.getByLabel('站点名称').fill(siteName)
+    await page.getByLabel('站点地址').fill(siteURL)
+    await page.getByLabel('联系邮箱').fill('smoke@example.com')
+    await page.getByLabel('站点简介').fill(createSmokeText('friend-reject-description'))
+
+    const submitResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/friends/applications')
+      && response.request().method() === 'POST',
+    )
+
+    await page.getByRole('button', { name: '提交申请' }).click()
+
+    await expectPageResponseOK(submitResponse)
+    await expect(page.getByText('友链申请已提交，审核通过后会出现在友链墙。')).toBeVisible()
+
+    await loginAsAdmin(page)
+    await page.goto('/admin/friends')
+
+    const applicationRow = page.locator('table').first().locator('tbody tr').filter({ hasText: siteURL }).first()
+    await expect(applicationRow).toBeVisible()
+    await expect(applicationRow.getByText('待审核')).toBeVisible()
+
+    const rejectResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/admin/friends/applications/')
+      && response.url().includes('/reject')
+      && response.request().method() === 'POST',
+    )
+
+    await applicationRow.getByRole('button', { name: '拒绝' }).click()
+
+    await expectPageResponseOK(rejectResponse)
+    await expect(applicationRow.getByText('已拒绝')).toBeVisible()
+
+    await page.goto('/friends')
+    await expect(page.getByRole('heading', { name: siteName })).toHaveCount(0)
   })
 
   test('moments interactions succeed publicly', async ({ page, request }) => {

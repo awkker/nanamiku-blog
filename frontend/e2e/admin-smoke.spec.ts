@@ -59,6 +59,64 @@ test.describe('admin smoke', () => {
     await expect(page).toHaveURL(/\/login(?:\/)?$/)
   })
 
+  test('admin session refresh keeps backup export available', async ({ page, request }) => {
+    test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running authenticated smoke.')
+    await requireBackend(request)
+
+    await loginAsAdmin(page)
+
+    const initialCookies = await page.context().cookies()
+    const accessCookie = initialCookies.find((cookie) => cookie.name === 'miku_blog_access')
+    const refreshCookie = initialCookies.find((cookie) => cookie.name === 'miku_blog_refresh')
+
+    expect(accessCookie).toBeTruthy()
+    expect(refreshCookie).toBeTruthy()
+    expect(accessCookie?.httpOnly).toBeTruthy()
+    expect(refreshCookie?.httpOnly).toBeTruthy()
+    expect(accessCookie?.sameSite).toBe('Lax')
+    expect(refreshCookie?.sameSite).toBe('Lax')
+
+    const documentCookie = await page.evaluate(() => document.cookie)
+    expect(documentCookie).not.toContain('miku_blog_access')
+    expect(documentCookie).not.toContain('miku_blog_refresh')
+
+    await page.context().clearCookies()
+    await page.context().addCookies([refreshCookie!])
+
+    const refreshResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/auth/refresh')
+      && response.request().method() === 'POST',
+    )
+
+    await page.goto('/admin/backup')
+
+    const refresh = await expectPageResponseOK(refreshResponse)
+    expect(refresh.headers()['set-cookie']).toContain('HttpOnly')
+    await expect(page).toHaveURL(/\/admin\/backup(?:\/)?$/)
+
+    const refreshedCookies = await page.context().cookies()
+    expect(refreshedCookies.some((cookie) => cookie.name === 'miku_blog_access')).toBeTruthy()
+    expect(refreshedCookies.some((cookie) => cookie.name === 'miku_blog_refresh')).toBeTruthy()
+
+    const jsonResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/admin/backup/export?format=json')
+      && response.request().method() === 'GET',
+    )
+    await page.getByRole('button', { name: '导出 JSON' }).click()
+    const jsonExport = await expectPageResponseOK(jsonResponse)
+    expect(jsonExport.headers()['content-disposition']).toContain('.json')
+    expect(jsonExport.headers()['content-type']).toContain('application/json')
+
+    const sqlResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/admin/backup/export?format=sql')
+      && response.request().method() === 'GET',
+    )
+    await page.getByRole('button', { name: '导出 SQL' }).click()
+    const sqlExport = await expectPageResponseOK(sqlResponse)
+    expect(sqlExport.headers()['content-disposition']).toContain('.sql')
+    expect(sqlExport.headers()['content-type']).toContain('application/sql')
+  })
+
   test('admin can create, publish, edit, draft, and delete a post', async ({ page, request }) => {
     test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running authenticated smoke.')
     await requireBackend(request)

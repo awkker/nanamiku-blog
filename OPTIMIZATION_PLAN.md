@@ -34,7 +34,7 @@
 - 安全、测试、CI 仍偏“开发态”，还不是“上线态”。
 - 若干查询与请求链路存在 N+1 或统计口径不严谨问题。
 
-### 2.4 截至 2026-04-03 的执行进度
+### 2.4 截至 2026-04-06 的执行进度
 
 - 阶段一已完成核心收口：
   - 公开博客详情统一到 `/blog/[slug]`。
@@ -101,7 +101,18 @@
     - `admin/index.astro`、`admin/backup.astro`、`admin/posts.astro`、`admin/moments.astro`、`admin/profile.astro` 的 `<BaseHead>` title / description 均改为从 `adminCopy` 读取。
     - `adminCopy` 新增 `layout.page`、`backup.page`、`postsManager.page`、`momentsManager.page`、`profileManager.page` 五组 metaTitle / metaDescription 字段。
     - 至此所有 8 个后台 `.astro` 页面的 `<BaseHead>` 均已收口到 copy 模块，后台再无硬编码页面标题。
-  - 阶段四的实机联调、阶段五更完整的内容与互动 E2E 仍待继续。
+  - 2026-04-06 阶段四已补第一批实机联调探针：
+    - 本地已使用真实 PostgreSQL / Redis 重跑 `go run cmd/migrate/main.go`，首次回放时补应用 `000009_post_view_daily_visitors.up.sql`，当前本地 smoke 数据库已与仓库 migration 对齐。
+    - `backend/cmd/smoke` 已新增 `HttpOnly cookie` 属性校验、仅保留 refresh cookie 的自动刷新恢复、CORS 预检、备份导出 `Content-Type` / `Content-Disposition` / 非空 body 探针。
+    - 上述后端 smoke 已于 2026-04-06 在本地真实环境实跑通过，不再只停留在“代码已接线、尚未联调”的状态。
+  - 2026-04-06 阶段五已补第十二批次级互动与后台会话回归覆盖：
+    - `frontend/e2e/admin-smoke.spec.ts` 已新增“仅保留 refresh cookie -> 访问后台触发自动刷新 -> 备份导出仍可用”的浏览器级会话闭环。
+    - `frontend/e2e/public-smoke.spec.ts` 已新增“留言板留言审核通过 -> 前台点赞 -> 作者回复 -> 回复点赞 -> 清理”的浏览器级次级互动闭环。
+    - `frontend/e2e/public-smoke.spec.ts` 已新增“友链申请提交 -> 后台拒绝 -> 前台不可见”的浏览器级审核闭环。
+    - `frontend/src/components/guestbook/GuestbookMessageCard.vue` 已补最小 `data-testid` 锚点，留言板回复与投票 smoke 后续不再继续依赖脆弱文本定位。
+  - 2026-04-06 本地浏览器 smoke 实跑备注：
+    - Playwright 首次实跑未进入业务断言，直接因本机缺少 Chromium 可执行文件而中断；该阻塞属于本地环境问题，不是当前仓库代码回归。
+    - 下一步优先观察 GitHub Actions 中 `smoke` job 的真实执行结果；若 CI 仍失败，再按日志继续补修。
   - 2026-04-05 阶段六已完成第一批性能与口径修正：
     - 文章列表与分类列表已改为聚合标签查询，移除逐篇补拉标签的后端 N+1。
     - 文章 UV 已改为按“文章 + 日期 + 访客”去重入库，`post_view_daily` 不再按每次访问直接累加 UV。
@@ -113,13 +124,13 @@
 为方便下次继续，当前剩余工作明确收敛为以下几类：
 
 1. 阶段四实机联调仍未完成
-   - 需要在更接近生产的环境里跑一轮真实联调，重点确认 `HttpOnly cookie` 登录、自动刷新、登出失效、后台守卫、导出接口、`COOKIE_*` 与 `CORS` 配置在非本地开发场景下是否稳定。
-   - 需要观察一次 GitHub Actions 中新增 smoke job 的真实执行结果；若首跑暴露环境兼容或时序问题，再按日志补修。
+   - 本地后端实机联调已完成第一轮：`HttpOnly cookie` 登录、自动刷新恢复、登出失效、导出接口、`COOKIE_*` 与 `CORS` 已通过 `backend/cmd/smoke` 新增探针真实验证。
+   - 仍需观察一次 GitHub Actions 中新增 `smoke` job 的真实执行结果，尤其是 Playwright 浏览器链路；2026-04-06 本地首跑因缺少 Chromium 可执行文件中断，需以 CI 结果为准继续补修。
 
 2. 阶段五仍缺更完整的内容与互动 E2E
    - 后台文章管理基础闭环已补齐，"定时发布"路径已进入浏览器级自动验证（创建定时文章、前台不可见、行内重设时间、删除）。
    - 后台说说管理基础闭环已补齐，并已覆盖草稿、定时、发布、编辑、转草稿与前台可见性联动；但更细的图片、多记录并发与异常态回归仍主要依赖手工验证。
-   - 留言板回复、投票，友链申请拒绝等次级互动仍主要依赖手工回归。
+   - 留言板回复、投票与友链申请拒绝的浏览器级自动化覆盖已补齐；仍待继续补图片、多记录并发、异常态与边界条件回归。
 
 3. 阶段六第二批性能与口径修正（已完成）
    - `DashboardService` 已全面接入 Redis 缓存（stats 2 min, trends/analytics 5 min），避免仪表盘每次加载产生 6~17+ 次串行 DB 查询。
@@ -131,12 +142,6 @@
    - 全部 8 个后台 `.astro` 页面的 `<BaseHead>` 均已收口到 `adminCopy`，后台再无硬编码页面标题。
    - 原则仍是“页面和组件只消费 copy，不继续新增运营向硬编码文案”。
 
-### 2.6 下次建议直接开工顺序
-
-1. 先跑一轮 CI / smoke 实机结果，处理最先暴露的问题。
-2. 再补后台文章“定时发布”浏览器级路径，优先覆盖创建定时文章、前台不可见、到点前状态确认与清理。
-3. 然后推进阶段六第二批缓存与统计口径修正。
-4. 最后继续做零散文案收口。
 
 ## 3. 优先级总览
 
