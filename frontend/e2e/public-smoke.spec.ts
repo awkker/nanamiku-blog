@@ -36,6 +36,7 @@ test.describe('public smoke', () => {
       await openSmokePost(page, post.slug, post.title)
       const commentsSection = page.locator('#post-comments')
       const commentForm = commentsSection.locator('form')
+      await expect(page.getByTestId('post-comment-form')).toHaveAttribute('data-hydrated', 'true')
       await expect(commentsSection.getByRole('heading', { name: '发布评论' })).toBeVisible()
 
       await commentForm.getByLabel('评论昵称').fill(createSmokeText('blog-comment-author'))
@@ -49,9 +50,10 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
 
-      await commentForm.getByRole('button', { name: '发送评论' }).click()
-
-      await expectPageResponseOK(submitResponse)
+      await Promise.all([
+        expectPageResponseOK(submitResponse),
+        commentForm.getByRole('button', { name: '发送评论' }).click(),
+      ])
       await expect(page.getByText('评论已提交，审核通过后会显示在列表中。')).toBeVisible()
     } finally {
       await cleanup()
@@ -70,6 +72,7 @@ test.describe('public smoke', () => {
       await openSmokePost(page, post.slug, post.title)
       const commentsSection = page.locator('#post-comments')
       const commentForm = commentsSection.locator('form')
+      await expect(page.getByTestId('post-comment-form')).toHaveAttribute('data-hydrated', 'true')
 
       await commentForm.getByLabel('评论昵称').fill(author)
       await commentForm.getByLabel('评论邮箱').fill('smoke@example.com')
@@ -82,9 +85,10 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
 
-      await commentForm.getByRole('button', { name: '发送评论' }).click()
-
-      await expectPageResponseOK(submitResponse)
+      await Promise.all([
+        expectPageResponseOK(submitResponse),
+        commentForm.getByRole('button', { name: '发送评论' }).click(),
+      ])
       await expect(page.getByText('评论已提交，审核通过后会显示在列表中。')).toBeVisible()
 
       await loginAsAdmin(page)

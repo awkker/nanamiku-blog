@@ -103,6 +103,10 @@ export async function loginAsAdmin(page: Page) {
   cachedAdminCookies = await page.context().cookies()
 }
 
+export async function rememberAdminCookies(page: Page) {
+  cachedAdminCookies = await page.context().cookies()
+}
+
 export async function expectPageResponseOK(responseOrPromise: Response | Promise<Response>) {
   const response = await responseOrPromise
   expect(

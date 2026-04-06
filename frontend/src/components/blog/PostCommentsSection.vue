@@ -33,7 +33,7 @@
         </div>
         <h3 class="text-base font-semibold text-slate-800">发布评论</h3>
       </div>
-      <form class="space-y-4" @submit.prevent="submitComment">
+      <form class="space-y-4" data-testid="post-comment-form" :data-hydrated="hydrated ? 'true' : 'false'" @submit.prevent="submitComment">
         <div
           v-if="replyTarget"
           class="flex items-center justify-between gap-3 rounded-xl border border-[#c084fc]/30 bg-[#c084fc]/10 px-3 py-2"
@@ -266,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { siteCopy } from '../../content/copy'
 import { api, type PagedData } from '../../lib/api'
@@ -300,6 +300,7 @@ const comments = ref<PostCommentItem[]>([])
 const total = ref(0)
 const loading = ref(false)
 const submitting = ref(false)
+const hydrated = ref(false)
 
 const author = ref('')
 const email = ref('')
@@ -369,6 +370,10 @@ watch(
   },
   { immediate: true },
 )
+
+onMounted(() => {
+  hydrated.value = true
+})
 
 function setFeedback(message: string, type: 'neutral' | 'success' | 'error' = 'neutral') {
   feedback.value = message

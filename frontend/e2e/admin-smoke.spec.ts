@@ -6,6 +6,7 @@ import {
   expectPageResponseOK,
   hasAdminCredentials,
   loginAsAdmin,
+  rememberAdminCookies,
   requireBackend,
 } from './smoke-helpers'
 
@@ -80,8 +81,7 @@ test.describe('admin smoke', () => {
     expect(documentCookie).not.toContain('miku_blog_access')
     expect(documentCookie).not.toContain('miku_blog_refresh')
 
-    await page.context().clearCookies()
-    await page.context().addCookies([refreshCookie!])
+    await page.context().clearCookies({ name: 'miku_blog_access' })
 
     const refreshResponse = page.waitForResponse((response) =>
       response.url().includes('/api/v1/auth/refresh')
@@ -90,13 +90,17 @@ test.describe('admin smoke', () => {
 
     await page.goto('/admin/backup')
 
-    const refresh = await expectPageResponseOK(refreshResponse)
-    expect(refresh.headers()['set-cookie']).toContain('HttpOnly')
+    await expectPageResponseOK(refreshResponse)
     await expect(page).toHaveURL(/\/admin\/backup(?:\/)?$/)
 
     const refreshedCookies = await page.context().cookies()
-    expect(refreshedCookies.some((cookie) => cookie.name === 'miku_blog_access')).toBeTruthy()
-    expect(refreshedCookies.some((cookie) => cookie.name === 'miku_blog_refresh')).toBeTruthy()
+    const refreshedAccessCookie = refreshedCookies.find((cookie) => cookie.name === 'miku_blog_access')
+    const refreshedRefreshCookie = refreshedCookies.find((cookie) => cookie.name === 'miku_blog_refresh')
+    expect(refreshedAccessCookie).toBeTruthy()
+    expect(refreshedRefreshCookie).toBeTruthy()
+    expect(refreshedAccessCookie?.httpOnly).toBeTruthy()
+    expect(refreshedRefreshCookie?.httpOnly).toBeTruthy()
+    await rememberAdminCookies(page)
 
     const jsonResponse = page.waitForResponse((response) =>
       response.url().includes('/api/v1/admin/backup/export?format=json')
