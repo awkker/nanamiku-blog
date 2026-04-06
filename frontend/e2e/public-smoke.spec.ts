@@ -1,13 +1,19 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import {
   acquirePublishedSmokePost,
   createSmokeMoment,
   createSmokeText,
+  expectPageResponseOK,
   hasAdminCredentials,
   loginAsAdmin,
   requireBackend,
 } from './smoke-helpers'
+
+async function openSmokePost(page: Page, slug: string, title: string) {
+  await page.goto(`/blog/${encodeURIComponent(slug)}`)
+  await expect(page.locator('header').getByRole('heading', { level: 1 }).first()).toContainText(title)
+}
 
 test.describe('public smoke', () => {
   test.beforeEach(async ({ context }) => {
@@ -20,9 +26,7 @@ test.describe('public smoke', () => {
     const { item: post, cleanup } = smokePost
 
     try {
-      await page.goto(`/blog/${encodeURIComponent(post.slug)}`)
-
-      await expect(page.getByRole('heading', { level: 1 })).toContainText(post.title)
+      await openSmokePost(page, post.slug, post.title)
       await expect(page.getByRole('heading', { name: '发布评论' })).toBeVisible()
 
       await page.getByLabel('评论昵称').fill(createSmokeText('blog-comment-author'))
@@ -37,7 +41,7 @@ test.describe('public smoke', () => {
 
       await page.getByRole('button', { name: '发送评论' }).click()
 
-      await expect(await submitResponse).toBeOK()
+      await expectPageResponseOK(submitResponse)
       await expect(page.getByText('评论已提交，审核通过后会显示在列表中。')).toBeVisible()
     } finally {
       await cleanup()
@@ -53,8 +57,7 @@ test.describe('public smoke', () => {
     const commentContent = createSmokeText('moderation-comment')
 
     try {
-      await page.goto(`/blog/${encodeURIComponent(post.slug)}`)
-      await expect(page.getByRole('heading', { level: 1 })).toContainText(post.title)
+      await openSmokePost(page, post.slug, post.title)
 
       await page.getByLabel('评论昵称').fill(author)
       await page.getByLabel('评论邮箱').fill('smoke@example.com')
@@ -68,7 +71,7 @@ test.describe('public smoke', () => {
 
       await page.getByRole('button', { name: '发送评论' }).click()
 
-      await expect(await submitResponse).toBeOK()
+      await expectPageResponseOK(submitResponse)
       await expect(page.getByText('评论已提交，审核通过后会显示在列表中。')).toBeVisible()
 
       await loginAsAdmin(page)
@@ -86,10 +89,10 @@ test.describe('public smoke', () => {
 
       await pendingRow.getByRole('button', { name: '通过评论' }).click()
 
-      await expect(await approveResponse).toBeOK()
+      await expectPageResponseOK(approveResponse)
       await expect(pendingRow.getByText('已通过')).toBeVisible()
 
-      await page.goto(`/blog/${encodeURIComponent(post.slug)}`)
+      await openSmokePost(page, post.slug, post.title)
       const publicComment = page.locator('#post-comments').getByText(commentContent)
       await expect(publicComment).toBeVisible()
 
@@ -104,7 +107,7 @@ test.describe('public smoke', () => {
 
       await approvedRow.getByRole('button', { name: '删除评论' }).click()
 
-      await expect(await deleteResponse).toBeOK()
+      await expectPageResponseOK(deleteResponse)
       await expect(page.locator('tbody tr').filter({ hasText: commentContent })).toHaveCount(0)
     } finally {
       await cleanup()
@@ -126,9 +129,9 @@ test.describe('public smoke', () => {
       && response.request().method() === 'POST',
     )
 
-    await page.getByRole('button', { name: '发布' }).click()
+    await page.getByRole('button', { name: '发送留言' }).click()
 
-    await expect(await submitResponse).toBeOK()
+    await expectPageResponseOK(submitResponse)
     await expect(page.getByRole('status').filter({ hasText: '留言已提交，等待审核' })).toBeVisible()
   })
 
@@ -150,9 +153,9 @@ test.describe('public smoke', () => {
       && response.request().method() === 'POST',
     )
 
-    await page.getByRole('button', { name: '发布' }).click()
+    await page.getByRole('button', { name: '发送留言' }).click()
 
-    await expect(await submitResponse).toBeOK()
+    await expectPageResponseOK(submitResponse)
     await expect(page.getByRole('status').filter({ hasText: '留言已提交，等待审核' })).toBeVisible()
 
     await loginAsAdmin(page)
@@ -171,7 +174,7 @@ test.describe('public smoke', () => {
 
     await pendingRow.getByRole('button', { name: '通过评论' }).click()
 
-    await expect(await approveResponse).toBeOK()
+    await expectPageResponseOK(approveResponse)
     await expect(pendingRow.getByText('已通过')).toBeVisible()
 
     await page.goto('/guestbook')
@@ -190,7 +193,7 @@ test.describe('public smoke', () => {
 
     await approvedRow.getByRole('button', { name: '删除评论' }).click()
 
-    await expect(await deleteResponse).toBeOK()
+    await expectPageResponseOK(deleteResponse)
     await expect(page.locator('tbody tr').filter({ hasText: content })).toHaveCount(0)
   })
 
@@ -216,7 +219,7 @@ test.describe('public smoke', () => {
 
     await page.getByRole('button', { name: '提交申请' }).click()
 
-    await expect(await submitResponse).toBeOK()
+    await expectPageResponseOK(submitResponse)
     await expect(page.getByText('友链申请已提交，审核通过后会出现在友链墙。')).toBeVisible()
 
     await loginAsAdmin(page)
@@ -234,7 +237,7 @@ test.describe('public smoke', () => {
 
     await applicationRow.getByRole('button', { name: '通过' }).click()
 
-    await expect(await approveResponse).toBeOK()
+    await expectPageResponseOK(approveResponse)
 
     await page.goto('/friends')
     await expect(page.getByRole('heading', { name: siteName })).toBeVisible()
@@ -251,7 +254,7 @@ test.describe('public smoke', () => {
 
     await friendRow.getByRole('button', { name: '删除' }).click()
 
-    await expect(await deleteResponse).toBeOK()
+    await expectPageResponseOK(deleteResponse)
     await expect(page.locator('table').last().locator('tbody tr').filter({ hasText: siteURL })).toHaveCount(0)
   })
 
@@ -272,7 +275,7 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
       await card.getByTestId('moment-like-button').click()
-      await expect(await likeResponse).toBeOK()
+      await expectPageResponseOK(likeResponse)
       await expect(card.getByTestId('moment-like-button')).toContainText('1')
 
       const repostResponse = page.waitForResponse((response) =>
@@ -280,7 +283,7 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
       await card.getByTestId('moment-repost-button').click()
-      await expect(await repostResponse).toBeOK()
+      await expectPageResponseOK(repostResponse)
       await expect(card.getByTestId('moment-repost-button')).toContainText('1')
 
       await card.getByTestId('moment-comment-toggle').click()
@@ -292,7 +295,7 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
       await card.getByTestId('moment-comment-submit').click()
-      await expect(await commentResponse).toBeOK()
+      await expectPageResponseOK(commentResponse)
 
       const commentItem = card.getByTestId('moment-comment-item').filter({ hasText: commentContent }).first()
       await expect(commentItem).toBeVisible()
@@ -302,7 +305,7 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
       await commentItem.getByTestId('moment-comment-like-button').click()
-      await expect(await commentLikeResponse).toBeOK()
+      await expectPageResponseOK(commentLikeResponse)
       await expect(commentItem.getByTestId('moment-comment-like-button')).toContainText('1')
     } finally {
       await cleanup()

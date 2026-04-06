@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test'
 
-import { cleanupAdminResource, createSmokeText, hasAdminCredentials, loginAsAdmin, requireBackend } from './smoke-helpers'
+import {
+  cleanupAdminResource,
+  createSmokeText,
+  expectPageResponseOK,
+  hasAdminCredentials,
+  loginAsAdmin,
+  requireBackend,
+} from './smoke-helpers'
 
 function formatLocalDateTimeInput(date: Date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000)
@@ -83,7 +90,7 @@ test.describe('admin smoke', () => {
       await page.getByTestId('admin-post-create-submit').click()
 
       const created = await createResponse
-      await expect(created).toBeOK()
+      await expectPageResponseOK(created)
       postID = String((await created.json()).data?.id || '')
 
       const draftRow = page.getByTestId('admin-post-row').filter({ hasText: originalTitle }).first()
@@ -103,7 +110,7 @@ test.describe('admin smoke', () => {
       )
       await publishRow.getByTestId('admin-post-publish-button').click()
 
-      await expect(await publishResponse).toBeOK()
+      await expectPageResponseOK(publishResponse)
       await expect(publishRow.getByText('已发布')).toBeVisible()
 
       await page.goto('/blog')
@@ -124,7 +131,7 @@ test.describe('admin smoke', () => {
       )
       await page.getByTestId('admin-post-edit-submit').click()
 
-      await expect(await updateResponse).toBeOK()
+      await expectPageResponseOK(updateResponse)
       const updatedRow = page.getByTestId('admin-post-row').filter({ hasText: updatedTitle }).first()
       await expect(updatedRow).toBeVisible()
 
@@ -141,7 +148,7 @@ test.describe('admin smoke', () => {
       )
       await unpublishRow.getByTestId('admin-post-unpublish-button').click()
 
-      await expect(await unpublishResponse).toBeOK()
+      await expectPageResponseOK(unpublishResponse)
       await expect(unpublishRow.getByText('草稿')).toBeVisible()
 
       await page.goto('/blog')
@@ -157,7 +164,7 @@ test.describe('admin smoke', () => {
       )
       await deleteRow.getByTestId('admin-post-delete-button').click()
 
-      await expect(await deleteResponse).toBeOK()
+      await expectPageResponseOK(deleteResponse)
       await expect(page.getByTestId('admin-post-row').filter({ hasText: updatedTitle })).toHaveCount(0)
       postID = ''
     } finally {
@@ -193,7 +200,7 @@ test.describe('admin smoke', () => {
       await page.getByTestId('admin-moment-create-submit').click()
 
       const created = await createResponse
-      await expect(created).toBeOK()
+      await expectPageResponseOK(created)
       momentID = String((await created.json()).data?.id || '')
 
       const draftRow = page.getByTestId('admin-moment-row').filter({ hasText: originalContent }).first()
@@ -216,7 +223,7 @@ test.describe('admin smoke', () => {
       )
       await scheduleRow.getByTestId('admin-moment-schedule-button').click()
 
-      await expect(await scheduleResponse).toBeOK()
+      await expectPageResponseOK(scheduleResponse)
       await expect(scheduleRow.getByText('定时发布')).toBeVisible()
 
       await page.goto('/moments')
@@ -232,7 +239,7 @@ test.describe('admin smoke', () => {
       )
       await publishRow.getByTestId('admin-moment-publish-button').click()
 
-      await expect(await publishResponse).toBeOK()
+      await expectPageResponseOK(publishResponse)
       await expect(publishRow.getByText('已发布')).toBeVisible()
 
       await page.goto('/moments')
@@ -252,7 +259,7 @@ test.describe('admin smoke', () => {
       )
       await page.getByTestId('admin-moment-edit-submit').click()
 
-      await expect(await updateResponse).toBeOK()
+      await expectPageResponseOK(updateResponse)
       const updatedRow = page.getByTestId('admin-moment-row').filter({ hasText: updatedContent }).first()
       await expect(updatedRow).toBeVisible()
 
@@ -269,7 +276,7 @@ test.describe('admin smoke', () => {
       )
       await unpublishRow.getByTestId('admin-moment-unpublish-button').click()
 
-      await expect(await unpublishResponse).toBeOK()
+      await expectPageResponseOK(unpublishResponse)
       await expect(unpublishRow.getByText('草稿')).toBeVisible()
 
       await page.goto('/moments')
@@ -288,7 +295,7 @@ test.describe('admin smoke', () => {
       )
       await deleteRow.getByTestId('admin-moment-delete-button').click()
 
-      await expect(await deleteResponse).toBeOK()
+      await expectPageResponseOK(deleteResponse)
       await expect(page.getByTestId('admin-moment-row').filter({ hasText: updatedContent })).toHaveCount(0)
       momentID = ''
     } finally {

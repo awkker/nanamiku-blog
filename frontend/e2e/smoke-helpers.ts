@@ -1,4 +1,4 @@
-import { test, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Page, type Response } from '@playwright/test'
 
 export const adminIdentifier = process.env.SMOKE_ADMIN_IDENTIFIER || ''
 export const adminPassword = process.env.SMOKE_ADMIN_PASSWORD || ''
@@ -56,13 +56,22 @@ export async function requireBackend(request: APIRequestContext) {
 
 export async function loginAsAdmin(page: Page) {
   await page.goto('/login')
-  await page.getByLabel('用户名或邮箱').fill(adminIdentifier)
-  await page.getByLabel('密码').fill(adminPassword)
+  await page.locator('input[autocomplete="username"]').fill(adminIdentifier)
+  await page.locator('input[autocomplete="current-password"]').fill(adminPassword)
 
   await Promise.all([
     page.waitForURL('**/admin'),
     page.getByRole('button', { name: '登录' }).click(),
   ])
+}
+
+export async function expectPageResponseOK(responseOrPromise: Response | Promise<Response>) {
+  const response = await responseOrPromise
+  expect(
+    response.ok(),
+    `${response.request().method()} ${response.url()} -> ${response.status()}`,
+  ).toBeTruthy()
+  return response
 }
 
 export function createSmokeText(prefix: string) {
@@ -156,9 +165,8 @@ export async function acquirePublishedSmokePost(request: APIRequestContext): Pro
 
   return {
     item: post,
-    cleanup: async () => {
-      await cleanupAdminResource(request, `/admin/posts/${post.id}`)
-    },
+    // Keep the seeded post so retries and later tests can reuse the same routed slug.
+    cleanup: noopCleanup,
   }
 }
 
