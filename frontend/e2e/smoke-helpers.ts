@@ -38,6 +38,7 @@ interface SmokeResource<T> {
 }
 
 const noopCleanup = async () => {}
+let cachedAdminCookies: Awaited<ReturnType<ReturnType<Page['context']>['cookies']>> | null = null
 
 export async function requireBackend(request: APIRequestContext) {
   let available = false
@@ -55,6 +56,36 @@ export async function requireBackend(request: APIRequestContext) {
 }
 
 export async function loginAsAdmin(page: Page) {
+  if (cachedAdminCookies && cachedAdminCookies.length > 0) {
+    await page.context().addCookies(cachedAdminCookies)
+    await page.goto('/admin')
+
+    const hasSession = await page.evaluate(async () => {
+      try {
+        const response = await fetch('/api/v1/auth/me', {
+          method: 'GET',
+          credentials: 'include',
+        })
+        if (!response.ok) {
+          return false
+        }
+
+        const body = await response.json().catch(() => null)
+        return Boolean(body && body.code === 0 && body.data)
+      } catch {
+        return false
+      }
+    })
+
+    if (hasSession) {
+      await page.waitForURL(/\/admin(?:\/)?$/)
+      return
+    }
+
+    cachedAdminCookies = null
+    await page.context().clearCookies()
+  }
+
   await page.goto('/login')
   await page.locator('input[autocomplete="username"]').fill(adminIdentifier)
   await page.locator('input[autocomplete="current-password"]').fill(adminPassword)
@@ -69,6 +100,7 @@ export async function loginAsAdmin(page: Page) {
 
   await page.goto('/admin')
   await page.waitForURL(/\/admin(?:\/)?$/)
+  cachedAdminCookies = await page.context().cookies()
 }
 
 export async function expectPageResponseOK(responseOrPromise: Response | Promise<Response>) {

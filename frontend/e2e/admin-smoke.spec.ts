@@ -42,8 +42,8 @@ test.describe('admin smoke', () => {
 
     await page.getByRole('link', { name: '友链管理' }).click()
     await expect(page).toHaveURL(/\/admin\/friends(?:\/)?$/)
-    await expect(page.getByText('申请队列')).toBeVisible()
-    await expect(page.getByText('正式友链')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '申请队列' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '正式友链' })).toBeVisible()
 
     await page.getByRole('link', { name: '数据备份' }).click()
     await expect(page).toHaveURL(/\/admin\/backup(?:\/)?$/)

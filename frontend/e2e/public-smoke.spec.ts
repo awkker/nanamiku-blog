@@ -33,11 +33,14 @@ test.describe('public smoke', () => {
 
     try {
       await openSmokePost(page, post.slug, post.title)
-      await expect(page.getByRole('heading', { name: '发布评论' })).toBeVisible()
+      const commentsSection = page.locator('#post-comments')
+      const commentForm = commentsSection.locator('form')
+      await expect(commentsSection.getByRole('heading', { name: '发布评论' })).toBeVisible()
 
-      await page.getByLabel('评论昵称').fill(createSmokeText('blog-comment-author'))
-      await page.getByLabel('评论邮箱').fill('smoke@example.com')
-      await page.getByLabel('评论内容').fill(createSmokeText('blog-comment'))
+      await commentForm.getByLabel('评论昵称').fill(createSmokeText('blog-comment-author'))
+      await commentForm.getByLabel('评论邮箱').fill('smoke@example.com')
+      await commentForm.getByLabel('评论内容').fill(createSmokeText('blog-comment'))
+      await expect(commentForm.getByRole('button', { name: '发送评论' })).toBeEnabled()
 
       const submitResponse = page.waitForResponse((response) =>
         response.url().includes('/api/v1/posts/')
@@ -45,7 +48,7 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
 
-      await page.getByRole('button', { name: '发送评论' }).click()
+      await commentForm.getByRole('button', { name: '发送评论' }).click()
 
       await expectPageResponseOK(submitResponse)
       await expect(page.getByText('评论已提交，审核通过后会显示在列表中。')).toBeVisible()
@@ -64,10 +67,13 @@ test.describe('public smoke', () => {
 
     try {
       await openSmokePost(page, post.slug, post.title)
+      const commentsSection = page.locator('#post-comments')
+      const commentForm = commentsSection.locator('form')
 
-      await page.getByLabel('评论昵称').fill(author)
-      await page.getByLabel('评论邮箱').fill('smoke@example.com')
-      await page.getByLabel('评论内容').fill(commentContent)
+      await commentForm.getByLabel('评论昵称').fill(author)
+      await commentForm.getByLabel('评论邮箱').fill('smoke@example.com')
+      await commentForm.getByLabel('评论内容').fill(commentContent)
+      await expect(commentForm.getByRole('button', { name: '发送评论' })).toBeEnabled()
 
       const submitResponse = page.waitForResponse((response) =>
         response.url().includes('/api/v1/posts/')
@@ -75,7 +81,7 @@ test.describe('public smoke', () => {
         && response.request().method() === 'POST',
       )
 
-      await page.getByRole('button', { name: '发送评论' }).click()
+      await commentForm.getByRole('button', { name: '发送评论' }).click()
 
       await expectPageResponseOK(submitResponse)
       await expect(page.getByText('评论已提交，审核通过后会显示在列表中。')).toBeVisible()
