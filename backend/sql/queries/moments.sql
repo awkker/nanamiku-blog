@@ -77,8 +77,8 @@ RETURNING id, created_at;
 -- name: UpdateMoment :exec
 UPDATE moments
 SET author_name = $2, author_avatar_url = $3, content = $4, image_urls = $5, publish_status = $6,
-    published_at = CASE WHEN $6 = 'published'::moment_publish_status THEN COALESCE(published_at, now()) ELSE NULL END,
-    scheduled_at = CASE WHEN $6 = 'scheduled'::moment_publish_status THEN $7 ELSE NULL END
+    published_at = CASE WHEN $6 = 'published'::moment_publish_status THEN COALESCE(published_at, now()) ELSE NULL::timestamptz END,
+    scheduled_at = CASE WHEN $6 = 'scheduled'::moment_publish_status THEN $7::timestamptz ELSE NULL::timestamptz END
 WHERE id = $1;
 
 -- name: DeleteMoment :exec
