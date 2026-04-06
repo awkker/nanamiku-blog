@@ -3,12 +3,15 @@ import BaseHead from '../../components/base/BaseHead.astro'
 import AdminProfileManager from '../../components/admin/AdminProfileManager.vue'
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
 import AdminLayout from '../../layouts/AdminLayout.astro'
+import { adminCopy } from '../../content/copy'
+
+const copy = adminCopy.profileManager
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title="个人设置 | Miku Blog" description="后台个人设置" />
+    <BaseHead title={copy.page.metaTitle} description={copy.page.metaDescription} />
     <AdminRouteGuard />
   </head>
   <body>

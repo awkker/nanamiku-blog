@@ -2,7 +2,7 @@
 SELECT count(*) FROM posts WHERE status != 'draft';
 
 -- name: GetTotalLikeCount :one
-SELECT coalesce(sum(like_count), 0)::bigint FROM posts;
+SELECT coalesce(sum(like_count), 0)::bigint FROM posts WHERE status = 'published';
 
 -- name: CountDraftPosts :one
 SELECT count(*) FROM posts WHERE status = 'draft';

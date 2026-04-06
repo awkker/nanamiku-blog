@@ -3,12 +3,15 @@ import BaseHead from '../../components/base/BaseHead.astro'
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
 import AdminBackupManager from '../../components/admin/AdminBackupManager.vue'
 import AdminLayout from '../../layouts/AdminLayout.astro'
+import { adminCopy } from '../../content/copy'
+
+const copy = adminCopy.backup
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title="数据备份 | Miku Blog" description="后台数据导出与备份" />
+    <BaseHead title={copy.page.metaTitle} description={copy.page.metaDescription} />
     <AdminRouteGuard />
   </head>
   <body>

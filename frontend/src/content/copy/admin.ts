@@ -9,8 +9,16 @@
 export const adminCopy = {
   layout: {
     defaultPageTitle: '仪表盘',
+    page: {
+      metaTitle: '后台管理 | Miku Blog',
+      metaDescription: 'Miku Blog 后台管理中心',
+    },
   },
   backup: {
+    page: {
+      metaTitle: '数据备份 | Miku Blog',
+      metaDescription: '后台数据导出与备份',
+    },
     title: '数据导出与备份',
     subtitle: '一键导出 JSON 或 SQL 备份，方便迁移与灾备。',
     jsonCardTitle: 'JSON 备份',
@@ -247,6 +255,8 @@ export const adminCopy = {
     page: {
       title: '个人设置',
       subtitle: '在这里统一维护后台身份与登录账号信息。',
+      metaTitle: '个人设置 | Miku Blog',
+      metaDescription: '后台个人设置',
     },
     profile: {
       title: '展示身份',
@@ -430,7 +440,17 @@ export const adminCopy = {
       rejectApplicationSuccess: '申请已拒绝',
     },
   },
+  postsManager: {
+    page: {
+      metaTitle: '文章管理 | Miku Blog',
+      metaDescription: '后台文章管理',
+    },
+  },
   momentsManager: {
+    page: {
+      metaTitle: '说说管理 | Miku Blog',
+      metaDescription: '后台说说管理',
+    },
     profile: {
       title: '管理员说说身份',
       subtitle: '发布说说时会自动使用这里的昵称与头像。',

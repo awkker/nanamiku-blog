@@ -213,6 +213,11 @@ func (s *DashboardService) CollectPageview(ctx context.Context, in AnalyticsColl
 }
 
 func (s *DashboardService) GetAnalyticsOverview(ctx context.Context, rangeKey string, offset int) (*DashboardAnalyticsOverview, error) {
+	cacheKey := fmt.Sprintf("dash:analytics:%s:%d", rangeKey, offset)
+	if cached, ok := s.readCache(ctx, cacheKey, new(DashboardAnalyticsOverview)); ok {
+		return cached.(*DashboardAnalyticsOverview), nil
+	}
+
 	window := resolveAnalyticsWindow(rangeKey, time.Now(), offset)
 
 	visitors, err := s.q.CountAnalyticsVisitors(ctx, query.CountAnalyticsVisitorsParams{StartedAt: window.start, StartedAt_2: window.end})
@@ -359,6 +364,7 @@ func (s *DashboardService) GetAnalyticsOverview(ctx context.Context, rangeKey st
 		Traffic: mapTraffic(heatRows),
 	}
 
+	s.writeCache(ctx, cacheKey, result, dashTrendTTL)
 	return result, nil
 }
 
@@ -368,6 +374,12 @@ func (s *DashboardService) GetPublicSiteTrend(ctx context.Context, days int) ([]
 	}
 	if days > 30 {
 		days = 30
+	}
+
+	cacheKey := fmt.Sprintf("dash:public_trend:%d", days)
+	var cached []PublicSiteTrendPoint
+	if v, ok := s.readCache(ctx, cacheKey, &cached); ok {
+		return *v.(*[]PublicSiteTrendPoint), nil
 	}
 
 	end := startOfDay(time.Now()).Add(24 * time.Hour)
@@ -396,6 +408,7 @@ func (s *DashboardService) GetPublicSiteTrend(ctx context.Context, days int) ([]
 			Views:    item.Views,
 		})
 	}
+	s.writeCache(ctx, cacheKey, result, dashTrendTTL)
 	return result, nil
 }
 

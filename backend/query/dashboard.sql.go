@@ -124,7 +124,7 @@ func (q *Queries) GetDailyViewTrend(ctx context.Context, day pgtype.Date) ([]Get
 }
 
 const getTotalLikeCount = `-- name: GetTotalLikeCount :one
-SELECT coalesce(sum(like_count), 0)::bigint FROM posts
+SELECT coalesce(sum(like_count), 0)::bigint FROM posts WHERE status = 'published'
 `
 
 func (q *Queries) GetTotalLikeCount(ctx context.Context) (int64, error) {

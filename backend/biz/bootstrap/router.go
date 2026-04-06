@@ -46,7 +46,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 	if err != nil {
 		slog.Warn("geoip resolver disabled", "error", err)
 	}
-	dashboardSvc := service.NewDashboardService(db, geoResolver)
+	dashboardSvc := service.NewDashboardService(db, rdb, geoResolver)
 	moderationSvc := service.NewModerationService(db, rdb)
 	postsSvc := service.NewPostsService(db)
 	postCommentsSvc := service.NewPostCommentsService(db)

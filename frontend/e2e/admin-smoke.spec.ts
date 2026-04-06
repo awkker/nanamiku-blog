@@ -175,6 +175,91 @@ test.describe('admin smoke', () => {
     }
   })
 
+  test('admin can create a scheduled post, verify not public, reschedule, and delete', async ({ page, request }) => {
+    test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running authenticated smoke.')
+    await requireBackend(request)
+
+    const title = createSmokeText('admin-post-scheduled')
+    const content = createSmokeText('admin-post-scheduled-content')
+    const futureTime = formatLocalDateTimeInput(new Date(Date.now() + 60 * 60 * 1000))
+    let postID = ''
+
+    try {
+      await loginAsAdmin(page)
+      await page.goto('/admin/posts')
+      await expect(page.getByTestId('admin-post-create-toggle')).toBeVisible()
+
+      // --- Create post with "scheduled" status via create form ---
+      await page.getByTestId('admin-post-create-toggle').click()
+      await expect(page.getByTestId('admin-post-create-form')).toBeVisible()
+
+      await page.getByTestId('admin-post-create-title').fill(title)
+      await page.getByTestId('admin-post-create-content').fill(content)
+      await page.getByTestId('admin-post-create-status').selectOption('scheduled')
+      await page.getByTestId('admin-post-create-scheduled-at').fill(futureTime)
+
+      const createResponse = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/admin/posts')
+        && response.request().method() === 'POST',
+      )
+      await page.getByTestId('admin-post-create-submit').click()
+
+      const created = await createResponse
+      await expectPageResponseOK(created)
+      postID = String((await created.json()).data?.id || '')
+
+      // --- Verify scheduled status in admin ---
+      const row = page.getByTestId('admin-post-row').filter({ hasText: title }).first()
+      await expect(row).toBeVisible()
+      await expect(row.getByText('定时发布')).toBeVisible()
+
+      // --- Verify NOT visible on public blog ---
+      await page.goto('/blog')
+      await expect(page.getByText(title)).toHaveCount(0)
+
+      // --- Reschedule via row "定时" button (prompt dialog) ---
+      await page.goto('/admin/posts')
+      const scheduleRow = page.getByTestId('admin-post-row').filter({ hasText: title }).first()
+      await scheduleRow.hover()
+
+      const rescheduledTime = formatLocalDateTimeInput(new Date(Date.now() + 120 * 60 * 1000))
+      page.once('dialog', async (dialog) => {
+        await dialog.accept(rescheduledTime)
+      })
+      const scheduleResponse = page.waitForResponse((response) =>
+        response.url().includes(`/api/v1/admin/posts/${postID}/schedule`)
+        && response.request().method() === 'POST',
+      )
+      await scheduleRow.getByTestId('admin-post-schedule-button').click()
+
+      await expectPageResponseOK(scheduleResponse)
+      await expect(scheduleRow.getByText('定时发布')).toBeVisible()
+
+      // --- Still not visible on public blog ---
+      await page.goto('/blog')
+      await expect(page.getByText(title)).toHaveCount(0)
+
+      // --- Cleanup: delete the scheduled post ---
+      await page.goto('/admin/posts')
+      const deleteRow = page.getByTestId('admin-post-row').filter({ hasText: title }).first()
+      await deleteRow.hover()
+
+      const deleteResponse = page.waitForResponse((response) =>
+        response.url().includes(`/api/v1/admin/posts/${postID}`)
+        && response.request().method() === 'DELETE',
+      )
+      await deleteRow.getByTestId('admin-post-delete-button').click()
+
+      await expectPageResponseOK(deleteResponse)
+      await expect(page.getByTestId('admin-post-row').filter({ hasText: title })).toHaveCount(0)
+      postID = ''
+    } finally {
+      if (postID) {
+        await cleanupAdminResource(request, `/admin/posts/${postID}`)
+      }
+    }
+  })
+
   test('admin can schedule, publish, edit, draft, and delete a moment', async ({ page, request }) => {
     test.skip(!hasAdminCredentials, 'Set SMOKE_ADMIN_IDENTIFIER and SMOKE_ADMIN_PASSWORD before running authenticated smoke.')
     await requireBackend(request)

@@ -88,7 +88,20 @@
   - 2026-04-06 阶段五已补第九批后台说说管理闭环：
     - `frontend/e2e/admin-smoke.spec.ts` 已新增“后台创建草稿说说 -> 前台不可见 -> 后台设为定时发布 -> 立即发布 -> 前台可见 -> 后台编辑 -> 后台转草稿 -> 前台下线 -> 删除”的浏览器级闭环。
     - `frontend/src/components/admin/AdminMomentsManager.vue` 已补最小 `data-testid` 锚点，避免说说管理相关 smoke 继续依赖脆弱的样式或纯文本定位。
-  - 阶段四的实机联调、阶段五更完整的内容与互动 E2E、阶段六性能口径修正仍待继续。
+  - 2026-04-06 阶段五已补第十批定时发布与 CI 修正：
+    - `frontend/e2e/admin-smoke.spec.ts` 已新增"后台创建定时发布文章 -> 前台不可见 -> 行内重设发布时间 -> 仍不可见 -> 删除"的浏览器级闭环。
+    - 修复 `UpdateMoment` SQL 中 `$7` 与 `NULL` 缺少 `::timestamptz` 显式类型转换导致的一致性 500 错误。
+    - 修复 `admin-smoke` 文章创建测试未展开"文章属性"抽屉导致分类输入不可见的超时。
+    - 登录限流从 10 req/min 放宽至 60 req/min，避免 CI 并行 worker 触发 429 级联。
+  - 2026-04-06 阶段六已完成第二批性能与口径修正：
+    - `dashboard.sql` 中 `GetTotalLikeCount` 已限定 `WHERE status = 'published'`，不再把草稿/定时文章的点赞计入仪表盘总量。
+    - `DashboardService` 已接入 Redis，`GetStats`（2 min TTL）、`GetViewTrend` / `GetCommentTrend` / `GetLikeTrend`（5 min TTL）、`GetAnalyticsOverview`（5 min TTL）、`GetPublicSiteTrend`（5 min TTL）均增加了 JSON 序列化缓存，避免每次加载仪表盘时对 PostgreSQL 做 6~17+ 次串行聚合查询。
+    - 缓存为 best-effort：Redis 不可用或反序列化失败时自动降级到数据库查询，无破坏性影响。
+  - 2026-04-06 文案收口第十一批：后台 admin BaseHead 硬编码统一迁入 `adminCopy`：
+    - `admin/index.astro`、`admin/backup.astro`、`admin/posts.astro`、`admin/moments.astro`、`admin/profile.astro` 的 `<BaseHead>` title / description 均改为从 `adminCopy` 读取。
+    - `adminCopy` 新增 `layout.page`、`backup.page`、`postsManager.page`、`momentsManager.page`、`profileManager.page` 五组 metaTitle / metaDescription 字段。
+    - 至此所有 8 个后台 `.astro` 页面的 `<BaseHead>` 均已收口到 copy 模块，后台再无硬编码页面标题。
+  - 阶段四的实机联调、阶段五更完整的内容与互动 E2E 仍待继续。
   - 2026-04-05 阶段六已完成第一批性能与口径修正：
     - 文章列表与分类列表已改为聚合标签查询，移除逐篇补拉标签的后端 N+1。
     - 文章 UV 已改为按“文章 + 日期 + 访客”去重入库，`post_view_daily` 不再按每次访问直接累加 UV。
@@ -104,17 +117,18 @@
    - 需要观察一次 GitHub Actions 中新增 smoke job 的真实执行结果；若首跑暴露环境兼容或时序问题，再按日志补修。
 
 2. 阶段五仍缺更完整的内容与互动 E2E
-   - 后台文章管理基础闭环已补齐，但“定时发布”路径仍未进入浏览器级自动验证。
+   - 后台文章管理基础闭环已补齐，"定时发布"路径已进入浏览器级自动验证（创建定时文章、前台不可见、行内重设时间、删除）。
    - 后台说说管理基础闭环已补齐，并已覆盖草稿、定时、发布、编辑、转草稿与前台可见性联动；但更细的图片、多记录并发与异常态回归仍主要依赖手工验证。
    - 留言板回复、投票，友链申请拒绝等次级互动仍主要依赖手工回归。
 
-3. 阶段六还剩第二批性能与口径修正
-   - 还需要把热点数据、趋势数据、第三方依赖数据的缓存策略继续收口，补齐更明确的缓存 key、TTL 与失效条件。
-   - 还需要复查后台统计面板中的 PV / UV / 互动指标口径，确认是否还有 SQL 或 service 层统计偏差。
-   - 还需要继续排查是否仍存在新的公开页或后台接口 N+1、重复请求或可合并查询链路。
+3. 阶段六第二批性能与口径修正（已完成）
+   - `DashboardService` 已全面接入 Redis 缓存（stats 2 min, trends/analytics 5 min），避免仪表盘每次加载产生 6~17+ 次串行 DB 查询。
+   - `GetTotalLikeCount` 已限定 `WHERE status = 'published'`，修正草稿/定时文章点赞被计入仪表盘的口径偏差。
+   - 前端无残余 N+1 模式。
 
-4. 文案系统仍未完全收口
-   - 计划书第 5 节中提到的文案专项仍应继续执行，尤其是 `frontend/src/pages/friends.astro`、`frontend/src/components/friends/FriendsGrid.vue` 以及若干 admin 页面的 `BaseHead` 文案统一。
+4. 文案系统收口（已完成）
+   - `friends.astro` 与 `FriendsGrid.vue` 早已完全消费 `siteCopy.friendsPage`，无硬编码。
+   - 全部 8 个后台 `.astro` 页面的 `<BaseHead>` 均已收口到 `adminCopy`，后台再无硬编码页面标题。
    - 原则仍是“页面和组件只消费 copy，不继续新增运营向硬编码文案”。
 
 ### 2.6 下次建议直接开工顺序

@@ -3,12 +3,15 @@ import BaseHead from '../../components/base/BaseHead.astro'
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
 import AdminMomentsManager from '../../components/admin/AdminMomentsManager.vue'
 import AdminLayout from '../../layouts/AdminLayout.astro'
+import { adminCopy } from '../../content/copy'
+
+const copy = adminCopy.momentsManager
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title="说说管理 | Miku Blog" description="后台说说管理" />
+    <BaseHead title={copy.page.metaTitle} description={copy.page.metaDescription} />
     <AdminRouteGuard />
   </head>
   <body>
