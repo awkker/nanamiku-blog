@@ -78,6 +78,7 @@ test.describe('admin smoke', () => {
       await expect(page.getByTestId('admin-post-create-form')).toBeVisible()
 
       await page.getByTestId('admin-post-create-title').fill(originalTitle)
+      await page.getByRole('button', { name: '文章属性' }).click()
       await page.getByPlaceholder('技术 / 随笔 / 教程').fill('Smoke')
       await page.getByPlaceholder('简短描述文章内容').fill(createSmokeText('admin-post-excerpt'))
       await page.getByTestId('admin-post-create-content').fill(originalContent)

@@ -102,7 +102,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 
 		// Auth
 		auth := api.Group("/auth")
-		auth.Use(middleware.RateLimit(rdb, "login", 10, 1*time.Minute))
+		auth.Use(middleware.RateLimit(rdb, "login", 60, 1*time.Minute))
 		{
 			auth.POST("/login", authH.Login)
 			auth.POST("/refresh", authH.Refresh)
