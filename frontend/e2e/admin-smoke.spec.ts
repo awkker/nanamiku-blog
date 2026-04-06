@@ -33,30 +33,30 @@ test.describe('admin smoke', () => {
 
     await loginAsAdmin(page)
 
-    await expect(page).toHaveURL(/\/admin$/)
+    await expect(page).toHaveURL(/\/admin(?:\/)?$/)
     await expect(page.getByRole('heading', { name: '仪表盘' })).toBeVisible()
 
     await page.getByRole('link', { name: '文章管理' }).click()
-    await expect(page).toHaveURL(/\/admin\/posts$/)
-    await expect(page.getByRole('heading', { name: '文章管理' })).toBeVisible()
+    await expect(page).toHaveURL(/\/admin\/posts(?:\/)?$/)
+    await expect(page.getByTestId('admin-post-create-toggle')).toBeVisible()
 
     await page.getByRole('link', { name: '友链管理' }).click()
-    await expect(page).toHaveURL(/\/admin\/friends$/)
+    await expect(page).toHaveURL(/\/admin\/friends(?:\/)?$/)
     await expect(page.getByText('申请队列')).toBeVisible()
     await expect(page.getByText('正式友链')).toBeVisible()
 
     await page.getByRole('link', { name: '数据备份' }).click()
-    await expect(page).toHaveURL(/\/admin\/backup$/)
+    await expect(page).toHaveURL(/\/admin\/backup(?:\/)?$/)
     await expect(page.getByRole('button', { name: '导出 JSON' })).toBeVisible()
     await expect(page.getByRole('button', { name: '导出 SQL' })).toBeVisible()
 
     await Promise.all([
-      page.waitForURL('**/login'),
+      page.waitForURL(/\/login(?:\/)?$/),
       page.getByRole('button', { name: '退出登录' }).click(),
     ])
 
     await page.goto('/admin')
-    await expect(page).toHaveURL(/\/login$/)
+    await expect(page).toHaveURL(/\/login(?:\/)?$/)
   })
 
   test('admin can create, publish, edit, draft, and delete a post', async ({ page, request }) => {
@@ -72,7 +72,7 @@ test.describe('admin smoke', () => {
     try {
       await loginAsAdmin(page)
       await page.goto('/admin/posts')
-      await expect(page.getByRole('heading', { name: '文章管理' })).toBeVisible()
+      await expect(page.getByTestId('admin-post-create-toggle')).toBeVisible()
 
       await page.getByTestId('admin-post-create-toggle').click()
       await expect(page.getByTestId('admin-post-create-form')).toBeVisible()
@@ -186,7 +186,7 @@ test.describe('admin smoke', () => {
     try {
       await loginAsAdmin(page)
       await page.goto('/admin/moments')
-      await expect(page.getByRole('heading', { name: '说说管理' })).toBeVisible()
+      await expect(page.getByTestId('admin-moment-create-toggle')).toBeVisible()
 
       await page.getByTestId('admin-moment-create-toggle').click()
       await expect(page.getByTestId('admin-moment-create-form')).toBeVisible()

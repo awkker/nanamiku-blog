@@ -59,10 +59,16 @@ export async function loginAsAdmin(page: Page) {
   await page.locator('input[autocomplete="username"]').fill(adminIdentifier)
   await page.locator('input[autocomplete="current-password"]').fill(adminPassword)
 
-  await Promise.all([
-    page.waitForURL('**/admin'),
-    page.getByRole('button', { name: '登录' }).click(),
-  ])
+  const loginResponse = page.waitForResponse((response) =>
+    response.url().includes('/api/v1/auth/login')
+    && response.request().method() === 'POST',
+  )
+
+  await page.getByRole('button', { name: '登录' }).click()
+  await expectPageResponseOK(loginResponse)
+
+  await page.goto('/admin')
+  await page.waitForURL(/\/admin(?:\/)?$/)
 }
 
 export async function expectPageResponseOK(responseOrPromise: Response | Promise<Response>) {

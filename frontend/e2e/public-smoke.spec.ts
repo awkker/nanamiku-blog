@@ -11,8 +11,14 @@ import {
 } from './smoke-helpers'
 
 async function openSmokePost(page: Page, slug: string, title: string) {
+  const commentsLoadResponse = page.waitForResponse((response) =>
+    response.url().includes('/api/v1/posts/')
+    && response.url().includes('/comments?page=1&size=20')
+    && response.request().method() === 'GET',
+  )
   await page.goto(`/blog/${encodeURIComponent(slug)}`)
   await expect(page.locator('header').getByRole('heading', { level: 1 }).first()).toContainText(title)
+  await expectPageResponseOK(commentsLoadResponse)
 }
 
 test.describe('public smoke', () => {
