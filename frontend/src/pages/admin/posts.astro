@@ -15,7 +15,7 @@ const copy = adminCopy.postsManager
     <AdminRouteGuard />
   </head>
   <body>
-    <AdminLayout activeKey="posts" pageTitle="文章管理">
+    <AdminLayout activeKey="posts" pageTitle={adminCopy.sidebar.nav.posts}>
       <AdminPostsManager client:load />
     </AdminLayout>
   </body>

@@ -1,14 +1,14 @@
 <template>
   <div>
-    <h3 class="text-sm font-semibold text-slate-900">站点趋势</h3>
-    <p class="mt-1 text-[11px] text-slate-500">最近 7 天访问热度</p>
+    <h3 class="text-sm font-semibold text-slate-900">{{ st.title }}</h3>
+    <p class="mt-1 text-[11px] text-slate-500">{{ st.subtitle }}</p>
 
     <div v-if="!loaded" class="mt-3 flex h-[96px] items-center justify-center">
-      <span class="text-xs text-slate-300">加载中...</span>
+      <span class="text-xs text-slate-300">{{ st.loading }}</span>
     </div>
 
     <div v-else-if="hasData" class="mt-3">
-      <svg :viewBox="`0 0 ${W} ${H}`" class="w-full" role="img" aria-label="站点趋势图">
+      <svg :viewBox="`0 0 ${W} ${H}`" class="w-full" role="img" :aria-label="st.chartAria">
         <defs>
           <linearGradient id="siteTrendGrad" x1="0%" x2="100%" y1="0%" y2="0%">
             <stop offset="0%" stop-color="#39c5bb" />
@@ -38,7 +38,7 @@
     </div>
 
     <div v-else class="mt-3 flex h-[96px] items-center justify-center">
-      <span class="text-xs text-slate-300">暂无数据</span>
+      <span class="text-xs text-slate-300">{{ st.noData }}</span>
     </div>
   </div>
 </template>
@@ -47,6 +47,9 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { api } from '../../lib/api'
+import { siteCopy } from '../../content/copy'
+
+const st = siteCopy.components.siteTrend
 
 interface SiteTrendPoint {
   day: string

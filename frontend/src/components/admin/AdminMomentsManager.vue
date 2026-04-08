@@ -4,10 +4,10 @@
     <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-semibold text-slate-900">说说管理</h1>
-          <p class="mt-1 text-sm text-slate-600">发布和管理说说动态。</p>
+          <h1 class="text-2xl font-semibold text-slate-900">{{ mm.header.title }}</h1>
+          <p class="mt-1 text-sm text-slate-600">{{ mm.header.subtitle }}</p>
         </div>
-        <MikuButton variant="solid" aria-label="发布说说" data-testid="admin-moment-create-toggle" @click="toggleCreateForm">+ 发布说说</MikuButton>
+        <MikuButton variant="solid" :aria-label="mm.header.title" data-testid="admin-moment-create-toggle" @click="toggleCreateForm">{{ mm.createButton }}</MikuButton>
       </div>
     </AdminPlainCard>
 
@@ -19,7 +19,7 @@
           <textarea
             v-model="newMoment.content"
             data-testid="admin-moment-create-content"
-            placeholder="此刻的想法..."
+            :placeholder="mm.createForm.contentPlaceholder"
             class="compose-editor"
           />
         </div>
@@ -39,27 +39,27 @@
             @click="showCreateMeta = !showCreateMeta"
           >
             <svg class="h-3.5 w-3.5 transition-transform" :class="showCreateMeta ? 'rotate-90' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-            发布设置
+            {{ mm.createForm.metaToggle }}
           </button>
           <div v-show="showCreateMeta" class="compose-meta-drawer">
             <p class="rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-xs text-slate-500">
               {{ copy.profile.autoHint }}
             </p>
             <div class="compose-meta-row">
-              <label class="compose-meta-label">发布状态</label>
+              <label class="compose-meta-label">{{ mm.createForm.statusLabel }}</label>
               <select v-model="newMoment.publish_status" data-testid="admin-moment-create-status" class="compose-meta-input">
-                <option value="draft">草稿</option>
-                <option value="published">立即发布</option>
-                <option value="scheduled">定时发布</option>
+                <option value="draft">{{ mm.createForm.statusDraft }}</option>
+                <option value="published">{{ mm.createForm.statusPublished }}</option>
+                <option value="scheduled">{{ mm.createForm.statusScheduled }}</option>
               </select>
             </div>
             <div v-if="newMoment.publish_status === 'scheduled'" class="compose-meta-row">
-              <label class="compose-meta-label">发布时间</label>
+              <label class="compose-meta-label">{{ mm.createForm.scheduledLabel }}</label>
               <input v-model="newMoment.scheduled_at" data-testid="admin-moment-create-scheduled-at" type="datetime-local" class="compose-meta-input" />
             </div>
             <div class="compose-meta-row">
-              <label class="compose-meta-label">图片</label>
-              <input v-model="newMoment.image_urls" data-testid="admin-moment-create-image-input" type="text" placeholder="贴入图片链接, 用逗号分隔 (最多4张)" class="compose-meta-input" />
+              <label class="compose-meta-label">{{ mm.createForm.imageLabel }}</label>
+              <input v-model="newMoment.image_urls" data-testid="admin-moment-create-image-input" type="text" :placeholder="mm.createForm.imagePlaceholder" class="compose-meta-input" />
             </div>
           </div>
         </div>
@@ -71,8 +71,8 @@
             {{ charCount(newMoment.content) }}
           </div>
           <div class="flex items-center gap-3">
-            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeCreateForm">取消</button>
-            <MikuButton type="submit" variant="solid" data-testid="admin-moment-create-submit" :disabled="creating">{{ creating ? '发布中...' : '发布说说' }}</MikuButton>
+            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeCreateForm">{{ mm.createForm.cancelButton }}</button>
+            <MikuButton type="submit" variant="solid" data-testid="admin-moment-create-submit" :disabled="creating">{{ creating ? mm.createForm.publishLoading : mm.createForm.publishIdle }}</MikuButton>
           </div>
         </div>
       </form>
@@ -82,11 +82,11 @@
     <AdminPlainCard v-if="showEditForm" padding="0px">
       <form data-testid="admin-moment-edit-form" @submit.prevent="updateMoment">
         <div class="compose-content-zone">
-          <p class="mb-1 text-xs tracking-wide text-slate-400">编辑中</p>
+          <p class="mb-1 text-xs tracking-wide text-slate-400">{{ mm.createForm.editingBadge }}</p>
           <textarea
             v-model="editMoment.content"
             data-testid="admin-moment-edit-content"
-            placeholder="此刻的想法..."
+            :placeholder="mm.createForm.contentPlaceholder"
             class="compose-editor"
           />
         </div>
@@ -104,27 +104,27 @@
             @click="showEditMeta = !showEditMeta"
           >
             <svg class="h-3.5 w-3.5 transition-transform" :class="showEditMeta ? 'rotate-90' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-            发布设置
+            {{ mm.createForm.metaToggle }}
           </button>
           <div v-show="showEditMeta" class="compose-meta-drawer">
             <p class="rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-xs text-slate-500">
               {{ copy.profile.autoHint }}
             </p>
             <div class="compose-meta-row">
-              <label class="compose-meta-label">发布状态</label>
+              <label class="compose-meta-label">{{ mm.createForm.statusLabel }}</label>
               <select v-model="editMoment.publish_status" data-testid="admin-moment-edit-status" class="compose-meta-input">
-                <option value="draft">草稿</option>
-                <option value="published">立即发布</option>
-                <option value="scheduled">定时发布</option>
+                <option value="draft">{{ mm.createForm.statusDraft }}</option>
+                <option value="published">{{ mm.createForm.statusPublished }}</option>
+                <option value="scheduled">{{ mm.createForm.statusScheduled }}</option>
               </select>
             </div>
             <div v-if="editMoment.publish_status === 'scheduled'" class="compose-meta-row">
-              <label class="compose-meta-label">发布时间</label>
+              <label class="compose-meta-label">{{ mm.createForm.scheduledLabel }}</label>
               <input v-model="editMoment.scheduled_at" data-testid="admin-moment-edit-scheduled-at" type="datetime-local" class="compose-meta-input" />
             </div>
             <div class="compose-meta-row">
-              <label class="compose-meta-label">图片</label>
-              <input v-model="editMoment.image_urls" data-testid="admin-moment-edit-image-input" type="text" placeholder="贴入图片链接, 用逗号分隔 (最多4张)" class="compose-meta-input" />
+              <label class="compose-meta-label">{{ mm.createForm.imageLabel }}</label>
+              <input v-model="editMoment.image_urls" data-testid="admin-moment-edit-image-input" type="text" :placeholder="mm.createForm.imagePlaceholder" class="compose-meta-input" />
             </div>
           </div>
         </div>
@@ -135,8 +135,8 @@
             {{ charCount(editMoment.content) }}
           </div>
           <div class="flex items-center gap-3">
-            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeEditForm">取消</button>
-            <MikuButton type="submit" variant="solid" data-testid="admin-moment-edit-submit" :disabled="editing">{{ editing ? '保存中...' : '保存修改' }}</MikuButton>
+            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeEditForm">{{ mm.createForm.cancelButton }}</button>
+            <MikuButton type="submit" variant="solid" data-testid="admin-moment-edit-submit" :disabled="editing">{{ editing ? mm.createForm.saveLoading : mm.createForm.saveIdle }}</MikuButton>
           </div>
         </div>
       </form>
@@ -145,15 +145,15 @@
     <!-- Stats -->
     <div class="grid gap-4 sm:grid-cols-3">
       <AdminPlainCard padding="16px">
-        <p class="text-xs uppercase tracking-[0.2em] text-slate-600">说说总数</p>
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-600">{{ mm.stats.totalLabel }}</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-slate-900">{{ momentsList.length }}</p>
       </AdminPlainCard>
       <AdminPlainCard padding="16px">
-        <p class="text-xs uppercase tracking-[0.2em] text-slate-600">总点赞</p>
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-600">{{ mm.stats.likesLabel }}</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-miku">{{ totalLikes }}</p>
       </AdminPlainCard>
       <AdminPlainCard padding="16px">
-        <p class="text-xs uppercase tracking-[0.2em] text-slate-600">总评论</p>
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-600">{{ mm.stats.commentsLabel }}</p>
         <p class="mt-1 font-mono text-2xl font-semibold text-[#c084fc]">{{ totalComments }}</p>
       </AdminPlainCard>
     </div>
@@ -164,8 +164,8 @@
         <div class="loading-dot" /><div class="loading-dot delay-1" /><div class="loading-dot delay-2" />
       </div>
       <div v-else-if="momentsList.length === 0" class="py-20 text-center">
-        <p class="text-base text-slate-400">暂无说说</p>
-        <button type="button" class="mt-3 text-sm text-miku/80 transition hover:text-miku" @click="toggleCreateForm">发布第一条 &rarr;</button>
+        <p class="text-base text-slate-400">{{ mm.list.emptyMessage }}</p>
+        <button type="button" class="mt-3 text-sm text-miku/80 transition hover:text-miku" @click="toggleCreateForm">{{ mm.list.firstMomentCta }} &rarr;</button>
       </div>
       <div v-else class="divide-y divide-slate-100/60">
         <div
@@ -190,7 +190,7 @@
                   v-for="(img, idx) in item.images.slice(0, 4)"
                   :key="idx"
                   :src="img"
-                  :alt="`图片 ${idx + 1}`"
+                  :alt="`${idx + 1}`"
                   data-testid="admin-moment-row-image"
                   class="h-16 w-16 rounded-xl border border-slate-100/80 object-cover transition-transform hover:scale-105"
                   loading="lazy"
@@ -208,39 +208,39 @@
                   type="button"
                   data-testid="admin-moment-edit-button"
                   class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-700 transition hover:border-miku/40 hover:text-miku"
-                  aria-label="编辑说说"
+                  :aria-label="mm.listActions.editAria"
                   @click="startEditMoment(item)"
                 >
-                  编辑
+                  {{ mm.listActions.editButton }}
                 </button>
                 <button
                   v-if="item.publishStatus !== 'published'"
                   type="button"
                   data-testid="admin-moment-publish-button"
                   class="rounded-xl border border-emerald-200/80 bg-white/50 px-2.5 py-1 text-xs text-emerald-600 transition hover:bg-emerald-50"
-                  aria-label="发布说说"
+                  :aria-label="mm.listActions.publishAria"
                   @click="publishMoment(item.id)"
                 >
-                  发布
+                  {{ mm.listActions.publishButton }}
                 </button>
                 <button
                   type="button"
                   data-testid="admin-moment-schedule-button"
                   class="rounded-xl border border-[#e9d5ff]/80 bg-white/50 px-2.5 py-1 text-xs text-[#9333ea] transition hover:bg-[#faf5ff]"
-                  aria-label="定时发布说说"
+                  :aria-label="mm.listActions.scheduleAria"
                   @click="scheduleMoment(item.id)"
                 >
-                  定时
+                  {{ mm.listActions.scheduleButton }}
                 </button>
                 <button
                   v-if="item.publishStatus !== 'draft'"
                   type="button"
                   data-testid="admin-moment-unpublish-button"
                   class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-50"
-                  aria-label="转为草稿"
+                  :aria-label="mm.listActions.unpublishAria"
                   @click="unpublishMoment(item.id)"
                 >
-                  转草稿
+                  {{ mm.listActions.unpublishButton }}
                 </button>
                 <button
                   type="button"
@@ -373,7 +373,8 @@ const newMoment = ref<MomentForm>(createEmptyMomentForm())
 const editMoment = ref<MomentForm>(createEmptyMomentForm())
 const showCreateMeta = ref(false)
 const showEditMeta = ref(false)
-const copy = adminCopy.momentsManager
+const mm = adminCopy.momentsManager
+const copy = mm
 
 const createImagePreviews = computed(() => {
   return newMoment.value.image_urls.split(',').map((u: string) => u.trim()).filter(Boolean).slice(0, 4)
@@ -384,8 +385,8 @@ const editImagePreviews = computed(() => {
 
 function charCount(text: string): string {
   const len = text.length
-  if (len === 0) return '0 字'
-  return `${len} 字`
+  if (len === 0) return mm.charCount.zero
+  return `${len}${mm.charCount.suffix}`
 }
 
 function toggleCreateForm() {
@@ -415,7 +416,7 @@ async function loadMoments() {
     momentsList.value = (data.items || []).map(mapMoment)
   } catch (err) {
     console.error('[AdminMoments] loadMoments failed:', err)
-    showToast('加载说说列表失败', 'error')
+    showToast(mm.toast.loadFailed, 'error')
     momentsList.value = []
   } finally {
     loading.value = false
@@ -425,7 +426,7 @@ async function loadMoments() {
 async function createMoment() {
   if (!newMoment.value.content.trim()) return
   if (newMoment.value.publish_status === 'scheduled' && !newMoment.value.scheduled_at) {
-    showToast('请选择定时发布时间', 'error')
+    showToast(mm.toast.scheduledAtRequired, 'error')
     return
   }
   creating.value = true
@@ -440,10 +441,10 @@ async function createMoment() {
     })
     closeCreateForm()
     newMoment.value = createEmptyMomentForm()
-    showToast('说说发布成功', 'success')
+    showToast(mm.toast.createSuccess, 'success')
     await loadMoments()
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '发布说说失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : mm.toast.createFailed
     console.error('[AdminMoments] createMoment failed:', err)
     showToast(msg, 'error')
   } finally {
@@ -469,7 +470,7 @@ async function updateMoment() {
   if (!editingMomentID.value) return
   if (!editMoment.value.content.trim()) return
   if (editMoment.value.publish_status === 'scheduled' && !editMoment.value.scheduled_at) {
-    showToast('请选择定时发布时间', 'error')
+    showToast(mm.toast.scheduledAtRequired, 'error')
     return
   }
   editing.value = true
@@ -482,11 +483,11 @@ async function updateMoment() {
         ? localInputToRFC3339(editMoment.value.scheduled_at)
         : undefined,
     })
-    showToast('说说更新成功', 'success')
+    showToast(mm.toast.updateSuccess, 'success')
     closeEditForm()
     await loadMoments()
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '更新说说失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : mm.toast.updateFailed
     console.error('[AdminMoments] updateMoment failed:', err)
     showToast(msg, 'error')
   } finally {
@@ -498,16 +499,16 @@ async function publishMoment(id: string) {
   try {
     await api.post(`/admin/moments/${id}/publish`)
     await loadMoments()
-    showToast('说说发布成功', 'success')
+    showToast(mm.toast.publishSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '发布失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : mm.toast.publishFailed
     showToast(msg, 'error')
   }
 }
 
 async function scheduleMoment(id: string) {
   const defaultTime = formatDateInputLocal(new Date(Date.now() + 30 * 60 * 1000))
-  const next = window.prompt('请输入计划发布时间（格式：YYYY-MM-DDTHH:mm）', defaultTime)
+  const next = window.prompt(mm.listActions.schedulePrompt, defaultTime)
   if (!next) return
 
   try {
@@ -515,9 +516,9 @@ async function scheduleMoment(id: string) {
       scheduled_at: localInputToRFC3339(next),
     })
     await loadMoments()
-    showToast('说说已设为定时发布', 'success')
+    showToast(mm.toast.scheduleSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '定时发布设置失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : mm.toast.scheduleFailed
     showToast(msg, 'error')
   }
 }
@@ -526,9 +527,9 @@ async function unpublishMoment(id: string) {
   try {
     await api.post(`/admin/moments/${id}/unpublish`)
     await loadMoments()
-    showToast('说说已转为草稿', 'success')
+    showToast(mm.toast.unpublishSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '转草稿失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : mm.toast.unpublishFailed
     showToast(msg, 'error')
   }
 }
@@ -562,9 +563,9 @@ function statusClass(status: MomentItem['publishStatus']) {
 }
 
 function statusLabel(status: MomentItem['publishStatus']) {
-  if (status === 'published') return '已发布'
-  if (status === 'draft') return '草稿'
-  return '定时发布'
+  if (status === 'published') return mm.status.published
+  if (status === 'draft') return mm.status.draft
+  return mm.status.scheduled
 }
 </script>
 

@@ -4,7 +4,7 @@
       <button
         type="button"
         class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
-        aria-label="打开导航菜单"
+        :aria-label="ch.openMenuAria"
         @click="toggleSidebar"
       >
         <svg viewBox="0 0 24 24" class="h-5 w-5 fill-none stroke-current stroke-[1.8]">
@@ -18,7 +18,7 @@
     <div class="flex items-center gap-3">
       <div class="hidden text-right sm:block">
         <p class="text-sm font-medium text-slate-900">{{ userName }}</p>
-        <p class="text-xs text-slate-500">管理员</p>
+        <p class="text-xs text-slate-500">{{ ch.roleLabel }}</p>
       </div>
       <div
         class="flex h-9 w-9 items-center justify-center rounded-full bg-miku/15 text-sm font-semibold text-miku"
@@ -36,13 +36,16 @@ import { useStore } from '@nanostores/vue'
 
 import { authState, hydrateAuth } from '../../stores/auth'
 import { toggleSidebar } from '../../stores/ui'
+import { adminCopy } from '../../content/copy'
+
+const ch = adminCopy.contentHeader
 
 interface Props {
   pageTitle?: string
 }
 
 withDefaults(defineProps<Props>(), {
-  pageTitle: '仪表盘',
+  pageTitle: adminCopy.contentHeader.defaultPageTitle,
 })
 
 const auth = useStore(authState)

@@ -23,6 +23,7 @@
 <script setup lang="ts">
 import LiquidGlassCard from './LiquidGlassCard.vue'
 import MikuButton from './MikuButton.vue'
+import { siteCopy } from '../../content/copy'
 
 interface Props {
   title?: string
@@ -31,8 +32,8 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: '加载失败',
-  retryLabel: '重试',
+  title: siteCopy.components.errorState.defaultTitle,
+  retryLabel: siteCopy.components.errorState.defaultRetryLabel,
 })
 
 defineEmits<{

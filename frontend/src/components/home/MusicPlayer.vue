@@ -3,17 +3,17 @@
     <button @click="expanded = !expanded" class="max-w-[74px] truncate rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] transition hover:bg-white/25 min-[380px]:max-w-[96px] min-[380px]:text-[11px] sm:max-w-[140px] sm:px-2">
       {{ currentTrack.title }}
     </button>
-    <button @click="prev" class="hidden rounded p-1 transition hover:bg-white/15 sm:inline-flex" aria-label="上一首">
+    <button @click="prev" class="hidden rounded p-1 transition hover:bg-white/15 sm:inline-flex" :aria-label="mp.prevAria">
       <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M6 6h2v12H6zm3 6l9-6v12z" /></svg>
     </button>
-    <button @click="togglePlay" class="rounded p-1 transition hover:bg-white/15" :aria-label="isPlaying ? '暂停' : '播放'">
+    <button @click="togglePlay" class="rounded p-1 transition hover:bg-white/15" :aria-label="isPlaying ? mp.pauseAria : mp.playAria">
       <svg v-if="isPlaying" viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M7 5h4v14H7zm6 0h4v14h-4z" /></svg>
       <svg v-else viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M8 5v14l11-7z" /></svg>
     </button>
-    <button @click="next" class="hidden rounded p-1 transition hover:bg-white/15 sm:inline-flex" aria-label="下一首">
+    <button @click="next" class="hidden rounded p-1 transition hover:bg-white/15 sm:inline-flex" :aria-label="mp.nextAria">
       <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-current"><path d="M16 6h2v12h-2zM7 6l9 6-9 6z" /></svg>
     </button>
-    <input type="range" min="0" max="100" :value="Math.round(volume * 100)" @input="onVolumeInput" class="player-range hidden h-[3px] w-14 cursor-pointer sm:block" aria-label="音量" />
+    <input type="range" min="0" max="100" :value="Math.round(volume * 100)" @input="onVolumeInput" class="player-range hidden h-[3px] w-14 cursor-pointer sm:block" :aria-label="mp.volumeAria" />
 
     <Transition name="fade">
       <div v-if="expanded" class="fixed inset-0 z-40 bg-black/20" @click="expanded = false" />
@@ -21,7 +21,7 @@
 
     <Transition name="card-slide">
       <div v-if="expanded" class="fixed right-2 top-10 z-50 w-[calc(100vw-1rem)] max-w-sm rounded-2xl border border-white/15 bg-slate-900/88 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl min-[380px]:right-3 min-[380px]:p-5 sm:right-4 sm:w-80">
-        <button @click="expanded = false" class="absolute right-3 top-3 rounded-full p-1 text-white/40 transition hover:bg-white/10 hover:text-white/70" aria-label="关闭">
+        <button @click="expanded = false" class="absolute right-3 top-3 rounded-full p-1 text-white/40 transition hover:bg-white/10 hover:text-white/70" :aria-label="mp.closeAria">
           <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[2]"><path d="M18 6L6 18M6 6l12 12" /></svg>
         </button>
 
@@ -42,27 +42,27 @@
         </div>
 
         <div class="mt-1 flex items-center justify-center gap-4">
-          <button @click="loopMode = !loopMode" class="rounded-full p-1.5 transition" :class="loopMode ? 'text-[#39c5bb]' : 'text-white/35 hover:text-white/60'" aria-label="循环">
+          <button @click="loopMode = !loopMode" class="rounded-full p-1.5 transition" :class="loopMode ? 'text-[#39c5bb]' : 'text-white/35 hover:text-white/60'" :aria-label="mp.loopAria">
             <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" /></svg>
           </button>
-          <button @click="prev" class="rounded-full p-2 text-white/55 transition hover:text-white" aria-label="上一首">
+          <button @click="prev" class="rounded-full p-2 text-white/55 transition hover:text-white" :aria-label="mp.prevAria">
             <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current"><path d="M6 6h2v12H6zm3 6l9-6v12z" /></svg>
           </button>
-          <button @click="togglePlay" class="rounded-full bg-[#39c5bb] p-3 text-slate-900 shadow-lg shadow-[#39c5bb]/25 transition hover:bg-[#4dd4c8]" :aria-label="isPlaying ? '暂停' : '播放'">
+          <button @click="togglePlay" class="rounded-full bg-[#39c5bb] p-3 text-slate-900 shadow-lg shadow-[#39c5bb]/25 transition hover:bg-[#4dd4c8]" :aria-label="isPlaying ? mp.pauseAria : mp.playAria">
             <svg v-if="isPlaying" viewBox="0 0 24 24" class="h-5 w-5 fill-current"><path d="M7 5h4v14H7zm6 0h4v14h-4z" /></svg>
             <svg v-else viewBox="0 0 24 24" class="h-5 w-5 fill-current"><path d="M8 5v14l11-7z" /></svg>
           </button>
-          <button @click="next" class="rounded-full p-2 text-white/55 transition hover:text-white" aria-label="下一首">
+          <button @click="next" class="rounded-full p-2 text-white/55 transition hover:text-white" :aria-label="mp.nextAria">
             <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current"><path d="M16 6h2v12h-2zM7 6l9 6-9 6z" /></svg>
           </button>
-          <button @click="muted = !muted" class="rounded-full p-1.5 transition" :class="muted ? 'text-[#39c5bb]' : 'text-white/35 hover:text-white/60'" :aria-label="muted ? '取消静音' : '静音'">
+          <button @click="muted = !muted" class="rounded-full p-1.5 transition" :class="muted ? 'text-[#39c5bb]' : 'text-white/35 hover:text-white/60'" :aria-label="muted ? mp.unmuteAria : mp.muteAria">
             <svg v-if="muted" viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[2]"><path d="M11 5L6 9H2v6h4l5 4V5z" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></svg>
             <svg v-else viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[2]"><path d="M11 5L6 9H2v6h4l5 4V5z" /><path d="M15.54 8.46a5 5 0 010 7.07" /></svg>
           </button>
         </div>
 
         <div ref="lyricsRef" class="scrollbar-hide mt-3 h-36 overflow-y-auto rounded-xl bg-white/5 px-3 py-2">
-          <div v-if="lyrics.length === 0" class="flex h-full items-center justify-center text-xs text-white/25">暂无歌词</div>
+          <div v-if="lyrics.length === 0" class="flex h-full items-center justify-center text-xs text-white/25">{{ mp.noLyrics }}</div>
           <div v-else class="space-y-1.5 py-14 text-center">
             <p
               v-for="(line, i) in lyrics" :key="i" :data-idx="i"
@@ -79,6 +79,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { siteCopy } from '../../content/copy'
+
+const mp = siteCopy.components.musicPlayer
 
 interface Track {
   title: string

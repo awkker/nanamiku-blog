@@ -26,17 +26,17 @@
         <a
           href="/"
           class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-slate-600 transition duration-200 hover:bg-slate-100 hover:text-slate-900"
-          aria-label="前台首页"
+          :aria-label="sb.footer.homeAria"
         >
-          前台首页
+          {{ sb.footer.home }}
         </a>
         <button
           type="button"
           class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-slate-600 transition duration-200 hover:bg-slate-100 hover:text-slate-900"
-          aria-label="退出登录"
+          :aria-label="sb.footer.logoutAria"
           @click="handleLogout"
         >
-          退出登录
+          {{ sb.footer.logout }}
         </button>
       </div>
     </div>
@@ -58,11 +58,11 @@
       class="fixed left-0 top-0 z-50 h-full w-64 bg-slate-50 px-4 py-5 shadow-xl lg:hidden"
     >
       <div class="mb-5 flex items-center justify-between">
-        <p class="text-sm font-semibold text-slate-900">Nanamiku Admin</p>
+        <p class="text-sm font-semibold text-slate-900">{{ sb.mobile.brandTitle }}</p>
         <button
           type="button"
           class="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-          aria-label="关闭导航菜单"
+          :aria-label="sb.mobile.closeAria"
           @click="setSidebarOpen(false)"
         >
           <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[1.8]">
@@ -96,18 +96,18 @@
         <a
           href="/"
           class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-slate-600 transition hover:bg-slate-100"
-          aria-label="前台首页"
+          :aria-label="sb.footer.homeAria"
           @click="setSidebarOpen(false)"
         >
-          前台首页
+          {{ sb.footer.home }}
         </a>
         <button
           type="button"
           class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-slate-600 transition hover:bg-slate-100"
-          aria-label="退出登录"
+          :aria-label="sb.footer.logoutAria"
           @click="handleLogout"
         >
-          退出登录
+          {{ sb.footer.logout }}
         </button>
       </div>
     </aside>
@@ -119,6 +119,9 @@ import { useStore } from '@nanostores/vue'
 
 import { logout } from '../../stores/auth'
 import { sidebarOpen, setSidebarOpen } from '../../stores/ui'
+import { adminCopy } from '../../content/copy'
+
+const sb = adminCopy.sidebar
 
 interface Props {
   activeKey?: string
@@ -130,26 +133,26 @@ withDefaults(defineProps<Props>(), {
 
 const navGroups = [
   {
-    section: 'OVERVIEW',
+    section: sb.sections.overview,
     items: [
-      { key: 'dashboard', label: '仪表盘', href: '/admin' },
+      { key: 'dashboard', label: sb.nav.dashboard, href: '/admin' },
     ],
   },
   {
-    section: 'CONTENT',
+    section: sb.sections.content,
     items: [
-      { key: 'posts', label: '文章管理', href: '/admin/posts' },
-      { key: 'moments', label: '说说管理', href: '/admin/moments' },
-      { key: 'comments', label: '评论审核', href: '/admin/comments' },
+      { key: 'posts', label: sb.nav.posts, href: '/admin/posts' },
+      { key: 'moments', label: sb.nav.moments, href: '/admin/moments' },
+      { key: 'comments', label: sb.nav.comments, href: '/admin/comments' },
     ],
   },
   {
-    section: 'SYSTEM',
+    section: sb.sections.system,
     items: [
-      { key: 'footer', label: '页尾设置', href: '/admin/footer' },
-      { key: 'profile', label: '个人设置', href: '/admin/profile' },
-      { key: 'friends', label: '友链管理', href: '/admin/friends' },
-      { key: 'backup', label: '数据备份', href: '/admin/backup' },
+      { key: 'footer', label: sb.nav.footer, href: '/admin/footer' },
+      { key: 'profile', label: sb.nav.profile, href: '/admin/profile' },
+      { key: 'friends', label: sb.nav.friends, href: '/admin/friends' },
+      { key: 'backup', label: sb.nav.backup, href: '/admin/backup' },
     ],
   },
 ]

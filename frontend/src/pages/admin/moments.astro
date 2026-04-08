@@ -15,7 +15,7 @@ const copy = adminCopy.momentsManager
     <AdminRouteGuard />
   </head>
   <body>
-    <AdminLayout activeKey="moments" pageTitle="说说管理">
+    <AdminLayout activeKey="moments" pageTitle={adminCopy.sidebar.nav.moments}>
       <AdminMomentsManager client:load />
     </AdminLayout>
   </body>

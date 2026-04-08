@@ -10,15 +10,15 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-bold text-slate-900">评论区</h2>
-            <p class="mt-0.5 text-xs text-slate-500">评论提交后需审核通过方可展示</p>
+            <h2 class="text-lg font-bold text-slate-900">{{ commentsCopy.sectionTitle }}</h2>
+            <p class="mt-0.5 text-xs text-slate-500">{{ commentsCopy.sectionHint }}</p>
           </div>
         </div>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-[#39c5bb]/25 bg-[#39c5bb]/8 px-3 py-1 text-xs font-semibold text-[#39c5bb]">
           <svg viewBox="0 0 24 24" class="h-3 w-3 fill-none stroke-current stroke-[2]">
             <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
           </svg>
-          {{ total }} 条
+          {{ total }}{{ commentsCopy.countSuffix }}
         </span>
       </div>
     </LiquidGlassCard>
@@ -31,7 +31,7 @@
             <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
           </svg>
         </div>
-        <h3 class="text-base font-semibold text-slate-800">发布评论</h3>
+        <h3 class="text-base font-semibold text-slate-800">{{ commentsCopy.formTitle }}</h3>
       </div>
       <form class="space-y-4" data-testid="post-comment-form" :data-hydrated="hydrated ? 'true' : 'false'" @submit.prevent="submitComment">
         <div
@@ -39,20 +39,20 @@
           class="flex items-center justify-between gap-3 rounded-xl border border-[#c084fc]/30 bg-[#c084fc]/10 px-3 py-2"
         >
           <p class="text-xs text-slate-600">
-            正在回复 <span class="font-semibold text-[#8b5cf6]">@{{ replyTarget.author }}</span>
+            {{ commentsCopy.replyPrefix }}<span class="font-semibold text-[#8b5cf6]">@{{ replyTarget.author }}</span>
           </p>
           <button
             type="button"
             class="rounded-lg border border-white/70 bg-white/75 px-2 py-1 text-xs text-slate-500 transition hover:text-slate-700"
             @click="cancelReply"
           >
-            取消回复
+            {{ commentsCopy.cancelReply }}
           </button>
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
           <label class="group block">
-            <span class="mb-1.5 block text-xs font-semibold text-slate-600">昵称 <span class="text-[#39c5bb]">*</span></span>
+            <span class="mb-1.5 block text-xs font-semibold text-slate-600">{{ commentsCopy.nicknameLabel }} <span class="text-[#39c5bb]">{{ commentsCopy.nicknameRequired }}</span></span>
             <div class="relative">
               <svg viewBox="0 0 24 24" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 fill-none stroke-slate-400 stroke-[1.8] transition group-focus-within:stroke-[#39c5bb]">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
@@ -64,14 +64,14 @@
                 maxlength="32"
                 required
                 class="w-full rounded-xl border border-slate-200/80 bg-white/70 py-2.5 pl-9 pr-3 text-sm text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-[#39c5bb]/50 focus:bg-white/90 focus:shadow-[0_0_0_3px_rgba(57,197,187,0.1)]"
-                placeholder="请输入昵称"
-                aria-label="评论昵称"
+                :placeholder="commentsCopy.nicknamePlaceholder"
+                :aria-label="commentsCopy.nicknameAria"
               />
             </div>
           </label>
 
           <label class="group block">
-            <span class="mb-1.5 block text-xs font-semibold text-slate-600">邮箱（可选）</span>
+            <span class="mb-1.5 block text-xs font-semibold text-slate-600">{{ commentsCopy.emailLabel }}</span>
             <div class="relative">
               <svg viewBox="0 0 24 24" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 fill-none stroke-slate-400 stroke-[1.8] transition group-focus-within:stroke-[#39c5bb]">
                 <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -82,15 +82,15 @@
                 type="email"
                 maxlength="96"
                 class="w-full rounded-xl border border-slate-200/80 bg-white/70 py-2.5 pl-9 pr-3 text-sm text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-[#39c5bb]/50 focus:bg-white/90 focus:shadow-[0_0_0_3px_rgba(57,197,187,0.1)]"
-                placeholder="name@example.com"
-                aria-label="评论邮箱"
+                :placeholder="commentsCopy.emailPlaceholder"
+                :aria-label="commentsCopy.emailAria"
               />
             </div>
           </label>
         </div>
 
         <label class="group block">
-          <span class="mb-1.5 block text-xs font-semibold text-slate-600">评论内容 <span class="text-[#39c5bb]">*</span></span>
+          <span class="mb-1.5 block text-xs font-semibold text-slate-600">{{ commentsCopy.contentLabel }} <span class="text-[#39c5bb]">{{ commentsCopy.contentRequired }}</span></span>
           <textarea
             v-model="content"
             ref="contentInputRef"
@@ -98,8 +98,8 @@
             maxlength="800"
             required
             class="w-full resize-none rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2.5 text-sm leading-relaxed text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-[#39c5bb]/50 focus:bg-white/90 focus:shadow-[0_0_0_3px_rgba(57,197,187,0.1)]"
-            placeholder="写下你的看法..."
-            aria-label="评论内容"
+            :placeholder="commentsCopy.contentPlaceholder"
+            :aria-label="commentsCopy.contentAria"
           />
           <span class="mt-1 block text-right text-[11px] tabular-nums" :class="content.length >= 750 ? 'text-red-400' : 'text-slate-400'">
             {{ content.length }} / 800
@@ -141,7 +141,7 @@
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
-            {{ submitting ? '发送中...' : '发送评论' }}
+            {{ submitting ? commentsCopy.submitLoading : commentsCopy.submitIdle }}
           </button>
         </div>
       </form>
@@ -177,8 +177,8 @@
           <line x1="9" y1="10" x2="15" y2="10" />
         </svg>
       </div>
-      <p class="text-sm font-semibold text-slate-700">还没有评论</p>
-      <p class="mt-1 max-w-xs text-xs leading-relaxed text-slate-500">来发表第一条评论吧，分享你的想法与见解。</p>
+      <p class="text-sm font-semibold text-slate-700">{{ commentsCopy.emptyTitle }}</p>
+      <p class="mt-1 max-w-xs text-xs leading-relaxed text-slate-500">{{ commentsCopy.emptyDescription }}</p>
     </LiquidGlassCard>
 
     <!-- Comment list -->
@@ -203,8 +203,8 @@
 
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <img :src="avatarUrl(item.author_name)" :alt="item.author_name || '匿名用户'" class="h-5 w-5 rounded-full object-cover" loading="lazy" />
-              <span class="text-sm font-semibold text-slate-700">{{ item.author_name || '匿名用户' }}</span>
+              <img :src="avatarUrl(item.author_name)" :alt="item.author_name || commentsCopy.anonymousName" class="h-5 w-5 rounded-full object-cover" loading="lazy" />
+              <span class="text-sm font-semibold text-slate-700">{{ item.author_name || commentsCopy.anonymousName }}</span>
               <span class="h-0.5 w-0.5 rounded-full bg-slate-300" aria-hidden="true" />
               <span class="text-[11px] text-slate-400">{{ formatDate(item.created_at) }}</span>
             </div>
@@ -225,18 +225,18 @@
                 <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.8]" aria-hidden="true">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                 </svg>
-                回复
+                {{ commentsCopy.replyButton }}
               </button>
               <span v-if="childReplies(item.id).length > 0" class="text-[11px] text-slate-400">
-                {{ childReplies(item.id).length }} 条回复
+                {{ childReplies(item.id).length }}{{ commentsCopy.replySuffix }}
               </span>
             </div>
 
             <div v-if="childReplies(item.id).length > 0" class="mt-3 space-y-2 border-l-2 border-slate-200 pl-4">
               <div v-for="reply in childReplies(item.id)" :key="reply.id" class="rounded-lg bg-slate-50/60 px-3 py-2.5">
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <img :src="avatarUrl(reply.author_name)" :alt="reply.author_name || '匿名用户'" class="h-4 w-4 rounded-full object-cover" loading="lazy" />
-                  <span class="text-xs font-semibold text-slate-600">{{ reply.author_name || '匿名用户' }}</span>
+                  <img :src="avatarUrl(reply.author_name)" :alt="reply.author_name || commentsCopy.anonymousName" class="h-4 w-4 rounded-full object-cover" loading="lazy" />
+                  <span class="text-xs font-semibold text-slate-600">{{ reply.author_name || commentsCopy.anonymousName }}</span>
                   <span class="h-0.5 w-0.5 rounded-full bg-slate-300" aria-hidden="true" />
                   <span class="text-[11px] text-slate-400">{{ formatDate(reply.created_at) }}</span>
                 </div>
@@ -254,7 +254,7 @@
                   <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.8]" aria-hidden="true">
                     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                   </svg>
-                  回复
+                  {{ commentsCopy.replyButton }}
                 </button>
               </div>
             </div>
@@ -308,6 +308,7 @@ const content = ref('')
 const contentInputRef = ref<HTMLTextAreaElement | null>(null)
 const replyTarget = ref<{ id: string; author: string } | null>(null)
 const gifCopy = siteCopy.components.gifEmotePicker
+const commentsCopy = siteCopy.components.postComments
 
 const feedback = ref('')
 const feedbackType = ref<'neutral' | 'success' | 'error'>('neutral')
@@ -327,7 +328,7 @@ const topLevelComments = computed(() => {
 })
 
 function avatarUrl(name: string): string {
-  return `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(name || '匿名用户')}`
+  return `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(name || commentsCopy.anonymousName)}`
 }
 
 function childReplies(parentId: string): PostCommentItem[] {
@@ -337,7 +338,7 @@ function childReplies(parentId: string): PostCommentItem[] {
 async function startReply(item: PostCommentItem) {
   replyTarget.value = {
     id: item.id,
-    author: item.author_name || '匿名用户',
+    author: item.author_name || commentsCopy.anonymousName,
   }
   await nextTick()
   contentInputRef.value?.focus()
@@ -416,7 +417,7 @@ async function loadComments() {
     emit('count-updated', total.value)
   } catch {
     comments.value = []
-    setFeedback('评论加载失败，请稍后重试。', 'error')
+    setFeedback(commentsCopy.loadFailed, 'error')
   } finally {
     loading.value = false
   }
@@ -430,11 +431,11 @@ async function submitComment() {
   const finalContent = content.value.trim()
 
   if (!finalAuthor || !finalContent) {
-    setFeedback('昵称和评论内容不能为空。', 'error')
+    setFeedback(commentsCopy.validationEmpty, 'error')
     return
   }
   if (!isValidEmail(finalEmail)) {
-    setFeedback('邮箱格式不正确，请检查后重试。', 'error')
+    setFeedback(commentsCopy.validationEmail, 'error')
     return
   }
 
@@ -453,10 +454,10 @@ async function submitComment() {
     await api.post(`/posts/${encodeURIComponent(props.postId)}/comments`, payload)
     content.value = ''
     replyTarget.value = null
-    setFeedback('评论已提交，审核通过后会显示在列表中。', 'success')
+    setFeedback(commentsCopy.submitSuccess, 'success')
     await loadComments()
   } catch {
-    setFeedback('评论提交失败，请稍后重试。', 'error')
+    setFeedback(commentsCopy.submitFailed, 'error')
   } finally {
     submitting.value = false
   }

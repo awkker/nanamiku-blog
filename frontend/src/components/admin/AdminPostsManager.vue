@@ -4,10 +4,10 @@
     <AdminPlainCard padding="24px">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-semibold text-slate-900">文章管理</h1>
-          <p class="mt-1 text-sm text-slate-600">管理博客文章的发布、草稿与分类。</p>
+          <h1 class="text-2xl font-semibold text-slate-900">{{ pm.header.title }}</h1>
+          <p class="mt-1 text-sm text-slate-600">{{ pm.header.subtitle }}</p>
         </div>
-        <MikuButton variant="solid" aria-label="新建文章" data-testid="admin-post-create-toggle" @click="toggleCreateForm">+ 新建文章</MikuButton>
+        <MikuButton variant="solid" :aria-label="pm.header.title" data-testid="admin-post-create-toggle" @click="toggleCreateForm">{{ pm.createButton }}</MikuButton>
       </div>
     </AdminPlainCard>
 
@@ -20,11 +20,11 @@
             v-model="newPost.title"
             data-testid="admin-post-create-title"
             type="text"
-            placeholder="无题..."
+            :placeholder="pm.createForm.titlePlaceholder"
             class="writing-title-input"
             autocomplete="off"
           />
-          <p class="mt-2 text-xs tracking-wide text-slate-400">新文章</p>
+          <p class="mt-2 text-xs tracking-wide text-slate-400">{{ pm.createForm.newBadge }}</p>
         </div>
 
         <!-- Metadata drawer -->
@@ -35,25 +35,25 @@
             @click="showCreateMeta = !showCreateMeta"
           >
             <svg class="h-3.5 w-3.5 transition-transform" :class="showCreateMeta ? 'rotate-90' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-            文章属性
+            {{ pm.createForm.metaToggle }}
           </button>
           <div v-show="showCreateMeta" class="meta-drawer">
             <div class="meta-grid">
               <div class="meta-field">
-                <label class="meta-label">分类</label>
-                <input v-model="newPost.category" type="text" placeholder="技术 / 随笔 / 教程" class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.categoryLabel }}</label>
+                <input v-model="newPost.category" type="text" :placeholder="pm.createForm.categoryPlaceholder" class="meta-input" />
               </div>
               <div class="meta-field">
-                <label class="meta-label">标签</label>
-                <input v-model="newPost.tags" type="text" placeholder="用逗号分隔" class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.tagsLabel }}</label>
+                <input v-model="newPost.tags" type="text" :placeholder="pm.createForm.tagsPlaceholder" class="meta-input" />
               </div>
               <div class="meta-field">
-                <label class="meta-label">摘要</label>
-                <input v-model="newPost.excerpt" type="text" placeholder="简短描述文章内容" class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.excerptLabel }}</label>
+                <input v-model="newPost.excerpt" type="text" :placeholder="pm.createForm.excerptPlaceholder" class="meta-input" />
               </div>
               <div class="meta-field">
-                <label class="meta-label">封面图片</label>
-                <input v-model="newPost.hero_image_url" type="text" placeholder="https://..." class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.heroImageLabel }}</label>
+                <input v-model="newPost.hero_image_url" type="text" :placeholder="pm.createForm.heroImagePlaceholder" class="meta-input" />
               </div>
             </div>
             <div v-if="newPost.hero_image_url" class="mx-8 mb-4 overflow-hidden rounded-xl border border-slate-200/50">
@@ -67,7 +67,7 @@
           <textarea
             v-model="newPost.content_markdown"
             data-testid="admin-post-create-content"
-            placeholder="在此撰写你的想法..."
+            :placeholder="pm.createForm.contentPlaceholder"
             class="writing-editor"
           />
         </div>
@@ -80,9 +80,9 @@
           </div>
           <div class="flex items-center gap-3">
             <select v-model="newPost.status" data-testid="admin-post-create-status" class="meta-input cursor-pointer py-1.5 pr-7 text-xs">
-              <option value="draft">草稿</option>
-              <option value="published">直接发布</option>
-              <option value="scheduled">定时发布</option>
+              <option value="draft">{{ pm.createForm.statusDraft }}</option>
+              <option value="published">{{ pm.createForm.statusPublished }}</option>
+              <option value="scheduled">{{ pm.createForm.statusScheduled }}</option>
             </select>
             <input
               v-if="newPost.status === 'scheduled'"
@@ -91,8 +91,8 @@
               type="datetime-local"
               class="meta-input py-1.5 text-xs"
             />
-            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeCreateForm">取消</button>
-            <MikuButton type="submit" variant="solid" data-testid="admin-post-create-submit" :disabled="creating">{{ creating ? '创建中...' : '创建文章' }}</MikuButton>
+            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeCreateForm">{{ pm.createForm.cancelButton }}</button>
+            <MikuButton type="submit" variant="solid" data-testid="admin-post-create-submit" :disabled="creating">{{ creating ? pm.createForm.createLoading : pm.createForm.createIdle }}</MikuButton>
           </div>
         </div>
       </form>
@@ -106,11 +106,11 @@
             v-model="editPost.title"
             data-testid="admin-post-edit-title"
             type="text"
-            placeholder="无题..."
+            :placeholder="pm.createForm.titlePlaceholder"
             class="writing-title-input"
             autocomplete="off"
           />
-          <p class="mt-2 text-xs tracking-wide text-slate-400">编辑中</p>
+          <p class="mt-2 text-xs tracking-wide text-slate-400">{{ pm.createForm.editingBadge }}</p>
         </div>
 
         <div class="border-t border-slate-200/40">
@@ -120,25 +120,25 @@
             @click="showEditMeta = !showEditMeta"
           >
             <svg class="h-3.5 w-3.5 transition-transform" :class="showEditMeta ? 'rotate-90' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-            文章属性
+            {{ pm.createForm.metaToggle }}
           </button>
           <div v-show="showEditMeta" class="meta-drawer">
             <div class="meta-grid">
               <div class="meta-field">
-                <label class="meta-label">分类</label>
-                <input v-model="editPost.category" type="text" placeholder="技术 / 随笔 / 教程" class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.categoryLabel }}</label>
+                <input v-model="editPost.category" type="text" :placeholder="pm.createForm.categoryPlaceholder" class="meta-input" />
               </div>
               <div class="meta-field">
-                <label class="meta-label">标签</label>
-                <input v-model="editPost.tags" type="text" placeholder="用逗号分隔" class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.tagsLabel }}</label>
+                <input v-model="editPost.tags" type="text" :placeholder="pm.createForm.tagsPlaceholder" class="meta-input" />
               </div>
               <div class="meta-field">
-                <label class="meta-label">摘要</label>
-                <input v-model="editPost.excerpt" type="text" placeholder="简短描述文章内容" class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.excerptLabel }}</label>
+                <input v-model="editPost.excerpt" type="text" :placeholder="pm.createForm.excerptPlaceholder" class="meta-input" />
               </div>
               <div class="meta-field">
-                <label class="meta-label">封面图片</label>
-                <input v-model="editPost.hero_image_url" type="text" placeholder="https://..." class="meta-input" />
+                <label class="meta-label">{{ pm.createForm.heroImageLabel }}</label>
+                <input v-model="editPost.hero_image_url" type="text" :placeholder="pm.createForm.heroImagePlaceholder" class="meta-input" />
               </div>
             </div>
             <div v-if="editPost.hero_image_url" class="mx-8 mb-4 overflow-hidden rounded-xl border border-slate-200/50">
@@ -151,7 +151,7 @@
           <textarea
             v-model="editPost.content_markdown"
             data-testid="admin-post-edit-content"
-            placeholder="在此撰写你的想法..."
+            :placeholder="pm.createForm.contentPlaceholder"
             class="writing-editor"
           />
         </div>
@@ -162,8 +162,8 @@
             {{ charCount(editPost.content_markdown) }}
           </div>
           <div class="flex items-center gap-3">
-            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeEditForm">取消</button>
-            <MikuButton type="submit" variant="solid" data-testid="admin-post-edit-submit" :disabled="editing">{{ editing ? '保存中...' : '保存修改' }}</MikuButton>
+            <button type="button" class="rounded-xl px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100/50 hover:text-slate-600" @click="closeEditForm">{{ pm.createForm.cancelButton }}</button>
+            <MikuButton type="submit" variant="solid" data-testid="admin-post-edit-submit" :disabled="editing">{{ editing ? pm.createForm.saveLoading : pm.createForm.saveIdle }}</MikuButton>
           </div>
         </div>
       </form>
@@ -175,19 +175,19 @@
         <div class="loading-dot" /><div class="loading-dot delay-1" /><div class="loading-dot delay-2" />
       </div>
       <div v-else-if="posts.length === 0" class="py-20 text-center">
-        <p class="text-base text-slate-400">尚无文章</p>
-        <button type="button" class="mt-3 text-sm text-miku/80 transition hover:text-miku" @click="toggleCreateForm">撰写第一篇 &rarr;</button>
+        <p class="text-base text-slate-400">{{ pm.table.emptyMessage }}</p>
+        <button type="button" class="mt-3 text-sm text-miku/80 transition hover:text-miku" @click="toggleCreateForm">{{ pm.table.firstPostCta }} &rarr;</button>
       </div>
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="border-b border-slate-200/60">
-              <th class="px-5 py-3.5 font-semibold text-slate-700">标题</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700">分类</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700">状态</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700 text-right">浏览量</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700">发布时间/计划时间</th>
-              <th class="px-5 py-3.5 font-semibold text-slate-700 text-center">操作</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ pm.table.colTitle }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ pm.table.colCategory }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ pm.table.colStatus }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700 text-right">{{ pm.table.colViews }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700">{{ pm.table.colPublishTime }}</th>
+              <th class="px-5 py-3.5 font-semibold text-slate-700 text-center">{{ pm.table.colActions }}</th>
             </tr>
           </thead>
           <tbody>
@@ -215,48 +215,48 @@
                     type="button"
                     data-testid="admin-post-edit-button"
                     class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-700 transition hover:border-miku/40 hover:text-miku"
-                    aria-label="编辑文章"
+                    :aria-label="pm.actions.editAria"
                     @click="startEditPost(post.id)"
                   >
-                    编辑
+                    {{ pm.actions.editButton }}
                   </button>
                   <button
                     v-if="post.status !== 'published'"
                     type="button"
                     data-testid="admin-post-publish-button"
                     class="rounded-xl border border-emerald-200/80 bg-white/50 px-2.5 py-1 text-xs text-emerald-600 transition hover:bg-emerald-50"
-                    aria-label="发布文章"
+                    :aria-label="pm.actions.publishAria"
                     @click="publishPost(post.id)"
                   >
-                    发布
+                    {{ pm.actions.publishButton }}
                   </button>
                   <button
                     type="button"
                     data-testid="admin-post-schedule-button"
                     class="rounded-xl border border-[#e9d5ff]/80 bg-white/50 px-2.5 py-1 text-xs text-[#9333ea] transition hover:bg-[#faf5ff]"
-                    aria-label="定时发布文章"
+                    :aria-label="pm.actions.scheduleAria"
                     @click="schedulePost(post.id)"
                   >
-                    定时
+                    {{ pm.actions.scheduleButton }}
                   </button>
                   <button
                     v-if="post.status !== 'draft'"
                     type="button"
                     data-testid="admin-post-unpublish-button"
                     class="rounded-xl border border-slate-200/80 bg-white/50 px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-50"
-                    aria-label="转为草稿"
+                    :aria-label="pm.actions.unpublishAria"
                     @click="unpublishPost(post.id)"
                   >
-                    转草稿
+                    {{ pm.actions.unpublishButton }}
                   </button>
                   <button
                     type="button"
                     data-testid="admin-post-delete-button"
                     class="rounded-xl border border-red-200/80 bg-white/50 px-2.5 py-1 text-xs text-red-600 transition hover:bg-red-50 opacity-0 group-hover:opacity-100"
-                    aria-label="删除文章"
+                    :aria-label="pm.actions.deleteAria"
                     @click="deletePost(post.id)"
                   >
-                    删除
+                    {{ pm.actions.deleteButton }}
                   </button>
                 </div>
               </td>
@@ -271,10 +271,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import { adminCopy } from '../../content/copy'
 import { api, ApiError, type PagedData } from '../../lib/api'
 import { showToast } from '../../stores/ui'
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
+
+const pm = adminCopy.postsManager
 
 interface ApiPost {
   id: string
@@ -452,9 +455,9 @@ const showEditMeta = ref(false)
 
 function charCount(text: string): string {
   const len = text.length
-  if (len === 0) return '0 字'
-  if (len >= 10000) return `${(len / 10000).toFixed(1)} 万字`
-  return `${len} 字`
+  if (len === 0) return pm.charCount.zero
+  if (len >= 10000) return `${(len / 10000).toFixed(1)}${pm.charCount.tenThousandSuffix}`
+  return `${len}${pm.charCount.suffix}`
 }
 
 function toggleCreateForm() {
@@ -481,7 +484,7 @@ async function loadPosts() {
     posts.value = (data.items || []).map(mapPost)
   } catch (err) {
     console.error('[AdminPosts] loadPosts failed:', err)
-    showToast('加载文章列表失败', 'error')
+    showToast(pm.toast.loadFailed, 'error')
     posts.value = []
   } finally {
     loading.value = false
@@ -491,7 +494,7 @@ async function loadPosts() {
 async function createPost() {
   if (!newPost.value.title.trim()) return
   if (newPost.value.status === 'scheduled' && !newPost.value.scheduled_at) {
-    showToast('请选择定时发布时间', 'error')
+    showToast(pm.toast.scheduledAtRequired, 'error')
     return
   }
   creating.value = true
@@ -505,10 +508,10 @@ async function createPost() {
     })
     closeCreateForm()
     newPost.value = createEmptyNewPostForm()
-    showToast('文章创建成功', 'success')
+    showToast(pm.toast.createSuccess, 'success')
     await loadPosts()
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '创建文章失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : pm.toast.createFailed
     console.error('[AdminPosts] createPost failed:', err)
     showToast(msg, 'error')
   } finally {
@@ -531,7 +534,7 @@ async function startEditPost(id: string) {
     showEditForm.value = true
     showCreateForm.value = false
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '加载文章详情失败'
+    const msg = err instanceof ApiError ? err.message : pm.toast.loadDetailFailed
     console.error('[AdminPosts] startEditPost failed:', err)
     showToast(msg, 'error')
   }
@@ -543,11 +546,11 @@ async function updatePost() {
   editing.value = true
   try {
     await api.put(`/admin/posts/${editingPostID.value}`, toPostPayload(editPost.value))
-    showToast('文章更新成功', 'success')
+    showToast(pm.toast.updateSuccess, 'success')
     closeEditForm()
     await loadPosts()
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '更新文章失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : pm.toast.updateFailed
     console.error('[AdminPosts] updatePost failed:', err)
     showToast(msg, 'error')
   } finally {
@@ -559,9 +562,9 @@ async function publishPost(id: string) {
   try {
     await api.post(`/admin/posts/${id}/publish`)
     await loadPosts()
-    showToast('文章发布成功', 'success')
+    showToast(pm.toast.publishSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '发布失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : pm.toast.publishFailed
     console.error('[AdminPosts] publishPost failed:', err)
     showToast(msg, 'error')
   }
@@ -569,7 +572,7 @@ async function publishPost(id: string) {
 
 async function schedulePost(id: string) {
   const defaultTime = formatDateInputLocal(new Date(Date.now() + 30 * 60 * 1000))
-  const next = window.prompt('请输入计划发布时间（格式：YYYY-MM-DDTHH:mm）', defaultTime)
+  const next = window.prompt(pm.actions.schedulePrompt, defaultTime)
   if (!next) return
 
   try {
@@ -577,9 +580,9 @@ async function schedulePost(id: string) {
       scheduled_at: localInputToRFC3339(next),
     })
     await loadPosts()
-    showToast('文章已设为定时发布', 'success')
+    showToast(pm.toast.scheduleSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '定时发布设置失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : pm.toast.scheduleFailed
     console.error('[AdminPosts] schedulePost failed:', err)
     showToast(msg, 'error')
   }
@@ -589,9 +592,9 @@ async function unpublishPost(id: string) {
   try {
     await api.post(`/admin/posts/${id}/unpublish`)
     await loadPosts()
-    showToast('文章已转为草稿', 'success')
+    showToast(pm.toast.unpublishSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '转草稿失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : pm.toast.unpublishFailed
     console.error('[AdminPosts] unpublishPost failed:', err)
     showToast(msg, 'error')
   }
@@ -601,9 +604,9 @@ async function deletePost(id: string) {
   try {
     await api.delete(`/admin/posts/${id}`)
     posts.value = posts.value.filter((p) => p.id !== id)
-    showToast('文章已删除', 'success')
+    showToast(pm.toast.deleteSuccess, 'success')
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : '删除失败，请稍后重试'
+    const msg = err instanceof ApiError ? err.message : pm.toast.deleteFailed
     console.error('[AdminPosts] deletePost failed:', err)
     showToast(msg, 'error')
   }
@@ -620,9 +623,9 @@ function statusClass(status: Post['status']) {
 }
 
 function statusLabel(status: Post['status']) {
-  if (status === 'published') return '已发布'
-  if (status === 'draft') return '草稿'
-  return '定时发布'
+  if (status === 'published') return pm.status.published
+  if (status === 'draft') return pm.status.draft
+  return pm.status.scheduled
 }
 </script>
 

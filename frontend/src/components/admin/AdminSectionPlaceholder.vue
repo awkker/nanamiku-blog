@@ -22,6 +22,7 @@
 import { computed } from 'vue'
 
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
+import { adminCopy } from '../../content/copy'
 
 interface Props {
   title: string
@@ -31,23 +32,5 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const cardMap = {
-  posts: [
-    { title: '文章列表', desc: '后续接入发布状态、分类筛选和全文检索。' },
-    { title: '草稿箱', desc: '支持草稿保存、自动恢复与版本记录。' },
-    { title: '发布计划', desc: '预留定时发布与回滚入口。' },
-  ],
-  comments: [
-    { title: '待审核评论', desc: '支持批量通过、驳回与敏感词标记。' },
-    { title: '举报处理', desc: '统一管理用户举报与风险内容。' },
-    { title: '黑名单策略', desc: '预留 IP/关键词规则配置面板。' },
-  ],
-  friends: [
-    { title: '友链列表', desc: '维护已通过友链与展示排序。' },
-    { title: '申请队列', desc: '集中处理交换申请与状态通知。' },
-    { title: '校验任务', desc: '定期检测友链可用性与内容质量。' },
-  ],
-}
-
-const cards = computed(() => cardMap[props.module])
+const cards = computed(() => adminCopy.sectionPlaceholder[props.module])
 </script>

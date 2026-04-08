@@ -1,9 +1,11 @@
-import { type CollectionEntry, getCollection } from 'astro:content'
+/**
+ * 博客文章数据源（单一真源：后端 CMS API）
+ *
+ * 所有构建期与运行时的文章列表、详情、RSS 等均由此模块驱动，
+ * 不再 fallback 到 Astro Content Collections。
+ */
 
 import type { PostDetail, PostSummary } from './post-types'
-
-type BlogEntry = CollectionEntry<'blog'>
-type PostSourceKind = 'cms' | 'fallback'
 
 interface ApiResponse<T = unknown> {
   code: number
@@ -20,11 +22,10 @@ interface PagedData<T = unknown> {
 
 interface SourceResult<T> {
   data: T
-  source: PostSourceKind
+  source: 'cms'
 }
 
 const DEFAULT_CMS_ORIGIN = 'http://127.0.0.1:8080'
-const FALLBACK_HERO_IMAGE = '/picture/封面.avif'
 const CMS_PAGE_SIZE = 100
 
 const cmsOrigin = (
@@ -58,58 +59,6 @@ async function fetchCMS<T>(path: string): Promise<T> {
   return body.data
 }
 
-function slugifyTag(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{Letter}\p{Number}\u4e00-\u9fff\s-]/gu, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-}
-
-function toISODate(value?: Date): string {
-  return (value ?? new Date()).toISOString()
-}
-
-function mapFallbackEntryToSummary(entry: BlogEntry): PostSummary {
-  return {
-    id: entry.id,
-    slug: entry.id,
-    title: entry.data.title,
-    excerpt: entry.data.description,
-    hero_image_url: entry.data.heroImage?.src || FALLBACK_HERO_IMAGE,
-    category: entry.data.category || '技术随笔',
-    published_at: toISODate(entry.data.pubDate),
-    view_count: 0,
-    like_count: 0,
-    comment_count: 0,
-    created_at: toISODate(entry.data.pubDate),
-    tags: (entry.data.tags || []).map((name) => ({
-      name,
-      slug: slugifyTag(name),
-    })),
-  }
-}
-
-function mapFallbackEntryToDetail(entry: BlogEntry): PostDetail {
-  const summary = mapFallbackEntryToSummary(entry)
-
-  return {
-    ...summary,
-    content_markdown: entry.body || '',
-    status: 'published',
-    updated_at: toISODate(entry.data.updatedDate || entry.data.pubDate),
-    liked: false,
-  }
-}
-
-async function getFallbackEntries(): Promise<BlogEntry[]> {
-  return (await getCollection('blog')).sort(
-    (left, right) => right.data.pubDate.valueOf() - left.data.pubDate.valueOf(),
-  )
-}
-
 async function loadPublishedPostSummaries(): Promise<SourceResult<PostSummary[]>> {
   try {
     const firstPage = await fetchCMS<PagedData<PostSummary>>(`/posts?page=1&size=${CMS_PAGE_SIZE}`)
@@ -122,33 +71,20 @@ async function loadPublishedPostSummaries(): Promise<SourceResult<PostSummary[]>
       items.push(...(nextPage.items || []))
     }
 
-    return {
-      data: items,
-      source: 'cms',
-    }
-  } catch {
-    const fallbackEntries = await getFallbackEntries()
-    return {
-      data: fallbackEntries.map(mapFallbackEntryToSummary),
-      source: 'fallback',
-    }
+    return { data: items, source: 'cms' }
+  } catch (err) {
+    console.warn('[post-source] CMS unreachable, returning empty post list:', (err as Error).message)
+    return { data: [], source: 'cms' }
   }
 }
 
 async function loadPublishedPostDetail(slug: string): Promise<SourceResult<PostDetail | null>> {
   try {
     const detail = await fetchCMS<PostDetail>(`/posts/${encodeURIComponent(slug)}`)
-    return {
-      data: detail,
-      source: 'cms',
-    }
-  } catch {
-    const fallbackEntries = await getFallbackEntries()
-    const entry = fallbackEntries.find((item) => item.id === slug)
-    return {
-      data: entry ? mapFallbackEntryToDetail(entry) : null,
-      source: 'fallback',
-    }
+    return { data: detail, source: 'cms' }
+  } catch (err) {
+    console.warn(`[post-source] CMS unreachable for slug "${slug}":`, (err as Error).message)
+    return { data: null, source: 'cms' }
   }
 }
 

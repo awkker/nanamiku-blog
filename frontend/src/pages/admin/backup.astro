@@ -15,7 +15,7 @@ const copy = adminCopy.backup
     <AdminRouteGuard />
   </head>
   <body>
-    <AdminLayout activeKey="backup" pageTitle="数据备份">
+    <AdminLayout activeKey="backup" pageTitle={adminCopy.sidebar.nav.backup}>
       <AdminBackupManager client:load />
     </AdminLayout>
   </body>

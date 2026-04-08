@@ -13,7 +13,7 @@
         v-for="(src, i) in heroImages"
         :key="src"
         :src="src"
-        :alt="`封面 ${i + 1}`"
+        :alt="`${hp.coverAltPrefix}${i + 1}`"
         class="parallax-img absolute inset-0 h-full w-full object-cover"
         :class="mounted && i === currentIndex ? 'is-active' : ''"
         :loading="i === currentIndex ? 'eager' : 'lazy'"
@@ -28,6 +28,9 @@
 <script setup lang="ts">
 import { useStore } from '@nanostores/vue'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { siteCopy } from '../../content/copy'
+
+const hp = siteCopy.components.heroParallax
 
 import { heroImages, heroIndex, shuffleHeroImage } from '../../stores/heroImage'
 

@@ -1,22 +1,8 @@
-import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
-import { z } from 'astro/zod';
+/**
+ * Astro Content Collections 配置。
+ *
+ * 博客文章已统一由后端 CMS API 驱动（见 src/lib/post-source.ts），
+ * 此处不再注册 blog 集合。src/content/blog/ 目录保留为样例内容与迁移参考。
+ */
 
-const blog = defineCollection({
-	// Load Markdown and MDX files in the `src/content/blog/` directory.
-	loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
-	// Type-check frontmatter using a schema
-	schema: ({ image }) =>
-		z.object({
-			title: z.string(),
-			description: z.string(),
-			category: z.string().optional(),
-			tags: z.array(z.string()).optional(),
-			// Transform string to Date object
-			pubDate: z.coerce.date(),
-			updatedDate: z.coerce.date().optional(),
-			heroImage: z.optional(image()),
-		}),
-});
-
-export const collections = { blog };
+export const collections = {};

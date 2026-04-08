@@ -2,8 +2,8 @@
   <section class="glass-layer rounded-[22px] p-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="space-y-1">
-        <p class="text-xs font-semibold tracking-[0.14em] text-slate-500">互动</p>
-        <p class="text-sm text-slate-600">喜欢这篇文章的话，先点个赞，再到评论区聊聊你的看法。</p>
+        <p class="text-xs font-semibold tracking-[0.14em] text-slate-500">{{ lb.sectionTitle }}</p>
+        <p class="text-sm text-slate-600">{{ lb.description }}</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -28,15 +28,15 @@
           >
             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
           </svg>
-          {{ likedState ? '已点赞' : '点赞' }} · {{ likeCountState }}
+          {{ likedState ? lb.likedLabel : lb.likeLabel }} · {{ likeCountState }}
         </button>
 
         <a
           href="#post-comments"
           class="inline-flex items-center gap-1.5 rounded-xl border border-miku/35 bg-miku-soft px-4 py-2 text-sm font-semibold text-miku transition hover:border-miku/55"
-          aria-label="跳转到评论区"
+          :aria-label="lb.goToCommentsAria"
         >
-          去评论区
+          {{ lb.goToComments }}
           <span class="rounded-full border border-miku/35 bg-white/70 px-1.5 py-0.5 text-[11px] text-miku">
             {{ commentCount }}
           </span>
@@ -52,6 +52,9 @@
 import { ref, watch } from 'vue'
 
 import { api } from '../../lib/api'
+import { siteCopy } from '../../content/copy'
+
+const lb = siteCopy.components.postLikeBar
 
 interface Props {
   postId: string
@@ -104,7 +107,7 @@ async function toggleLike() {
       likeCount: likeCountState.value,
     })
   } catch {
-    message.value = '点赞失败，请稍后重试。'
+    message.value = lb.likeFailed
   } finally {
     liking.value = false
   }

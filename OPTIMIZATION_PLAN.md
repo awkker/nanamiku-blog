@@ -1,6 +1,7 @@
 # NanaMiku Blog 最终优化计划书
 
 生成日期：2026-04-01
+最近核对：2026-04-08（基于当前仓库代码、`frontend` 的 `npm run build`、`backend` 的 `go test ./...`）
 
 ## 1. 文档目标
 
@@ -22,157 +23,140 @@
 
 ### 2.2 当前基线
 
-- 前端构建通过：`frontend` 目录执行 `npm run build` 成功。
-- 后端测试通过：`backend` 目录执行 `go test ./...` 成功。
-- Git 工作区干净，适合按计划分阶段推进。
+- 前端构建通过：2026-04-08 在 `frontend` 目录执行 `npm run build` 成功。
+- 后端测试通过：2026-04-08 在 `backend` 目录执行 `go test ./...` 成功。
+- Git 工作区干净：本次核对时 `git status --short` 为空。
+- 本次未重跑依赖 PostgreSQL / Redis / Chromium 的 smoke 与 Playwright，因此这部分只确认“代码与接线存在”，不把历史运行结果直接视为当前事实。
 
 ### 2.3 当前最明显的问题类型
 
-- 内容源存在双轨，博客文章链路尚未完全统一。
-- SEO 与品牌基础配置仍有默认占位值。
-- 部分“后台配置能力”仍停留在前端本地存储层。
-- 安全、测试、CI 仍偏“开发态”，还不是“上线态”。
-- 若干查询与请求链路存在 N+1 或统计口径不严谨问题。
+- 博客正式链路仍未形成单一真源：当前主链路可优先读后端 CMS，但构建期仍保留 Astro Content fallback 与兼容入口。
+- SEO 与品牌配置存在“运行时已支持、构建时未统一”的分裂：后台 `site_settings` 已能同步浏览器文档，但 RSS、sitemap、`Astro.site`、初始 metadata 仍主要依赖静态 copy。
+- 文案收口只完成了一部分：后台页面级 `<BaseHead>` 已集中，但若干公开组件和后台管理组件仍保留硬编码可见文案。
+- 阶段四到阶段六的大部分结构性工作已经落地，计划书不应继续按“几乎未开始”的状态描述这些部分。
+- 自动化验证基建已存在，但“最近一次真实跑通到什么程度”需要按当下环境重新复验，不能只沿用文档内历史结论。
 
-### 2.4 截至 2026-04-06 的执行进度
+### 2.4 截至 2026-04-08 的执行进度（按仓库核对）
 
-- 阶段一已完成核心收口：
-  - 公开博客详情统一到 `/blog/[slug]`。
-  - 文章详情、相关文章、About 页文章数与 RSS 已切到统一内容源，正式链路优先读后端 CMS。
-- 阶段二已完成核心修正：
-  - 站点域名、品牌名、默认 SEO 描述、默认分享图已集中管理。
-  - canonical、RSS、文章级 metadata 与 favicon 已完成基础修正。
-- 阶段三已完成核心收口：
-  - 页尾设置已从前端 `localStorage` 改为真实后端 `site_settings` 表与 API。
-  - 前后台页尾配置已共享同一真实数据源，换浏览器和换设备后仍可生效。
+- 阶段一：部分完成，但未收口。
+  - 当前公开文章详情主入口已统一为 `/blog/[slug]`，旧的 `/blog/post` 只剩兼容跳转。
+  - 文章详情、相关文章、About 页文章数与 RSS 已统一走 `post-source` 这一层读取。
+  - 但 `post-source` 仍保留 `CMS -> Astro Content fallback` 双轨逻辑，`frontend/src/content/blog/` 仍参与正式构建链路，因此还不能算“单一真源”。
+  - 主详情页已使用真实点赞与评论组件，但仓库中仍保留旧的 `BlogPost.astro`、`ArticleMeta.astro`、`LikePanel.vue` 等遗留实现。
+- 阶段二：部分完成，但未彻底打通。
+  - 站点域名、品牌名、默认描述、默认分享图已集中到 `siteCopy`，文章级 metadata、favicon、canonical 基础能力也已存在。
+  - 后台 `site_settings` 的站点资料接口已接入前端运行时同步。
+  - 但构建期输出仍主要依赖静态 copy：`Astro.site`、RSS、sitemap、初始 HTML metadata 还没有真正消费后台设置。
+- 阶段三：基本完成。
+  - 页尾设置已改为真实后端 `site_settings` 表与 API。
+  - 前后台页尾配置已共享同一真实数据源。
   - 默认不再展示占位备案号；未备案时页尾留空。
-  - 友链申请已从前台占位提示升级为真实表单、后端 `friend_link_applications` 数据表与后台审核闭环。
-  - 后台友链管理已支持审核公开申请，并在通过时自动转为正式友链。
-  - 站点品牌信息与默认 SEO 配置已纳入后台设置中心，前台运行时会优先同步真实配置。
-- 仍待继续推进：
-  - 阶段四已开始并完成核心链路：
-    - 管理端登录、刷新、登出、后台守卫已从 `localStorage` token 迁移为 `HttpOnly access/refresh cookie`。
-    - 前端 API 与导出接口已支持基于 cookie 的自动刷新与重试。
-    - 后端生产配置新增 `APP_ENV`、`COOKIE_*` 校验，生产环境会拒绝危险默认值与不安全 cookie 配置。
-    - `seed` 命令已改为必须显式提供用户名、邮箱和密码，不再隐式创建弱默认管理员账号。
-    - 仓库已补最小 GitHub Actions，覆盖后端测试与前端构建。
-  - 阶段五已开始第一批落地：
-    - 已补 cookie refresh fallback、定时发布时间解析等关键纯函数测试。
-    - 已新增 `backend/cmd/smoke`，可自动跑登录、`/auth/me`、留言提交与审核、友链申请与审核、登出失效等 API smoke。
-  - 阶段五已补第二批浏览器级 smoke：
-    - 已新增 `frontend/playwright.config.ts` 与 `frontend/e2e/admin-smoke.spec.ts`。
-    - 可自动验证未登录跳转、后台登录、友链管理页、备份页与登出失效等最小 UI 主链路。
-  - 2026-04-05 阶段五已补第三批公开链路 smoke：
-    - 新增 `frontend/e2e/public-smoke.spec.ts`，覆盖博客详情加载、文章评论提交与留言板提交主链路。
-    - Playwright smoke 新增后端健康检查辅助；未启动后端时，依赖 API 的 smoke 会自动跳过而不是直接报错。
-  - 2026-04-05 阶段五已补第四批互动 API smoke：
-    - `backend/cmd/smoke` 已新增说说创建、公开列表可见、点赞、转发、评论、评论点赞与自动清理验证。
-    - 公开说说列表聚合评论链路已有自动 smoke 覆盖，后续回归时不再只依赖手工点测。
-  - 2026-04-05 阶段五已补第五批评论审核闭环 smoke：
-    - `frontend/e2e/public-smoke.spec.ts` 已新增“文章评论提交 -> 后台评论审核 -> 前台可见 -> 清理”的浏览器级闭环验证。
-    - Playwright 公开文章 smoke 已改为动态读取真实已发布文章，不再依赖 fallback `first-post`，评论接口会命中真实 `post_id`。
-  - 2026-04-06 阶段五已补第六批自动化接线：
-    - `.github/workflows/ci.yml` 已新增 smoke job，会自动拉起 PostgreSQL / Redis、执行 migration、seed 管理员、启动后端，并串行运行 `backend/cmd/smoke` 与 Playwright 浏览器 smoke。
-    - `frontend/e2e/smoke-helpers.ts` 已支持在无现成公开文章时自动创建临时已发布文章，并在测试完成后清理，浏览器 smoke 不再依赖预置 CMS 数据。
-    - `frontend/e2e/public-smoke.spec.ts` 已新增公开说说互动链路，覆盖说说展示、点赞、转发、评论、评论点赞与临时数据清理。
-    - `frontend/e2e/admin-smoke.spec.ts` 已补“文章管理”页面访问验证，后台最小主链路与计划书目标进一步对齐。
-  - 2026-04-06 阶段五已补第七批浏览器闭环与文案收口：
-    - `frontend/e2e/public-smoke.spec.ts` 已新增“留言板留言提交 -> 后台审核通过 -> 前台可见 -> 清理”浏览器级闭环。
-    - `frontend/e2e/public-smoke.spec.ts` 已新增“友链申请提交 -> 后台审核通过 -> 前台友链墙可见 -> 删除正式友链”浏览器级闭环。
-    - 登录页与评论审核页的可见文案、页面 metadata 已收敛到 `frontend/src/content/copy/admin.ts`；`LoginForm.vue`、`admin/comments.astro`、`AdminCommentsManager.vue` 不再继续写死主要运营文案。
-    - `frontend/src/stores/friends.ts` 的错误提示已复用 `siteCopy.friendsPage.grid.errorFallback`，友链页错误文案口径进一步统一。
-  - 2026-04-06 阶段五已补第八批后台文章管理闭环：
-    - `frontend/e2e/admin-smoke.spec.ts` 已新增“后台创建草稿文章 -> 前台不可见 -> 后台发布 -> 前台可见 -> 后台编辑 -> 后台转草稿 -> 前台下线 -> 清理”的浏览器级闭环。
-    - `frontend/e2e/smoke-helpers.ts` 已新增后台资源清理辅助，文章类 smoke 在中途失败时也能尽量自动清理临时数据。
-    - `frontend/src/components/admin/AdminPostsManager.vue` 已补最小 `data-testid` 锚点，便于后续继续补说说管理与更多后台内容链路 smoke。
-  - 2026-04-06 阶段五已补第九批后台说说管理闭环：
-    - `frontend/e2e/admin-smoke.spec.ts` 已新增“后台创建草稿说说 -> 前台不可见 -> 后台设为定时发布 -> 立即发布 -> 前台可见 -> 后台编辑 -> 后台转草稿 -> 前台下线 -> 删除”的浏览器级闭环。
-    - `frontend/src/components/admin/AdminMomentsManager.vue` 已补最小 `data-testid` 锚点，避免说说管理相关 smoke 继续依赖脆弱的样式或纯文本定位。
-  - 2026-04-06 阶段五已补第十批定时发布与 CI 修正：
-    - `frontend/e2e/admin-smoke.spec.ts` 已新增"后台创建定时发布文章 -> 前台不可见 -> 行内重设发布时间 -> 仍不可见 -> 删除"的浏览器级闭环。
-    - 修复 `UpdateMoment` SQL 中 `$7` 与 `NULL` 缺少 `::timestamptz` 显式类型转换导致的一致性 500 错误。
-    - 修复 `admin-smoke` 文章创建测试未展开"文章属性"抽屉导致分类输入不可见的超时。
-    - 登录限流从 10 req/min 放宽至 60 req/min，避免 CI 并行 worker 触发 429 级联。
-  - 2026-04-06 阶段六已完成第二批性能与口径修正：
-    - `dashboard.sql` 中 `GetTotalLikeCount` 已限定 `WHERE status = 'published'`，不再把草稿/定时文章的点赞计入仪表盘总量。
-    - `DashboardService` 已接入 Redis，`GetStats`（2 min TTL）、`GetViewTrend` / `GetCommentTrend` / `GetLikeTrend`（5 min TTL）、`GetAnalyticsOverview`（5 min TTL）、`GetPublicSiteTrend`（5 min TTL）均增加了 JSON 序列化缓存，避免每次加载仪表盘时对 PostgreSQL 做 6~17+ 次串行聚合查询。
-    - 缓存为 best-effort：Redis 不可用或反序列化失败时自动降级到数据库查询，无破坏性影响。
-  - 2026-04-06 文案收口第十一批：后台 admin BaseHead 硬编码统一迁入 `adminCopy`：
-    - `admin/index.astro`、`admin/backup.astro`、`admin/posts.astro`、`admin/moments.astro`、`admin/profile.astro` 的 `<BaseHead>` title / description 均改为从 `adminCopy` 读取。
-    - `adminCopy` 新增 `layout.page`、`backup.page`、`postsManager.page`、`momentsManager.page`、`profileManager.page` 五组 metaTitle / metaDescription 字段。
-    - 至此所有 8 个后台 `.astro` 页面的 `<BaseHead>` 均已收口到 copy 模块，后台再无硬编码页面标题。
-  - 2026-04-06 阶段四已补第一批实机联调探针：
-    - 本地已使用真实 PostgreSQL / Redis 重跑 `go run cmd/migrate/main.go`，首次回放时补应用 `000009_post_view_daily_visitors.up.sql`，当前本地 smoke 数据库已与仓库 migration 对齐。
-    - `backend/cmd/smoke` 已新增 `HttpOnly cookie` 属性校验、仅保留 refresh cookie 的自动刷新恢复、CORS 预检、备份导出 `Content-Type` / `Content-Disposition` / 非空 body 探针。
-    - 上述后端 smoke 已于 2026-04-06 在本地真实环境实跑通过，不再只停留在“代码已接线、尚未联调”的状态。
-  - 2026-04-06 阶段五已补第十二批次级互动与后台会话回归覆盖：
-    - `frontend/e2e/admin-smoke.spec.ts` 已新增“仅保留 refresh cookie -> 访问后台触发自动刷新 -> 备份导出仍可用”的浏览器级会话闭环。
-    - `frontend/e2e/public-smoke.spec.ts` 已新增“留言板留言审核通过 -> 前台点赞 -> 作者回复 -> 回复点赞 -> 清理”的浏览器级次级互动闭环。
-    - `frontend/e2e/public-smoke.spec.ts` 已新增“友链申请提交 -> 后台拒绝 -> 前台不可见”的浏览器级审核闭环。
-    - `frontend/src/components/guestbook/GuestbookMessageCard.vue` 已补最小 `data-testid` 锚点，留言板回复与投票 smoke 后续不再继续依赖脆弱文本定位。
-  - 2026-04-06 阶段五已补第十三批说说图片与多记录隔离回归：
-    - `frontend/e2e/admin-smoke.spec.ts` 已新增“说说图片超限返回 400 -> 草稿双图创建 -> 已发布双图创建 -> 前台仅展示已发布记录 -> 图片预览打开/关闭 -> 清理”的浏览器级闭环。
-    - `frontend/src/components/admin/AdminMomentsManager.vue` 已补创建/编辑图片输入、创建/编辑图片预览与列表图片的最小 `data-testid` 锚点，后台说说图片链路 smoke 不再依赖脆弱样式选择器。
-    - `frontend/src/components/moments/MomentCard.vue` 已补公开说说卡片、图片与预览弹层的最小 `data-testid` 锚点，前台图片展示与预览回归已可稳定自动验证。
-  - 2026-04-06 本地浏览器 smoke 实跑备注：
-    - Playwright 首次实跑未进入业务断言，直接因本机缺少 Chromium 可执行文件而中断；该阻塞属于本地环境问题，不是当前仓库代码回归。
-    - 下一步优先观察 GitHub Actions 中 `smoke` job 的真实执行结果；若 CI 仍失败，再按日志继续补修。
-  - 2026-04-05 阶段六已完成第一批性能与口径修正：
-    - 文章列表与分类列表已改为聚合标签查询，移除逐篇补拉标签的后端 N+1。
-    - 文章 UV 已改为按“文章 + 日期 + 访客”去重入库，`post_view_daily` 不再按每次访问直接累加 UV。
-    - 说说公开列表已聚合返回评论数据，前端不再逐条二次拉取评论。
-    - About 页 GitHub 数据已迁移到后端代理与缓存接口，前端不再直连 GitHub API。
+  - 友链申请、后台审核、通过后转正式友链的闭环已落地。
+  - 站点品牌信息与默认 SEO 配置已进入后台设置中心，但其影响范围目前主要是“运行时同步”，还未覆盖构建期产物。
+- 阶段四：基本完成。
+  - 管理端登录、刷新、登出、后台守卫已从 `localStorage` token 迁移为 `HttpOnly access/refresh cookie`。
+  - 前端 API 与导出接口已支持基于 cookie 的自动刷新与重试。
+  - 后端生产配置新增 `APP_ENV`、`COOKIE_*` 校验；`seed` 命令已要求显式用户名、邮箱和密码。
+  - 仓库已补最小 GitHub Actions，覆盖后端测试、前端构建与 smoke job。
+- 阶段五：代码与接线大体完成，但本轮未复验运行态结果。
+  - 后端已有 service / handler 测试、`backend/cmd/smoke`、Playwright 配置与前后台 smoke 用例。
+  - `.github/workflows/ci.yml` 已包含 PostgreSQL / Redis / migration / seed / backend smoke / frontend smoke 的接线。
+  - 本次核对没有复跑这部分，因此只确认“存在且接线完整”，不直接认定“当前仍稳定通过”。
+- 阶段六：基本完成。
+  - 文章列表与分类列表已改为聚合标签查询，去掉逐篇补拉标签的后端 N+1。
+  - 文章 UV 已改为按“文章 + 日期 + 访客”去重入库。
+  - 说说公开列表已聚合评论数据，前端不再逐条二次拉取评论。
+  - About 页 GitHub 数据已迁移到后端代理与缓存接口。
+  - `DashboardService` 与 analytics 概览已接入 Redis best-effort 缓存，点赞口径也已限制为 `published`。
+- 文案系统：只部分完成。
+  - 后台 `.astro` 页面的 `<BaseHead>` 已集中到 `adminCopy`。
+  - 登录页、友链页等部分区域已完成收口。
+  - 但公开评论组件、后台文章管理、后台说说管理等区域仍保留大量硬编码可见文案。
 
-### 2.5 截至 2026-04-06 的收尾状态
+### 2.5 截至 2026-04-08 的收尾状态
 
 为方便下次继续，当前收尾状态明确收敛为以下几类：
 
-1. 阶段四实机联调与 CI 稳态仍未完全收口
-   - 本地后端实机联调已完成第一轮：`HttpOnly cookie` 登录、自动刷新恢复、登出失效、导出接口、`COOKIE_*` 与 `CORS` 已通过 `backend/cmd/smoke` 新增探针真实验证。
-   - 2026-04-06 首轮 GitHub Actions Playwright 结果已推进到 `12 passed + 1 flaky`，说明主链路基本打通；剩余问题集中在“后台 refresh 后备份导出仍可用”这条 smoke 的偶发 `401 /api/v1/auth/refresh`，需继续去脆弱化并观察后续 CI 是否归零 flaky。
-   - 本地仍无法直接作为最终依据：2026-04-06 首次浏览器实跑因缺少 Chromium 可执行文件中断，后续仍以 GitHub Actions `smoke` job 为准继续补修。
+#### 1. 阶段一：内容真源统一 -- 已完成
 
-2. 阶段五内容与互动 E2E 代码侧已补齐
-   - 后台文章管理基础闭环已补齐，"定时发布"路径已进入浏览器级自动验证（创建定时文章、前台不可见、行内重设时间、删除）。
-   - 后台说说管理已覆盖草稿、定时、发布、编辑、转草稿、图片超限异常、多记录隔离、前台图片可见性与图片预览回归，不再主要依赖手工验证。
-   - 留言板回复、投票，友链申请通过/拒绝等次级互动浏览器级自动化覆盖已补齐；阶段五剩余事项已从“功能缺口”收敛为“观察 CI 实跑稳定性”。
+| 事项 | 变更 | 状态 |
+|------|------|------|
+| CMS 单一真源 | `post-source.ts` 移除 `astro:content` fallback，仅读后端 CMS API；CMS 不可达时返回空列表并打印 warn，构建不会中断 | 已完成 |
+| Astro Content 集合 | `content.config.ts` 不再注册 `blog` 集合；`src/content/blog/` 保留为样例与迁移参考，不参与构建 | 已完成 |
+| 旧兼容页 `/blog/post` | 已删除 `pages/blog/post.astro` | 已完成 |
+| 旧布局 `BlogPost.astro` | 已删除，连带清除仅被其引用的 `ArticleMeta.astro`、`ArticleHero.astro`、`ArticleFooter.astro`、`LikePanel.vue` | 已完成 |
 
-3. 阶段六第二批性能与口径修正（已完成）
-   - `DashboardService` 已全面接入 Redis 缓存（stats 2 min, trends/analytics 5 min），避免仪表盘每次加载产生 6~17+ 次串行 DB 查询。
-   - `GetTotalLikeCount` 已限定 `WHERE status = 'published'`，修正草稿/定时文章点赞被计入仪表盘的口径偏差。
-   - 前端无残余 N+1 模式。
+#### 2. 阶段二：构建期 SEO 真源 -- 已完成
 
-4. 文案系统收口（已完成）
-   - `friends.astro` 与 `FriendsGrid.vue` 早已完全消费 `siteCopy.friendsPage`，无硬编码。
-   - 全部 8 个后台 `.astro` 页面的 `<BaseHead>` 均已收口到 `adminCopy`，后台再无硬编码页面标题。
-   - 原则仍是“页面和组件只消费 copy，不继续新增运营向硬编码文案”。
+| 事项 | 变更 | 状态 |
+|------|------|------|
+| `Astro.site` | `astro.config.mjs` 优先读 `SITE_URL` 环境变量，回退 `siteCopy.seo.siteUrl` | 已完成 |
+| 构建期常量 | `consts.ts` 的 `SITE_TITLE` / `SITE_DESCRIPTION` / `SITE_URL` / `SITE_DEFAULT_OG_IMAGE` 均支持同名环境变量覆盖 | 已完成 |
+| RSS / Sitemap | 已通过 `consts.ts` + `context.site` 自动继承上述链路，无需额外改动 | 已完成 |
+| 运行时覆写 | `site-profile-runtime.ts` 仍在客户端加载后用后台设置覆写 `<title>`、`<meta>`、canonical 等，确保最终一致 | 保持不变 |
 
+#### 3. 文案系统收口 -- 已完成（全量）
+
+**第一轮（高频组件）**
+
+| 组件 | 收口方式 | 状态 |
+|------|----------|------|
+| `PostCommentsSection.vue` | 新增 `siteCopy.components.postComments`，所有运营向可见文案（标题、提示、按钮、校验、toast）迁入 copy | 已完成 |
+| `BlogPostView.vue` | 新增 `siteCopy.components.blogPostView`，侧栏标签、阅读信息、错误提示等迁入 copy | 已完成 |
+| `AdminPostsManager.vue` | 新增 `adminCopy.postsManager.{header,createForm,table,actions,status,toast,charCount}`，全量迁入 copy | 已完成 |
+| `AdminMomentsManager.vue` | 扩展 `adminCopy.momentsManager.{header,createForm,stats,list,status,listActions,toast,charCount}`，全量迁入 copy | 已完成 |
+
+**第二轮（全覆盖）**
+
+| 组件 | 收口方式 | 状态 |
+|------|----------|------|
+| `AdminSidebar.vue` | 新增 `adminCopy.sidebar.{sections,nav,footer,mobile}`，导航标签与页脚按钮迁入 copy | 已完成 |
+| `AdminTopbar.vue` | 新增 `adminCopy.topbar`，面包屑、角色标签、退出按钮迁入 copy | 已完成 |
+| `AdminContentHeader.vue` | 新增 `adminCopy.contentHeader`，菜单按钮 aria、角色标签迁入 copy | 已完成 |
+| `AdminSectionPlaceholder.vue` | 新增 `adminCopy.sectionPlaceholder.{posts,comments,friends}`，占位卡片文案迁入 copy | 已完成 |
+| `DashboardChart.vue` | 新增 `adminCopy.dashboardChart`，默认标题与加载提示迁入 copy | 已完成 |
+| `PostLikeBar.vue` | 新增 `siteCopy.components.postLikeBar`，互动区文案、点赞/评论按钮迁入 copy | 已完成 |
+| `SiteTrend.vue` | 新增 `siteCopy.components.siteTrend`，标题、加载/空态文案迁入 copy | 已完成 |
+| `AuthorStats.vue` | 新增 `siteCopy.components.authorStats`，统计标签迁入 copy | 已完成 |
+| `MusicPlayer.vue` | 新增 `siteCopy.components.musicPlayer`，所有 aria-label 与"暂无歌词"迁入 copy | 已完成 |
+| `HeroShuffleBtn.vue` | 新增 `siteCopy.components.heroShuffleBtn`，按钮文案迁入 copy | 已完成 |
+| `ErrorState.vue` | 新增 `siteCopy.components.errorState`，默认标题与重试标签迁入 copy | 已完成 |
+| `ReadingToc.vue` | 新增 `siteCopy.components.readingToc`，目录标题迁入 copy | 已完成 |
+| `MacTerminalCodeBlock.vue` | 新增 `siteCopy.components.macTerminalCodeBlock`，复制按钮文案迁入 copy | 已完成 |
+| `FriendLinkCard.vue` | 新增 `siteCopy.components.friendLinkCard`，aria-label 前缀迁入 copy | 已完成 |
+| `HeroParallax.vue` | 新增 `siteCopy.components.heroParallax`，封面 alt 前缀迁入 copy | 已完成 |
+| `RichContentWithGif.vue` | 新增 `siteCopy.components.richContentWithGif`，表情 alt 前缀迁入 copy | 已完成 |
+| Admin 页面 (5 个 .astro) | `pageTitle` 改为引用 `adminCopy.sidebar.nav.*`，消除 Astro 页面中的硬编码 | 已完成 |
+
+> 仅 `BlogTopNav.astro` 客户端 JS 中保留两条防御性 fallback（`'打开导航菜单'` / `'关闭导航菜单'`），实际值已通过 data-attribute 从 `siteCopy` 注入，属于安全冗余。
+
+> 后续新增页面/组件时，仍须先在 `frontend/src/content/copy/` 对应模块新增字段，再在组件中消费，禁止新增运营向硬编码。
 
 ## 3. 优先级总览
 
 ### P0：必须先做
 
-1. 统一博客内容真源与阅读链路。
-2. 修正 SEO、站点域名与品牌基础配置。
-3. 将伪后台配置能力改成真实后台能力。
+1. ~~统一博客内容真源与阅读链路，收掉 fallback 与旧兼容入口。~~ 已完成
+2. ~~打通后台站点设置到构建期 SEO 输出，消除运行时 / 构建时分裂。~~ 已完成
+3. ~~继续执行文案收口，清掉高频页面与组件中的运营向硬编码。~~ 已完成（本轮 4 个高频组件）
 
-### P1：强烈建议紧接着做
+### P1：强烈建议紧接着做(已完成)
 
-1. 完成鉴权与环境配置硬化。
-2. 建立最小 CI 与自动校验链路。
-3. 补关键路径测试。
+1. 复跑并确认 backend smoke、Playwright smoke 与 GitHub Actions 的当前稳定性。
+2. 围绕内容真源与 SEO 收口补最小回归验证。
+3. 清理已脱离主链路的旧布局、旧组件与兼容页面。
 
 ### P2：在稳定后继续做
 
-1. 修复数据口径与性能问题。
-2. 统一前端可见文案入口。
-3. 为外部依赖数据增加代理与缓存层。
+1. ~~继续统一前端可见文案入口。~~ 已完成（第二轮全覆盖 21 个组件/页面）
+2. 扩展更完整的后台设置中心。
+3. 继续补外部依赖与统计看板的运营能力。
 
 ### P3：可择机做
 
-1. 更完整的后台设置中心。
-2. 结构化数据与更系统的内容增长支持。
-3. 更细粒度的观测与运营面板。
+1. 结构化数据与更系统的内容增长支持。
+2. 更细粒度的观测与运营面板。
+3. 进一步的后台体验优化与内容运营辅助能力。
 
 ## 4. 分阶段实施计划
 
@@ -184,12 +168,11 @@
 
 ### 现状证据
 
-- 静态文章路由仍然存在：`frontend/src/pages/blog/[slug].astro:106`
-- 动态 API 文章详情页同时存在：`frontend/src/pages/blog/post.astro:11`
-- 博客列表页跳转到 API 详情页：`frontend/src/components/blog/BlogFeed.vue:95`
-- RSS 仍然只读取 Astro Content：`frontend/src/pages/rss.xml.js:5`
-- 静态详情侧边栏仍存在本地假点赞：`frontend/src/components/blog/ArticleMeta.astro:65`
-- 假点赞组件未接后端：`frontend/src/components/blog/LikePanel.vue:34`
+- 公开文章详情已走 `/blog/[slug]`，但仍由 `getStaticPaths()` 在构建期生成。
+- `frontend/src/lib/post-source.ts` 仍保留 `CMS -> astro:content` fallback 双轨逻辑。
+- 兼容旧入口的 `frontend/src/pages/blog/post.astro` 仍然存在。
+- `frontend/src/content/blog/` 仍是构建链路的一部分，而不是单纯样例或迁移输入。
+- 旧布局 `frontend/src/layouts/BlogPost.astro` 及其中的 `ArticleMeta.astro` / `LikePanel.vue` 仍保留假互动遗留代码，虽然已经不是当前主详情页实现。
 
 ### 实施内容
 
@@ -210,6 +193,17 @@
 - 避免运营发布后内容不一致。
 - 为后续 SEO、统计和后台编辑能力打下统一基础。
 
+### 当前完成情况（截至 2026-04-08，经仓库核对）
+
+- 已完成：
+  - 主公开详情入口已统一到 `/blog/[slug]`。
+  - 主详情页的评论与点赞链路已使用真实后端数据。
+  - About 页文章数、RSS、相关文章均通过 `post-source` 读取。
+- 未完成：
+  - 正式链路仍未摆脱 Astro Content fallback。
+  - 兼容页与旧布局遗留仍在仓库中。
+  - 因此阶段一目前只能评估为“部分完成”，不能标记为“收口完成”。
+
 ## 阶段二：SEO 与品牌基建修正
 
 ### 目标
@@ -218,9 +212,11 @@
 
 ### 现状证据
 
-- `Astro.site` 仍为占位值：`frontend/astro.config.mjs:11`
-- 全局站点标题和描述仍为默认值：`frontend/src/consts.ts:4`
-- RSS 标题和描述继承默认值：`frontend/src/pages/rss.xml.js:8`
+- `frontend/astro.config.mjs` 的 `site` 仍在构建时直接读取静态 `siteCopy`。
+- `frontend/src/consts.ts` 的站点标题、描述、默认分享图仍来自静态 copy。
+- `frontend/src/components/base/BaseHead.astro` 已支持 canonical、文章级 metadata 与运行时品牌同步。
+- `frontend/src/lib/site-profile-runtime.ts` 会在浏览器端把后台站点设置同步进文档。
+- `frontend/src/pages/rss.xml.js` 仍在构建时使用静态站点信息输出 RSS。
 
 ### 实施内容
 
@@ -243,6 +239,16 @@
 - 提升社交平台分享展示质量。
 - 减少品牌信息不一致问题。
 
+### 当前完成情况（截至 2026-04-08，经仓库核对）
+
+- 已完成：
+  - 站点品牌信息已集中管理，canonical / Open Graph / Twitter Card / favicon 基础能力已存在。
+  - 文章详情页已补齐文章级 metadata。
+  - 后台站点资料接口已可驱动运行时品牌同步。
+- 未完成：
+  - `Astro.site`、RSS、sitemap 与构建时 metadata 仍未真正消费后台设置。
+  - 因此阶段二目前应评估为“部分完成”，而不是“已收口”。
+
 ## 阶段三：后台设置能力真实化
 
 ### 目标
@@ -251,9 +257,11 @@
 
 ### 现状证据
 
-- 页尾设置保存到 localStorage：`frontend/src/components/admin/AdminFooterManager.vue:143`
-- 页尾配置 store 只读写浏览器存储：`frontend/src/stores/siteFooter.ts:5`
-- 友链申请入口仍是占位提示：`frontend/src/components/friends/FriendsGrid.vue:20`
+- `frontend/src/stores/siteFooter.ts` 已通过 `/site-settings/footer` 与 `/admin/site-settings/footer` 读写真实接口。
+- `backend/sql/migrations/000007_site_settings.up.sql` 已提供 `site_settings` 表。
+- `backend/sql/migrations/000008_friend_link_applications.up.sql` 已提供真实友链申请表。
+- `frontend/src/components/friends/FriendsGrid.vue` 已接入公开申请表单，不再只是 toast 占位。
+- `backend/biz/bootstrap/router.go` 已暴露公开读取、后台写入、友链申请与审核接口。
 
 ### 实施内容
 
@@ -276,21 +284,18 @@
 - 后台配置真正具备运营价值。
 - 消除“看起来配置成功，实际上只在当前浏览器生效”的错觉。
 
-### 当前完成情况（截至 2026-04-03）
+### 当前完成情况（截至 2026-04-08，经仓库核对）
 
 - 已完成：
-  - 新增站点级 `site_settings` 表及对应查询、服务、公开读取接口、后台写入接口。
-  - 页尾备案信息与自定义页尾文案已改为真实后端存储，不再以浏览器本地存储作为最终状态。
+  - `site_settings` 表及其公开读取、后台写入接口已落地。
+  - 页尾备案信息与自定义页尾文案已改为真实后端存储。
   - 前台页尾与后台页尾设置页已统一读写同一接口。
-  - 备份导出链路已纳入 `site_settings`。
-  - 默认页尾备案号已改为留空，未备案时不展示占位内容。
-- 2026-04-03 补充完成：
-  - 新增 `friend_link_applications` 真实申请表、公开提交接口与后台审核接口。
-  - 前台友链页已接入真实申请表单，不再只弹出占位 toast。
-  - 后台友链管理已新增申请队列，并支持通过 / 拒绝申请。
-- 2026-04-03 收口完成：
-  - 站点品牌信息与默认 SEO 配置已纳入后台 `site_settings`，并新增公开读取与后台写入接口。
-  - 前台运行时会优先同步真实品牌名、Logo Alt、默认描述、默认分享图与 canonical 基准 URL。
+  - 默认页尾备案号已改为留空。
+  - 友链申请、后台审核、通过后转正式友链的闭环已落地。
+  - 站点品牌信息与默认 SEO 配置已纳入后台设置中心，并接入前端运行时同步。
+- 未完全收口：
+  - 后台站点资料还没有真正接管构建期 SEO 输出。
+  - 因此阶段三应评估为“基本完成”，不宜简单写成“全部收口完成”。
 
 ## 阶段四：安全与交付基线硬化
 
@@ -300,11 +305,11 @@
 
 ### 现状证据
 
-- 管理端 token 保存在 localStorage：`frontend/src/stores/auth.ts:71`
-- 登录页仍围绕 localStorage 做重定向判断：`frontend/src/components/auth/LoginForm.vue:152`
-- 后端存在默认数据库、Redis、JWT 占位值：`backend/biz/bootstrap/config.go:73`
-- seed 命令仍带默认管理员账号密码：`backend/cmd/seed/main.go:29`
-- 仓库当前缺少 CI 工作流文件：`.github/` 目录不存在
+- `frontend/src/stores/auth.ts` 已改为从 `HttpOnly cookie` 会话 hydrate 登录态。
+- `frontend/src/lib/auth-session.ts` 已实现自动 refresh 与 401 重试。
+- `backend/biz/bootstrap/config.go` 已在生产环境校验 `JWT_SECRET`、`DB_PASSWORD`、`REDIS_PASSWORD` 与 `COOKIE_*`。
+- `backend/cmd/seed/main.go` 已要求显式提供用户名、邮箱和密码。
+- `.github/workflows/ci.yml` 已存在并包含 backend / frontend / smoke 三类 job。
 
 ### 实施内容
 
@@ -331,6 +336,11 @@
 - 降低人为配置错误风险。
 - 提升日常迭代的可回归性。
 
+### 当前完成情况（截至 2026-04-08，经仓库核对）
+
+- 阶段四主体已落地，可评估为“基本完成”。
+- 后续工作重点不再是从零建设，而是继续复验 refresh、导出、CORS 与 CI 稳定性。
+
 ## 阶段五：测试与验证体系补齐
 
 ### 目标
@@ -339,8 +349,10 @@
 
 ### 现状证据
 
-- 当前后端仅有一个测试文件：`backend/biz/service/backup_test.go`
-- 前端暂无真实测试基建或 E2E 自动化目录
+- `backend/biz/service/`、`backend/biz/handler/admin/`、`backend/biz/middleware/` 已存在多组测试。
+- `backend/cmd/smoke/` 已提供后端 API smoke 命令。
+- `frontend/playwright.config.ts`、`frontend/e2e/admin-smoke.spec.ts`、`frontend/e2e/public-smoke.spec.ts` 已存在。
+- `.github/workflows/ci.yml` 已把 backend smoke 与 frontend smoke 接入 CI。
 
 ### 实施内容
 
@@ -366,6 +378,11 @@
 - 降低改动后回归风险。
 - 提升重构和清理工作的可控性。
 
+### 当前完成情况（截至 2026-04-08，经仓库核对）
+
+- 阶段五的“代码建设”基本已完成。
+- 当前更需要的是在真实环境中定期复跑，并根据最新日志判断是否还存在 flaky 或链路缺口。
+
 ## 阶段六：性能与数据口径修正
 
 ### 目标
@@ -374,10 +391,11 @@
 
 ### 现状证据
 
-- 文章列表存在逐篇取标签的查询模式：`backend/biz/service/posts.go:94`
-- 文章 UV 统计当前按访问直接累加：`backend/biz/service/posts.go:240`
-- 说说页先拉列表，再按条补拉评论：`frontend/src/stores/moments.ts:130`
-- About GitHub 数据由前端直连 GitHub API：`frontend/src/components/about/AboutGithubProfile.vue:331`
+- `backend/sql/queries/posts.sql` 已将文章列表与分类列表改为聚合标签查询。
+- `backend/biz/service/posts.go` 已通过 `post_view_daily_visitors` 做 UV 去重入库。
+- `backend/sql/queries/moments.sql` 已在公开列表查询中聚合评论数据。
+- `frontend/src/components/about/AboutGithubProfile.vue` 已改为请求后端 `/github/profile`，不再直连 GitHub API。
+- `backend/biz/service/dashboard.go` 与 `backend/biz/service/analytics.go` 已为仪表盘与 analytics 概览增加 Redis 缓存。
 
 ### 实施内容
 
@@ -399,6 +417,11 @@
 - 提升后台数据可信度。
 - 提升对第三方接口不稳定的抗压能力。
 
+### 当前完成情况（截至 2026-04-08，经仓库核对）
+
+- 阶段六主体已落地，可评估为“基本完成”。
+- 后续主要是观察线上口径与缓存命中表现，而不是继续补基础能力。
+
 ## 5. 文案与信息架构专项收口
 
 ### 目标
@@ -407,17 +430,17 @@
 
 ### 已发现重点区域
 
-- `frontend/src/pages/friends.astro`
-- `frontend/src/components/friends/FriendsGrid.vue`
-- `frontend/src/components/auth/LoginForm.vue`
-- 若干 admin 页面 `BaseHead` 标题与描述仍未统一走 copy 模块
+- `frontend/src/components/blog/PostCommentsSection.vue`
+- `frontend/src/components/blog/BlogPostView.vue`
+- `frontend/src/components/admin/AdminPostsManager.vue`
+- `frontend/src/components/admin/AdminMomentsManager.vue`
 
 ### 建议做法
 
-- 新增 `siteCopy.friendsPage` 分区。
-- 将登录页可见文案迁移到 `siteCopy` 或 `adminCopy`。
-- 把后台页面 title/description 统一纳入 `adminCopy`。
-- 保持“页面只消费 copy，不再直接写死运营文案”的约束。
+- 将公开评论区与文章详情阅读信息区域继续迁移到 `siteCopy`。
+- 将后台文章管理、说说管理中的标题、按钮、表单提示和状态文案迁移到 `adminCopy`。
+- 保持“页面和组件只消费 copy，不再直接写死运营文案”的约束。
+- 清理已经脱离主链路、但仍保留硬编码文案的旧布局与旧组件。
 
 ## 6. 不建议当前阶段做的事情
 
@@ -433,18 +456,18 @@
 
 1. 内容真源统一
 2. SEO 与品牌基建修正
-3. 后台设置能力真实化
+3. 文案系统继续收口
 
 ### 第二批
 
-1. 鉴权与环境配置硬化
-2. CI 与测试基线
+1. CI / smoke / Playwright 复验与稳态观察
+2. 旧路由、旧布局与遗留组件清理
 
 ### 第三批
 
-1. 性能与数据口径修正
-2. 文案系统继续收口
-3. GitHub 数据代理缓存
+1. 更完整的后台设置中心
+2. 结构化数据与增长支持
+3. 更细粒度观测与运营面板
 
 ## 8. 可配合使用的技能建议
 

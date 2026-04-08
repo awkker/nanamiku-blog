@@ -26,7 +26,7 @@
         href="/blog"
         class="mt-4 inline-flex items-center gap-1 rounded-xl border border-miku/35 bg-miku-soft px-4 py-2 text-sm text-miku transition hover:border-miku/55"
       >
-        返回文章列表
+        {{ postViewCopy.backToList }}
       </a>
     </div>
 
@@ -38,7 +38,7 @@
         <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[2]">
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
-        返回文章列表
+        {{ postViewCopy.backToList }}
       </a>
 
       <div
@@ -88,20 +88,20 @@
               <path d="M12 6v6l4 2" />
               <circle cx="12" cy="12" r="9" />
             </svg>
-            预计 {{ readingMinutes }} 分钟
+            {{ postViewCopy.readingPrefix }}{{ readingMinutes }}{{ postViewCopy.readingMinuteSuffix }}
           </span>
           <span class="inline-flex items-center gap-1">
             <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.5]">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            {{ post.view_count.toLocaleString() }} 次阅读
+            {{ post.view_count.toLocaleString() }}{{ postViewCopy.viewSuffix }}
           </span>
           <span class="inline-flex items-center gap-1">
             <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-none stroke-current stroke-[1.5]">
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
             </svg>
-            {{ post.like_count }} 点赞
+            {{ post.like_count }}{{ postViewCopy.likeSuffix }}
           </span>
         </div>
       </header>
@@ -128,25 +128,25 @@
           <ReadingToc v-if="tocHeadings.length > 0" :headings="tocHeadings" />
 
           <div class="glass-layer rounded-2xl p-4">
-            <h3 class="text-xs font-bold tracking-[0.16em] text-slate-700">阅读信息</h3>
+            <h3 class="text-xs font-bold tracking-[0.16em] text-slate-700">{{ postViewCopy.sidebarReadingTitle }}</h3>
             <ul class="mt-3 space-y-2">
               <li class="flex items-center justify-between rounded-lg border border-white/60 bg-white/58 px-3 py-2 text-xs text-slate-600">
-                <span>预计阅读</span>
-                <span>{{ readingMinutes }} 分钟</span>
+                <span>{{ postViewCopy.sidebarReadingTime }}</span>
+                <span>{{ readingMinutes }}{{ postViewCopy.readingMinuteSuffix }}</span>
               </li>
               <li class="flex items-center justify-between rounded-lg border border-white/60 bg-white/58 px-3 py-2 text-xs text-slate-600">
-                <span>全文字数</span>
+                <span>{{ postViewCopy.sidebarWordCount }}</span>
                 <span>{{ wordCount.toLocaleString() }}</span>
               </li>
               <li class="flex items-center justify-between rounded-lg border border-white/60 bg-white/58 px-3 py-2 text-xs text-slate-600">
-                <span>目录节点</span>
+                <span>{{ postViewCopy.sidebarTocNodes }}</span>
                 <span>{{ tocHeadings.length }}</span>
               </li>
             </ul>
           </div>
 
           <div class="glass-layer rounded-2xl p-4">
-            <h3 class="text-xs font-bold tracking-[0.16em] text-slate-700">标签</h3>
+            <h3 class="text-xs font-bold tracking-[0.16em] text-slate-700">{{ postViewCopy.sidebarTagsTitle }}</h3>
             <div class="mt-3 flex flex-wrap gap-2">
               <span
                 v-for="tag in post.tags || []"
@@ -159,7 +159,7 @@
                 v-if="!post.tags || post.tags.length === 0"
                 class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-500"
               >
-                暂无标签
+                {{ postViewCopy.noTags }}
               </span>
             </div>
           </div>
@@ -168,7 +168,7 @@
 
       <section class="mx-auto w-full max-w-[1100px] space-y-4">
         <div v-if="relatedPosts.length > 0" class="glass-layer rounded-2xl p-4">
-          <h3 class="text-xs font-bold tracking-[0.16em] text-slate-700">相关文章</h3>
+          <h3 class="text-xs font-bold tracking-[0.16em] text-slate-700">{{ postViewCopy.relatedTitle }}</h3>
           <div class="mt-3 space-y-2.5">
             <a
               v-for="item in relatedPosts"
@@ -197,6 +197,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import { siteCopy } from '../../content/copy'
 import { api, type PagedData } from '../../lib/api'
 import { getReadingStats, renderPostMarkdown } from '../../lib/post-content'
 import { toPostUrl, type HeadingItem, type PostDetail, type PostSummary } from '../../lib/post-types'
@@ -204,6 +205,8 @@ import MarkdownCodeEnhancer from './MarkdownCodeEnhancer.vue'
 import PostCommentsSection from './PostCommentsSection.vue'
 import PostLikeBar from './PostLikeBar.vue'
 import ReadingToc from './ReadingToc.vue'
+
+const postViewCopy = siteCopy.components.blogPostView
 
 interface Props {
   initialSlug?: string
@@ -295,7 +298,7 @@ async function applyPostState(nextPost: PostDetail) {
 async function loadPost() {
   const slug = getSlugFromUrl()
   if (!slug) {
-    error.value = '缺少文章标识'
+    error.value = postViewCopy.errorMissingSlug
     loading.value = false
     return
   }
@@ -311,7 +314,7 @@ async function loadPost() {
     await applyPostState(detail)
     await loadRelatedPosts(detail.slug || slug)
   } catch {
-    error.value = '文章加载失败，请检查链接是否正确'
+    error.value = postViewCopy.errorLoadFailed
   } finally {
     loading.value = false
   }
@@ -330,7 +333,7 @@ function handleCommentCountUpdated(nextCount: number) {
 onMounted(() => {
   const slug = getSlugFromUrl()
   if (!slug) {
-    error.value = '缺少文章标识'
+    error.value = postViewCopy.errorMissingSlug
     loading.value = false
     return
   }

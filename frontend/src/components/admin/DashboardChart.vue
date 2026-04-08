@@ -2,7 +2,7 @@
   <AdminPlainCard padding="20px">
     <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
     <div v-if="loading" class="mt-4 flex items-center justify-center" style="height: 320px">
-      <p class="text-sm text-slate-400">加载中...</p>
+      <p class="text-sm text-slate-400">{{ dc.loading }}</p>
     </div>
     <div v-else class="mt-4" style="height: 320px">
       <v-chart :option="chartOption" autoresize />
@@ -23,6 +23,9 @@ import {
 import VChart from 'vue-echarts'
 
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
+import { adminCopy } from '../../content/copy'
+
+const dc = adminCopy.dashboardChart
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 
@@ -40,7 +43,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '近 7 日趋势',
+  title: adminCopy.dashboardChart.defaultTitle,
   labels: () => [],
   series: () => [],
   loading: false,

@@ -12,7 +12,7 @@
         class="rounded-md px-2 py-1 text-[11px] text-slate-400 transition hover:bg-slate-600/50 hover:text-slate-100"
         @click="copyCode"
       >
-        {{ copied ? '已复制' : '复制代码' }}
+        {{ copied ? mcb.copiedLabel : mcb.copyLabel }}
       </button>
     </header>
 
@@ -22,6 +22,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { siteCopy } from '../../content/copy'
+
+const mcb = siteCopy.components.macTerminalCodeBlock
 
 interface Props {
   language?: string

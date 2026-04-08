@@ -15,7 +15,7 @@ const copy = adminCopy.layout
     <AdminRouteGuard />
   </head>
   <body>
-    <AdminLayout activeKey="dashboard" pageTitle="仪表盘">
+    <AdminLayout activeKey="dashboard" pageTitle={adminCopy.sidebar.nav.dashboard}>
       <AdminDashboard client:load />
     </AdminLayout>
   </body>

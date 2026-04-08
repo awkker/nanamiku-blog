@@ -5,7 +5,7 @@
         <button
           type="button"
           class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-300/80 bg-white/60 text-slate-900 transition duration-300 hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-miku/70 lg:hidden"
-          aria-label="打开导航菜单"
+          :aria-label="tb.openMenuAria"
           @click="toggleSidebar"
         >
           <svg viewBox="0 0 24 24" class="h-5 w-5 fill-none stroke-current stroke-[1.8]">
@@ -14,8 +14,8 @@
         </button>
 
         <div class="min-w-0 flex-1">
-          <nav class="flex items-center gap-1.5 text-sm" aria-label="面包屑导航">
-            <span class="text-slate-500">Nanamiku Admin</span>
+          <nav class="flex items-center gap-1.5 text-sm" :aria-label="tb.breadcrumbAria">
+            <span class="text-slate-500">{{ tb.breadcrumbPrefix }}</span>
             <span class="text-slate-400">/</span>
             <span class="font-semibold text-slate-900">{{ pageTitle }}</span>
           </nav>
@@ -25,22 +25,22 @@
           <a
             href="/"
             class="inline-flex items-center justify-center rounded-2xl border border-slate-300/80 bg-white/60 px-3 py-2 text-sm text-slate-900 transition duration-300 hover:border-miku/40 hover:text-miku"
-            aria-label="前往前台首页"
+            :aria-label="tb.homeLinkAria"
           >
-            前台首页
+            {{ tb.homeLink }}
           </a>
           <div class="rounded-2xl border border-slate-300/80 bg-white/60 px-3 py-2 text-right">
             <p class="text-sm font-semibold text-slate-900">{{ userName }}</p>
-            <p class="text-xs text-slate-600">管理员</p>
+            <p class="text-xs text-slate-600">{{ tb.roleLabel }}</p>
           </div>
 
           <MikuButton
             variant="ghost"
             class="!border-slate-300/80 !bg-white/65 !text-slate-900 hover:!bg-white/80"
-            aria-label="退出登录"
+            :aria-label="tb.logoutAria"
             @click="handleLogout"
           >
-            退出
+            {{ tb.logoutButton }}
           </MikuButton>
         </div>
       </div>
@@ -57,13 +57,16 @@ import { useStore } from '@nanostores/vue'
 import { toggleSidebar } from '../../stores/ui'
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
 import MikuButton from '../ui/MikuButton.vue'
+import { adminCopy } from '../../content/copy'
+
+const tb = adminCopy.topbar
 
 interface Props {
   pageTitle?: string
 }
 
 withDefaults(defineProps<Props>(), {
-  pageTitle: '仪表盘',
+  pageTitle: adminCopy.topbar.defaultPageTitle,
 })
 
 const auth = useStore(authState)

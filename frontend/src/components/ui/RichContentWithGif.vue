@@ -19,6 +19,7 @@
 import { computed } from 'vue'
 
 import { parseRichContentWithGif } from '../../lib/gifEmotes'
+import { siteCopy } from '../../content/copy'
 
 interface Props {
   content: string
@@ -30,7 +31,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   textClass: 'whitespace-pre-wrap break-words',
   imageClass: 'my-1 mr-1 inline-block h-16 w-16 rounded-lg object-cover align-middle ring-1 ring-white/80',
-  altPrefix: '表情 ',
+  altPrefix: siteCopy.components.richContentWithGif.altPrefix,
 })
 
 const segments = computed(() => parseRichContentWithGif(props.content))

@@ -12,7 +12,7 @@
         <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M4 4l17 17" />
       </svg>
     </span>
-    <span>换图</span>
+    <span>{{ hsb.label }}</span>
     <span class="h-1.5 w-1.5 rounded-full bg-white opacity-0" />
   </button>
 </template>
@@ -20,6 +20,9 @@
 <script setup lang="ts">
 import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref, watch } from 'vue'
+import { siteCopy } from '../../content/copy'
+
+const hsb = siteCopy.components.heroShuffleBtn
 
 import { heroImages, heroIndex, shuffleHeroImage } from '../../stores/heroImage'
 
@@ -30,7 +33,7 @@ const mounted = ref(false)
 const spinning = ref(false)
 
 const btnTitle = computed(() =>
-  mounted.value ? `切换封面 (${currentIdx.value + 1}/${total})` : '切换封面'
+  mounted.value ? `${hsb.titlePrefix} (${currentIdx.value + 1}/${total})` : hsb.titlePrefix
 )
 
 watch($heroIndex, (v) => {

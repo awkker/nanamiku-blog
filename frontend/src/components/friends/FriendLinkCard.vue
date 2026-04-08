@@ -4,7 +4,7 @@
     target="_blank"
     rel="noopener noreferrer"
     class="group block transition duration-300 hover:scale-[1.02]"
-    :aria-label="`访问友链 ${friend.name}`"
+    :aria-label="`${flc.visitAriaPrefix}${friend.name}`"
   >
     <LiquidGlassCard padding="20px" class="h-full transition duration-300 group-hover:shadow-[0_14px_36px_rgba(15,23,42,0.35)]">
       <div class="flex items-start gap-4">
@@ -33,6 +33,9 @@
 <script setup lang="ts">
 import type { FriendLink } from '../../stores/friends'
 import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
+import { siteCopy } from '../../content/copy'
+
+const flc = siteCopy.components.friendLinkCard
 
 interface Props {
   friend: FriendLink

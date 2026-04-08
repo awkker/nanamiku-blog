@@ -15,7 +15,7 @@ const copy = adminCopy.profileManager
     <AdminRouteGuard />
   </head>
   <body>
-    <AdminLayout activeKey="profile" pageTitle="个人设置">
+    <AdminLayout activeKey="profile" pageTitle={adminCopy.sidebar.nav.profile}>
       <AdminProfileManager client:load />
     </AdminLayout>
   </body>
