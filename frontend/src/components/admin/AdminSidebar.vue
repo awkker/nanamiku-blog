@@ -147,6 +147,12 @@ const navGroups = [
     ],
   },
   {
+    section: sb.sections.settings,
+    items: [
+      { key: 'settings', label: sb.nav.settingsCenter, href: '/admin/settings' },
+    ],
+  },
+  {
     section: sb.sections.system,
     items: [
       { key: 'footer', label: sb.nav.footer, href: '/admin/footer' },

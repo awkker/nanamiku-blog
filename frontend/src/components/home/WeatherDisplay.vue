@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { api } from '../../lib/api'
 
 interface WeatherData {
@@ -17,6 +17,12 @@ interface WeatherData {
   wind_speed: string
   location: string
 }
+
+interface Props {
+  location?: string
+}
+
+const props = defineProps<Props>()
 
 const iconMap: Record<string, string> = {
   sunny: '\u2600',
@@ -30,13 +36,22 @@ const iconMap: Record<string, string> = {
 
 const displayText = ref('--\u00B0C')
 
-onMounted(async () => {
+async function loadWeather() {
   try {
-    const data = await api.get<WeatherData>('/weather')
+    const query = props.location ? `?location=${encodeURIComponent(props.location)}` : ''
+    const data = await api.get<WeatherData>(`/weather${query}`)
     const icon = iconMap[data.icon] || '\u2601'
     displayText.value = `${icon} ${data.temp}\u00B0C`
   } catch {
     displayText.value = '--\u00B0C'
   }
+}
+
+watch(() => props.location, () => {
+  void loadWeather()
+})
+
+onMounted(async () => {
+  await loadWeather()
 })
 </script>

@@ -10,7 +10,7 @@
       :style="{ transform: layerTransform }"
     >
       <img
-        v-for="(src, i) in heroImages"
+        v-for="(src, i) in currentHeroImages"
         :key="src"
         :src="src"
         :alt="`${hp.coverAltPrefix}${i + 1}`"
@@ -27,19 +27,31 @@
 
 <script setup lang="ts">
 import { useStore } from '@nanostores/vue'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { siteCopy } from '../../content/copy'
+import {
+  hydrateHomeAssetsSettings,
+  primeHomeAssetsSettingsFromCache,
+} from '../../stores/homeAssets'
 
 const hp = siteCopy.components.heroParallax
 
 import { heroImages, heroIndex, shuffleHeroImage } from '../../stores/heroImage'
 
 const $heroIndex = useStore(heroIndex)
+const $heroImages = useStore(heroImages)
 const currentIndex = ref($heroIndex.value)
 const mounted = ref(false)
+const currentHeroImages = computed(() => $heroImages.value)
 
 watch($heroIndex, (v) => {
   currentIndex.value = v
+})
+
+watch($heroImages, (images) => {
+  if (currentIndex.value >= images.length) {
+    currentIndex.value = 0
+  }
 })
 
 const containerRef = ref<HTMLElement | null>(null)
@@ -96,6 +108,8 @@ function loop() {
 }
 
 onMounted(() => {
+  primeHomeAssetsSettingsFromCache()
+  void hydrateHomeAssetsSettings()
   mounted.value = true
   shuffleHeroImage()
   currentIndex.value = heroIndex.get()

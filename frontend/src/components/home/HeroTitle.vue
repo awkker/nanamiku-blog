@@ -11,13 +11,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface Props {
   text: string
 }
 
 const props = defineProps<Props>()
 
-const chars = [...props.text]
+const chars = computed(() => [...props.text])
 
 function onEnter(e: Event) {
   const el = e.target as HTMLElement

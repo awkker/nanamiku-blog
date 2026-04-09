@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 interface Props {
   text: string
@@ -19,24 +19,49 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const visibleText = ref('')
+const mounted = ref(false)
 let cursor = 0
 let timer: ReturnType<typeof setInterval> | null = null
 
-onMounted(() => {
+function stopTimer() {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
+}
+
+function startTyping() {
+  stopTimer()
+  cursor = 0
+  visibleText.value = ''
+
+  if (!props.text.length) {
+    return
+  }
+
   timer = setInterval(() => {
     cursor += 1
     visibleText.value = props.text.slice(0, cursor)
     if (cursor >= props.text.length && timer) {
-      clearInterval(timer)
-      timer = null
+      stopTimer()
     }
   }, props.speed)
+}
+
+onMounted(() => {
+  mounted.value = true
+  startTyping()
+})
+
+watch(() => props.text, (next, prev) => {
+  if (!mounted.value || next === prev) {
+    return
+  }
+  startTyping()
 })
 
 onBeforeUnmount(() => {
-  if (timer) {
-    clearInterval(timer)
-  }
+  stopTimer()
 })
 </script>
 

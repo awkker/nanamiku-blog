@@ -352,12 +352,14 @@ function formatDate(dateStr: string): string {
 async function fetchGitHubData() {
   const username = props.githubUsername
   if (!username) {
-    error.value = true
+    error.value = false
     loading.value = false
     return
   }
 
   try {
+    loading.value = true
+    error.value = false
     const data = await api.get<GitHubProfilePayload>(`/github/profile?username=${encodeURIComponent(username)}`)
 
     profile.value = {
@@ -395,5 +397,12 @@ async function fetchGitHubData() {
   }
 }
 
-onMounted(() => { fetchGitHubData() })
+watch(() => props.githubUsername, (next, prev) => {
+  if (next === prev) {
+    return
+  }
+  void fetchGitHubData()
+})
+
+onMounted(() => { void fetchGitHubData() })
 </script>

@@ -21,19 +21,24 @@
 import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { siteCopy } from '../../content/copy'
+import {
+  hydrateHomeAssetsSettings,
+  primeHomeAssetsSettingsFromCache,
+} from '../../stores/homeAssets'
 
 const hsb = siteCopy.components.heroShuffleBtn
 
 import { heroImages, heroIndex, shuffleHeroImage } from '../../stores/heroImage'
 
 const $heroIndex = useStore(heroIndex)
-const total = heroImages.length
+const $heroImages = useStore(heroImages)
 const currentIdx = ref(0)
 const mounted = ref(false)
 const spinning = ref(false)
+const total = computed(() => $heroImages.value.length || 1)
 
 const btnTitle = computed(() =>
-  mounted.value ? `${hsb.titlePrefix} (${currentIdx.value + 1}/${total})` : hsb.titlePrefix
+  mounted.value ? `${hsb.titlePrefix} (${currentIdx.value + 1}/${total.value})` : hsb.titlePrefix
 )
 
 watch($heroIndex, (v) => {
@@ -41,6 +46,8 @@ watch($heroIndex, (v) => {
 })
 
 onMounted(() => {
+  primeHomeAssetsSettingsFromCache()
+  void hydrateHomeAssetsSettings()
   mounted.value = true
   currentIdx.value = heroIndex.get()
 })

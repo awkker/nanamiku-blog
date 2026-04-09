@@ -1,0 +1,22 @@
+---
+import BaseHead from '../../components/base/BaseHead.astro'
+import AdminRouteGuard from '../../components/admin/AdminRouteGuard.astro'
+import AdminSettingsCenter from '../../components/admin/AdminSettingsCenter.vue'
+import AdminLayout from '../../layouts/AdminLayout.astro'
+import { adminCopy } from '../../content/copy'
+
+const copy = adminCopy.settingsCenter
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title={copy.page.metaTitle} description={copy.page.metaDescription} />
+    <AdminRouteGuard />
+  </head>
+  <body>
+    <AdminLayout activeKey="settings" pageTitle={copy.page.title}>
+      <AdminSettingsCenter client:load />
+    </AdminLayout>
+  </body>
+</html>

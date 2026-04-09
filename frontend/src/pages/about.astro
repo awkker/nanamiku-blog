@@ -3,22 +3,13 @@ import BaseHead from '../components/base/BaseHead.astro'
 import BlogTopNav from '../components/blog/BlogTopNav.astro'
 import SiteFooter from '../components/base/SiteFooter.vue'
 import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
-import AboutGithubProfile from '../components/about/AboutGithubProfile.vue'
+import AboutContactSection from '../components/about/AboutContactSection.vue'
+import AboutIntroSection from '../components/about/AboutIntroSection.vue'
 import { siteCopy } from '../content/copy'
 import { getPublishedPostCount } from '../lib/post-source'
 
 const copy = siteCopy.aboutPage
 const postCount = await getPublishedPostCount()
-const heroActionClasses = [
-  'inline-flex items-center rounded-xl border border-miku/40 bg-miku-soft px-4 py-2.5 text-sm font-semibold text-miku transition hover:-translate-y-0.5 hover:border-miku/60',
-  'inline-flex items-center rounded-xl border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-[#c084fc]/45 hover:text-[#8b5cf6]',
-  'inline-flex items-center rounded-xl border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-miku/40 hover:text-miku',
-]
-
-const identityTags = copy.identityTags
-const heroActions = copy.heroActions
-
-const nowItems = copy.nowItems
 const introCards = copy.introCards
 
 const milestones = copy.milestones
@@ -31,10 +22,6 @@ const writingMap = copy.writingMap
 
 const monthlyGoals = copy.monthlyGoals
 const listeningNow = copy.listeningNow
-
-const githubUsername = copy.githubUsername
-
-const socialLinks = copy.socialLinks
 ---
 
 <!doctype html>
@@ -56,110 +43,7 @@ const socialLinks = copy.socialLinks
       </div>
 
       <div class="relative z-10 space-y-4 pb-20 sm:space-y-5">
-      <section class="relative mx-auto max-w-[1320px] px-4 pt-12 sm:px-6 lg:px-8 lg:pt-16">
-        <div class="grid gap-6 lg:grid-cols-[1.1fr_360px]">
-          <LiquidGlassCard client:visible padding="30px" maxWidth="100%">
-            <div class="space-y-5">
-              <p class="inline-flex rounded-full border border-white/60 bg-white/58 px-4 py-1 text-xs tracking-[0.18em] text-slate-500">
-                {copy.heroBadge}
-              </p>
-              <h1 class="bg-gradient-to-r from-slate-900 via-[#39c5bb] to-[#c084fc] bg-clip-text text-[clamp(2rem,4.8vw,3.8rem)] font-black tracking-tight text-transparent">
-                {copy.heroTitle}
-              </h1>
-              <p class="max-w-3xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                {copy.heroDescription}
-              </p>
-
-              <div class="flex flex-wrap gap-2">
-                {
-                  identityTags.map((tag) => (
-                    <span class="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-medium text-slate-600">
-                      {tag}
-                    </span>
-                  ))
-                }
-              </div>
-
-              <div class="flex flex-wrap gap-2.5 pt-1">
-                {
-                  heroActions.map((action, index) => (
-                <a
-                  href={action.href}
-                  class={heroActionClasses[index] ?? heroActionClasses[0]}
-                >
-                  {action.label}
-                </a>
-                  ))
-                }
-              </div>
-
-              <div class="grid gap-2.5 pt-2 sm:grid-cols-3">
-                <div class="rounded-xl border border-white/65 bg-white/62 px-3 py-2.5">
-                  <p class="text-xs text-slate-400">{copy.stats.postsLabel}</p>
-                  <p class="mt-1 text-lg font-bold text-slate-900">{postCount}</p>
-                </div>
-                <div class="rounded-xl border border-white/65 bg-white/62 px-3 py-2.5">
-                  <p class="text-xs text-slate-400">{copy.stats.focusLabel}</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-800">{copy.stats.focusValue}</p>
-                </div>
-                <div class="rounded-xl border border-white/65 bg-white/62 px-3 py-2.5">
-                  <p class="text-xs text-slate-400">{copy.stats.statusLabel}</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-800">{copy.stats.statusValue}</p>
-                </div>
-              </div>
-            </div>
-          </LiquidGlassCard>
-
-          <LiquidGlassCard client:visible padding="24px" maxWidth="100%">
-            <div class="space-y-4">
-              <div class="flex items-center gap-3">
-                <div class="relative h-14 w-14">
-                  <div
-                    id="about-profile-avatar-loader"
-                    class="absolute inset-0 flex items-center justify-center rounded-xl border border-slate-200/75 bg-white/82"
-                  >
-                    <svg viewBox="0 0 24 24" class="avatar-loader-rocket h-4.5 w-4.5 text-miku" fill="none" aria-hidden="true">
-                      <path d="M14.7 4.2c1.8.9 3.2 2.3 4.1 4.1L13.2 14l-2.8.4.4-2.8 3.9-7.4z" fill="currentColor" fill-opacity="0.92" />
-                      <path d="M10.6 11.6L8 14.2a1.8 1.8 0 000 2.6l.8.8a1.8 1.8 0 002.6 0l2.6-2.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                      <path class="avatar-loader-rocket-flame" d="M8.3 17.5l-2.1 2.6 3.3-1.3z" fill="#f59e0b" />
-                    </svg>
-                  </div>
-                  <img
-                    id="about-profile-avatar"
-                    src="/picture/author.jpg"
-                    alt={copy.profileCard.avatarAlt}
-                    class="h-14 w-14 rounded-xl border border-slate-200 object-cover opacity-0 transition-opacity duration-300"
-                  />
-                </div>
-                <div>
-                  <p id="about-profile-name" class="text-base font-semibold text-slate-900">{copy.profileCard.name}</p>
-                  <p class="text-xs text-slate-500">{copy.profileCard.role}</p>
-                </div>
-              </div>
-              <div class="rounded-xl border border-white/65 bg-white/58 px-3 py-2.5">
-                <p class="text-xs tracking-[0.14em] text-miku">{copy.profileCard.nowTitle}</p>
-                <ul class="mt-2 space-y-2 text-xs text-slate-600">
-                  {
-                    nowItems.map((item) => (
-                      <li class="flex items-start gap-2">
-                        <span class="mt-1 h-1.5 w-1.5 rounded-full bg-miku" />
-                        <span>{item}</span>
-                      </li>
-                    ))
-                  }
-                </ul>
-              </div>
-              <blockquote class="rounded-xl border border-white/65 bg-white/58 px-3 py-2.5 text-sm leading-relaxed text-slate-600">
-                {copy.profileCard.quote}
-              </blockquote>
-            </div>
-          </LiquidGlassCard>
-        </div>
-      </section>
-
-      <section id="github" class="relative mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
-        <AboutGithubProfile client:visible githubUsername={githubUsername} />
-      </section>
+      <AboutIntroSection client:load post-count={postCount} />
 
       <section class="relative mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
         <div class="grid gap-4 md:grid-cols-3">
@@ -320,42 +204,7 @@ const socialLinks = copy.socialLinks
       </section>
 
       <section class="relative mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
-        <LiquidGlassCard client:visible padding="26px" maxWidth="100%">
-          <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 class="text-lg font-bold text-slate-900">{copy.contactSection.title}</h2>
-              <p class="mt-1 text-sm text-slate-500">{copy.contactSection.subtitle}</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <a
-                href={copy.contactSection.emailHref}
-                class="inline-flex items-center rounded-xl border border-miku/40 bg-miku-soft px-4 py-2 text-sm font-semibold text-miku transition hover:border-miku/60"
-              >
-                {copy.contactSection.emailButton}
-              </a>
-              <a
-                href={`https://github.com/${githubUsername}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center rounded-xl border border-slate-200 bg-white/75 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-[#c084fc]/40 hover:text-[#8b5cf6]"
-              >
-                {copy.contactSection.githubButton}
-              </a>
-              {
-                socialLinks.map((link) => (
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center rounded-xl border border-slate-200 bg-white/75 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-[#c084fc]/40 hover:text-[#8b5cf6]"
-                  >
-                    {link.label}
-                  </a>
-                ))
-              }
-            </div>
-          </div>
-        </LiquidGlassCard>
+        <AboutContactSection client:load />
       </section>
       </div>
     </main>
@@ -365,36 +214,6 @@ const socialLinks = copy.socialLinks
     <script is:inline>
       const progressBar = document.getElementById('scroll-progress')
       const topNav = document.querySelector('[data-blog-topnav]')
-      const aboutProfileAvatar = document.getElementById('about-profile-avatar')
-      const aboutProfileAvatarLoader = document.getElementById('about-profile-avatar-loader')
-      const aboutProfileName = document.getElementById('about-profile-name')
-
-      const showAboutAvatar = () => {
-        if (!(aboutProfileAvatar instanceof HTMLImageElement)) {
-          return
-        }
-
-        aboutProfileAvatar.classList.add('is-ready')
-        aboutProfileAvatarLoader?.classList.add('is-hidden')
-      }
-
-      const resetAboutAvatar = () => {
-        if (!(aboutProfileAvatar instanceof HTMLImageElement)) {
-          return
-        }
-
-        aboutProfileAvatar.classList.remove('is-ready')
-        aboutProfileAvatarLoader?.classList.remove('is-hidden')
-      }
-
-      if (aboutProfileAvatar instanceof HTMLImageElement) {
-        aboutProfileAvatar.addEventListener('load', showAboutAvatar)
-        aboutProfileAvatar.addEventListener('error', showAboutAvatar)
-
-        if (aboutProfileAvatar.complete) {
-          showAboutAvatar()
-        }
-      }
 
       const updateScrollUI = () => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop
@@ -413,32 +232,6 @@ const socialLinks = copy.socialLinks
       window.addEventListener('scroll', updateScrollUI, { passive: true })
       window.addEventListener('resize', updateScrollUI, { passive: true })
       updateScrollUI()
-
-      const hydrateAboutProfile = async () => {
-        try {
-          const response = await fetch('/api/v1/author-profile', { credentials: 'include' })
-          const payload = await response.json()
-          if (!response.ok || payload?.code !== 0 || !payload?.data) {
-            return
-          }
-
-          const displayName = String(payload.data.display_name || payload.data.username || '').trim()
-          const avatarURL = String(payload.data.avatar_url || '').trim()
-
-          if (displayName && aboutProfileName) {
-            aboutProfileName.textContent = displayName
-          }
-
-          if (avatarURL && aboutProfileAvatar instanceof HTMLImageElement) {
-            resetAboutAvatar()
-            aboutProfileAvatar.src = avatarURL
-          }
-        } catch {
-          // keep copy fallback
-        }
-      }
-
-      void hydrateAboutProfile()
     </script>
   </body>
 </html>
@@ -464,49 +257,5 @@ const socialLinks = copy.socialLinks
     transform-origin: 0 50%;
     transform: scaleX(0);
     transition: transform 120ms linear;
-  }
-
-  #about-profile-avatar.is-ready {
-    opacity: 1;
-  }
-
-  #about-profile-avatar-loader {
-    opacity: 1;
-    transition: opacity 180ms ease;
-  }
-
-  #about-profile-avatar-loader.is-hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .avatar-loader-rocket {
-    transform-origin: 50% 50%;
-    animation: about-avatar-rocket 0.95s ease-in-out infinite;
-  }
-
-  .avatar-loader-rocket-flame {
-    transform-origin: 8px 18px;
-    animation: about-avatar-flame 0.62s ease-in-out infinite;
-  }
-
-  @keyframes about-avatar-rocket {
-    0%, 100% {
-      transform: translateY(0) rotate(-2deg);
-    }
-    50% {
-      transform: translateY(-1px) rotate(1.5deg);
-    }
-  }
-
-  @keyframes about-avatar-flame {
-    0%, 100% {
-      transform: scale(1, 0.9);
-      opacity: 0.74;
-    }
-    50% {
-      transform: scale(1.06, 1.2);
-      opacity: 1;
-    }
   }
 </style>

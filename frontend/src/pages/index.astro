@@ -1,11 +1,8 @@
 ---
 import BaseHead from '../components/base/BaseHead.astro'
 import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
-import SystemClock from '../components/home/SystemClock.vue'
-import TypewriterSubtitle from '../components/home/TypewriterSubtitle.vue'
-import MusicPlayer from '../components/home/MusicPlayer.vue'
-import HeroTitle from '../components/home/HeroTitle.vue'
-import WeatherDisplay from '../components/home/WeatherDisplay.vue'
+import HomeHeroIntro from '../components/home/HomeHeroIntro.vue'
+import HomeTopbarWidgets from '../components/home/HomeTopbarWidgets.vue'
 import HeroParallax from '../components/home/HeroParallax.vue'
 import HeroShuffleBtn from '../components/home/HeroShuffleBtn.vue'
 import { siteCopy } from '../content/copy'
@@ -53,25 +50,11 @@ const iconPaths: Record<string, string> = {
           <span class="whitespace-nowrap" data-site-brand-text>{siteCopy.brand.text}</span>
         </a>
 
-        <div class="flex items-center gap-1 text-[11px] min-[380px]:gap-1.5 sm:gap-3">
-          <MusicPlayer client:load />
-          <span class="hidden min-[360px]:inline-flex">
-            <WeatherDisplay client:load />
-          </span>
-          <span class="hidden min-[430px]:inline-flex">
-            <SystemClock client:load />
-          </span>
-        </div>
+        <HomeTopbarWidgets client:load />
       </header>
 
       <section class="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
-        <h1 class="hero-title animate-fade-up text-[clamp(2.9rem,7.4vw,5.6rem)] tracking-[0.03em]">
-          <span class="hero-text"><HeroTitle client:load text={siteCopy.home.heroTitle} /></span>
-        </h1>
-        <TypewriterSubtitle
-          client:load
-          text={siteCopy.home.heroSubtitle}
-        />
+        <HomeHeroIntro client:load />
       </section>
 
       <div class="absolute bottom-4 left-1/2 z-20 w-[calc(100vw-1rem)] max-w-[760px] -translate-x-1/2 sm:w-auto sm:max-w-none">
