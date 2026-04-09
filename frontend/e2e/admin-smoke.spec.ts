@@ -4,6 +4,7 @@ import {
   cleanupAdminResource,
   createSmokeText,
   expectPageResponseOK,
+  forgetCachedAdminCookies,
   hasAdminCredentials,
   loginAsAdmin,
   rememberAdminCookies,
@@ -55,6 +56,7 @@ test.describe('admin smoke', () => {
       page.waitForURL(/\/login(?:\/)?$/),
       page.getByRole('button', { name: '退出登录' }).click(),
     ])
+    forgetCachedAdminCookies()
 
     await page.goto('/admin')
     await expect(page).toHaveURL(/\/login(?:\/)?$/)

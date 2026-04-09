@@ -107,6 +107,10 @@ export async function rememberAdminCookies(page: Page) {
   cachedAdminCookies = await page.context().cookies()
 }
 
+export function forgetCachedAdminCookies() {
+  cachedAdminCookies = null
+}
+
 export async function expectPageResponseOK(responseOrPromise: Response | Promise<Response>) {
   const response = await responseOrPromise
   expect(
