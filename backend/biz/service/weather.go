@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -37,9 +38,19 @@ func NewWeatherService(rdb *redis.Client, location string) *WeatherService {
 	return &WeatherService{rdb: rdb, location: location}
 }
 
-func (s *WeatherService) GetCurrent(ctx context.Context) (*WeatherData, error) {
+func (s *WeatherService) GetCurrent(ctx context.Context, locationOverride string) (*WeatherData, error) {
+	location := strings.TrimSpace(locationOverride)
+	if location == "" {
+		location = strings.TrimSpace(s.location)
+	}
+	if location == "" {
+		location = "Shanghai"
+	}
+
+	cacheKey := weatherCacheKey + ":" + strings.ToLower(location)
+
 	// Try cache first
-	cached, err := s.rdb.Get(ctx, weatherCacheKey).Result()
+	cached, err := s.rdb.Get(ctx, cacheKey).Result()
 	if err == nil {
 		var data WeatherData
 		if json.Unmarshal([]byte(cached), &data) == nil {
@@ -48,14 +59,14 @@ func (s *WeatherService) GetCurrent(ctx context.Context) (*WeatherData, error) {
 	}
 
 	// Fetch from wttr.in
-	data, err := s.fetchWeather(ctx)
+	data, err := s.fetchWeather(ctx, location)
 	if err != nil {
 		return nil, err
 	}
 
 	// Cache the result
 	if b, err := json.Marshal(data); err == nil {
-		if cacheErr := s.rdb.Set(ctx, weatherCacheKey, string(b), weatherCacheTTL).Err(); cacheErr != nil {
+		if cacheErr := s.rdb.Set(ctx, cacheKey, string(b), weatherCacheTTL).Err(); cacheErr != nil {
 			slog.Warn("failed to cache weather data", "error", cacheErr)
 		}
 	}
@@ -70,13 +81,13 @@ type wttrResponse struct {
 }
 
 type wttrCondition struct {
-	TempC         string           `json:"temp_C"`
-	FeelsLikeC    string           `json:"FeelsLikeC"`
-	Humidity      string           `json:"humidity"`
-	WeatherCode   string           `json:"weatherCode"`
-	WindspeedKmph string           `json:"windspeedKmph"`
-	WeatherDesc   []wttrLangValue  `json:"lang_zh"`
-	WeatherDescEN []wttrLangValue  `json:"weatherDesc"`
+	TempC         string          `json:"temp_C"`
+	FeelsLikeC    string          `json:"FeelsLikeC"`
+	Humidity      string          `json:"humidity"`
+	WeatherCode   string          `json:"weatherCode"`
+	WindspeedKmph string          `json:"windspeedKmph"`
+	WeatherDesc   []wttrLangValue `json:"lang_zh"`
+	WeatherDescEN []wttrLangValue `json:"weatherDesc"`
 }
 
 type wttrLangValue struct {
@@ -87,8 +98,8 @@ type wttrArea struct {
 	AreaName []wttrLangValue `json:"areaName"`
 }
 
-func (s *WeatherService) fetchWeather(ctx context.Context) (*WeatherData, error) {
-	url := fmt.Sprintf("https://wttr.in/%s?format=j1&lang=zh", s.location)
+func (s *WeatherService) fetchWeather(ctx context.Context, location string) (*WeatherData, error) {
+	url := fmt.Sprintf("https://wttr.in/%s?format=j1&lang=zh", location)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -130,9 +141,9 @@ func (s *WeatherService) fetchWeather(ctx context.Context) (*WeatherData, error)
 		desc = cc.WeatherDescEN[0].Value
 	}
 
-	location := s.location
+	locationName := location
 	if len(wttr.NearestArea) > 0 && len(wttr.NearestArea[0].AreaName) > 0 {
-		location = wttr.NearestArea[0].AreaName[0].Value
+		locationName = wttr.NearestArea[0].AreaName[0].Value
 	}
 
 	icon := weatherCodeToIcon(cc.WeatherCode)
@@ -144,7 +155,7 @@ func (s *WeatherService) fetchWeather(ctx context.Context) (*WeatherData, error)
 		Desc:      desc,
 		Icon:      icon,
 		WindSpeed: cc.WindspeedKmph,
-		Location:  location,
+		Location:  locationName,
 	}, nil
 }
 

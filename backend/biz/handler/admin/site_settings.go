@@ -13,11 +13,24 @@ import (
 )
 
 type SiteSettingsAdminHandler struct {
-	svc    *service.SiteSettingsService
-	modSvc *service.ModerationService
+	svc    siteSettingsAdminService
+	modSvc siteSettingsAuditLogger
 }
 
-func NewSiteSettingsAdminHandler(svc *service.SiteSettingsService, modSvc *service.ModerationService) *SiteSettingsAdminHandler {
+type siteSettingsAdminService interface {
+	SaveFooterSettings(ctx context.Context, input service.FooterSettings, adminID uuid.UUID) (*service.FooterSettings, error)
+	SaveSiteProfileSettings(ctx context.Context, input service.SiteProfileSettings, adminID uuid.UUID) (*service.SiteProfileSettings, error)
+	SaveHomeHeroSettings(ctx context.Context, input service.HomeHeroSettings, adminID uuid.UUID) (*service.HomeHeroSettings, error)
+	SaveHomeAssetsSettings(ctx context.Context, input service.HomeAssetsSettings, adminID uuid.UUID) (*service.HomeAssetsSettings, error)
+	SaveAuthorProfileSettings(ctx context.Context, input service.AuthorProfileSettings, adminID uuid.UUID) (*service.AuthorProfileSettings, error)
+	SaveSiteIntegrationsSettings(ctx context.Context, input service.SiteIntegrationsSettings, adminID uuid.UUID) (*service.SiteIntegrationsSettings, error)
+}
+
+type siteSettingsAuditLogger interface {
+	LogAudit(ctx context.Context, adminID uuid.UUID, action, targetType, targetID string, detail interface{}, ip string) error
+}
+
+func NewSiteSettingsAdminHandler(svc siteSettingsAdminService, modSvc siteSettingsAuditLogger) *SiteSettingsAdminHandler {
 	return &SiteSettingsAdminHandler{svc: svc, modSvc: modSvc}
 }
 
@@ -34,6 +47,50 @@ type updateSiteProfileSettingsReq struct {
 	SiteURL            string `json:"site_url"`
 	DefaultDescription string `json:"default_description"`
 	DefaultSocialImage string `json:"default_social_image"`
+}
+
+type updateHomeHeroSettingsReq struct {
+	HeroTitle    string `json:"hero_title"`
+	HeroSubtitle string `json:"hero_subtitle"`
+}
+
+type updateHomeAssetsSettingsReq struct {
+	HeroImages []string `json:"hero_images"`
+}
+
+type updateAuthorSocialLinkReq struct {
+	Label   string `json:"label"`
+	Href    string `json:"href"`
+	IconKey string `json:"icon_key"`
+}
+
+type updateAuthorContactLinkReq struct {
+	Label string `json:"label"`
+	Href  string `json:"href"`
+}
+
+type updateAuthorProfileSettingsReq struct {
+	DisplayName      string                       `json:"display_name"`
+	AvatarURL        string                       `json:"avatar_url"`
+	Role             string                       `json:"role"`
+	Bio              string                       `json:"bio"`
+	AboutDescription string                       `json:"about_description"`
+	Location         string                       `json:"location"`
+	Since            string                       `json:"since"`
+	Skills           []string                     `json:"skills"`
+	NowItems         []string                     `json:"now_items"`
+	Quote            string                       `json:"quote"`
+	ContactEmail     string                       `json:"contact_email"`
+	SocialLinks      []updateAuthorSocialLinkReq  `json:"social_links"`
+	ContactLinks     []updateAuthorContactLinkReq `json:"contact_links"`
+}
+
+type updateSiteIntegrationsSettingsReq struct {
+	GitHubUsername  string `json:"github_username"`
+	WeatherLocation string `json:"weather_location"`
+	ShowWeather     bool   `json:"show_weather"`
+	ShowMusic       bool   `json:"show_music"`
+	ShowClock       bool   `json:"show_clock"`
 }
 
 func (h *SiteSettingsAdminHandler) UpdateFooter(ctx context.Context, c *app.RequestContext) {
@@ -100,6 +157,162 @@ func (h *SiteSettingsAdminHandler) UpdateSiteProfile(ctx context.Context, c *app
 		"site_url":             settings.SiteURL,
 		"default_description":  settings.DefaultDescription,
 		"default_social_image": settings.DefaultSocialImage,
+	}, getClientIP(c))
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}
+
+func (h *SiteSettingsAdminHandler) UpdateHomeHero(ctx context.Context, c *app.RequestContext) {
+	adminID := getAdminID(c)
+	if adminID == uuid.Nil {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	var req updateHomeHeroSettingsReq
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
+		return
+	}
+
+	settings, err := h.svc.SaveHomeHeroSettings(ctx, service.HomeHeroSettings{
+		HeroTitle:    req.HeroTitle,
+		HeroSubtitle: req.HeroSubtitle,
+	}, adminID)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to save home hero settings"))
+		return
+	}
+
+	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "home_hero", map[string]interface{}{
+		"hero_title":    settings.HeroTitle,
+		"hero_subtitle": settings.HeroSubtitle,
+	}, getClientIP(c))
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}
+
+func (h *SiteSettingsAdminHandler) UpdateHomeAssets(ctx context.Context, c *app.RequestContext) {
+	adminID := getAdminID(c)
+	if adminID == uuid.Nil {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	var req updateHomeAssetsSettingsReq
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
+		return
+	}
+
+	settings, err := h.svc.SaveHomeAssetsSettings(ctx, service.HomeAssetsSettings{
+		HeroImages: req.HeroImages,
+	}, adminID)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to save home assets settings"))
+		return
+	}
+
+	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "home_assets", map[string]interface{}{
+		"hero_image_count": len(settings.HeroImages),
+		"hero_images":      settings.HeroImages,
+	}, getClientIP(c))
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}
+
+func (h *SiteSettingsAdminHandler) UpdateAuthorProfile(ctx context.Context, c *app.RequestContext) {
+	adminID := getAdminID(c)
+	if adminID == uuid.Nil {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	var req updateAuthorProfileSettingsReq
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
+		return
+	}
+
+	socialLinks := make([]service.AuthorSocialLink, 0, len(req.SocialLinks))
+	for _, item := range req.SocialLinks {
+		socialLinks = append(socialLinks, service.AuthorSocialLink{
+			Label:   item.Label,
+			Href:    item.Href,
+			IconKey: item.IconKey,
+		})
+	}
+
+	contactLinks := make([]service.AuthorContactLink, 0, len(req.ContactLinks))
+	for _, item := range req.ContactLinks {
+		contactLinks = append(contactLinks, service.AuthorContactLink{
+			Label: item.Label,
+			Href:  item.Href,
+		})
+	}
+
+	settings, err := h.svc.SaveAuthorProfileSettings(ctx, service.AuthorProfileSettings{
+		DisplayName:      req.DisplayName,
+		AvatarURL:        req.AvatarURL,
+		Role:             req.Role,
+		Bio:              req.Bio,
+		AboutDescription: req.AboutDescription,
+		Location:         req.Location,
+		Since:            req.Since,
+		Skills:           req.Skills,
+		NowItems:         req.NowItems,
+		Quote:            req.Quote,
+		ContactEmail:     req.ContactEmail,
+		SocialLinks:      socialLinks,
+		ContactLinks:     contactLinks,
+	}, adminID)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to save author profile settings"))
+		return
+	}
+
+	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "author_profile", map[string]interface{}{
+		"display_name":        settings.DisplayName,
+		"role":                settings.Role,
+		"skills_count":        len(settings.Skills),
+		"social_links_count":  len(settings.SocialLinks),
+		"contact_links_count": len(settings.ContactLinks),
+	}, getClientIP(c))
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}
+
+func (h *SiteSettingsAdminHandler) UpdateSiteIntegrations(ctx context.Context, c *app.RequestContext) {
+	adminID := getAdminID(c)
+	if adminID == uuid.Nil {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	var req updateSiteIntegrationsSettingsReq
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
+		return
+	}
+
+	settings, err := h.svc.SaveSiteIntegrationsSettings(ctx, service.SiteIntegrationsSettings{
+		GitHubUsername:  req.GitHubUsername,
+		WeatherLocation: req.WeatherLocation,
+		ShowWeather:     req.ShowWeather,
+		ShowMusic:       req.ShowMusic,
+		ShowClock:       req.ShowClock,
+	}, adminID)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to save site integrations settings"))
+		return
+	}
+
+	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "site_integrations", map[string]interface{}{
+		"github_username":  settings.GitHubUsername,
+		"weather_location": settings.WeatherLocation,
+		"show_weather":     settings.ShowWeather,
+		"show_music":       settings.ShowMusic,
+		"show_clock":       settings.ShowClock,
 	}, getClientIP(c))
 
 	c.JSON(consts.StatusOK, dto.OK(settings))

@@ -3,6 +3,7 @@ package public
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	"nanamiku-blog/backend/biz/dto"
 	"nanamiku-blog/backend/biz/errcode"
@@ -21,7 +22,8 @@ func NewWeatherHandler(svc *service.WeatherService) *WeatherHandler {
 }
 
 func (h *WeatherHandler) Current(ctx context.Context, c *app.RequestContext) {
-	data, err := h.svc.GetCurrent(ctx)
+	location := strings.TrimSpace(c.Query("location"))
+	data, err := h.svc.GetCurrent(ctx, location)
 	if err != nil {
 		slog.Error("failed to get weather", "error", err)
 		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to fetch weather"))

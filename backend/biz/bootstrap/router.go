@@ -143,6 +143,10 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 		api.POST("/friends/applications", middleware.RateLimit(rdb, "friend:apply", 3, 10*time.Minute), friendsH.CreateApplication)
 		api.GET("/site-settings/footer", siteSettingsH.GetFooter)
 		api.GET("/site-settings/site-profile", siteSettingsH.GetSiteProfile)
+		api.GET("/site-settings/home-hero", siteSettingsH.GetHomeHero)
+		api.GET("/site-settings/home-assets", siteSettingsH.GetHomeAssets)
+		api.GET("/site-settings/author-profile", siteSettingsH.GetAuthorProfile)
+		api.GET("/site-settings/site-integrations", siteSettingsH.GetSiteIntegrations)
 		api.POST("/analytics/collect", middleware.RateLimit(rdb, "analytics:collect", 240, 1*time.Minute), analyticsH.Collect)
 		api.GET("/analytics/trend", analyticsH.Trend)
 
@@ -197,6 +201,10 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 			// Site settings
 			adm.PUT("/site-settings/footer", siteSettingsAdminH.UpdateFooter)
 			adm.PUT("/site-settings/site-profile", siteSettingsAdminH.UpdateSiteProfile)
+			adm.PUT("/site-settings/home-hero", siteSettingsAdminH.UpdateHomeHero)
+			adm.PUT("/site-settings/home-assets", siteSettingsAdminH.UpdateHomeAssets)
+			adm.PUT("/site-settings/author-profile", siteSettingsAdminH.UpdateAuthorProfile)
+			adm.PUT("/site-settings/site-integrations", siteSettingsAdminH.UpdateSiteIntegrations)
 
 			// Posts CRUD
 			adm.GET("/posts", postsAdminH.List)
