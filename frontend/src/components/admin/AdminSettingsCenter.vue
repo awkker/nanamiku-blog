@@ -63,21 +63,6 @@
           </div>
         </div>
 
-        <div :class="surfaceClass">
-          <p class="text-sm font-semibold text-slate-900">{{ copy.overview.oldEntryTitle }}</p>
-          <p class="mt-2 text-xs leading-6 text-slate-500">{{ copy.overview.oldEntrySubtitle }}</p>
-          <div class="mt-4 space-y-2">
-            <a
-              v-for="link in copy.overview.oldEntryLinks"
-              :key="link.href"
-              :href="link.href"
-              class="flex items-center justify-between rounded-[18px] border border-slate-200/80 bg-white/72 px-3.5 py-3 text-sm text-slate-600 transition hover:border-miku/30 hover:text-miku"
-            >
-              <span>{{ link.label }}</span>
-              <span aria-hidden="true">›</span>
-            </a>
-          </div>
-        </div>
       </div>
 
       <div class="space-y-5">
@@ -1066,7 +1051,7 @@
 
 <script setup lang="ts">
 import { useStore } from '@nanostores/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { adminCopy } from '../../content/copy'
 import { api, ApiError } from '../../lib/api'
@@ -1153,6 +1138,16 @@ type SectionKey =
   | 'site-integrations'
   | 'site-footer'
   | 'admin-profile'
+
+const sectionKeys: SectionKey[] = [
+  'site-profile',
+  'home-hero',
+  'home-assets',
+  'author-profile',
+  'site-integrations',
+  'site-footer',
+  'admin-profile',
+]
 
 type ProbeState = 'idle' | 'loading' | 'ok' | 'error'
 
@@ -1945,6 +1940,39 @@ const accountIdentityPreview = computed(() => {
   return email || username || copy.actions.emptyValue
 })
 
+function isSectionKey(value: string | null): value is SectionKey {
+  return typeof value === 'string' && sectionKeys.includes(value as SectionKey)
+}
+
+function readSectionFromLocation(): SectionKey | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const section = new URLSearchParams(window.location.search).get('section')
+  return isSectionKey(section) ? section : null
+}
+
+function syncSectionToLocation(section: SectionKey) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const url = new URL(window.location.href)
+  const current = url.searchParams.get('section')
+
+  if (current === section) {
+    return
+  }
+
+  if (!current && section === 'site-profile') {
+    return
+  }
+
+  url.searchParams.set('section', section)
+  window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
 function validateSiteProfileSection() {
   return [
     brandText.value,
@@ -2301,7 +2329,18 @@ async function resetCurrentSection() {
   }
 }
 
+watch(activeSection, (next, prev) => {
+  if (next === prev) {
+    return
+  }
+  syncSectionToLocation(next)
+})
+
 onMounted(() => {
+  const sectionFromLocation = readSectionFromLocation()
+  if (sectionFromLocation) {
+    activeSection.value = sectionFromLocation
+  }
   void load()
 })
 </script>

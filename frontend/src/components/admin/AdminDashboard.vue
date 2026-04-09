@@ -62,6 +62,13 @@
       </div>
     </AdminPlainCard>
 
+    <AdminOperationsCockpit
+      :analytics="analytics"
+      :dashboard-stats="dashboardStats"
+      :activity-items="activityItems"
+      :activity-loading="activityLoading"
+    />
+
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <template v-if="status === 'loading' && !analytics">
         <SkeletonCard v-for="i in 5" :key="i" />
@@ -368,6 +375,7 @@ import { hydrateAuth } from '../../stores/auth'
 import { setScopeStatus } from '../../stores/loading'
 import { adminCopy } from '../../content/copy'
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
+import AdminOperationsCockpit from './AdminOperationsCockpit.vue'
 import SkeletonCard from '../ui/SkeletonCard.vue'
 
 echarts.use([CanvasRenderer, BarChart, MapChart, GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, GeoComponent, LegacyGridContainLabel])
@@ -464,7 +472,10 @@ interface AuditLogItem {
 }
 
 interface DashboardStats {
+  total_posts: number
+  total_likes: number
   pending_comments: number
+  friend_count: number
   draft_count: number
 }
 

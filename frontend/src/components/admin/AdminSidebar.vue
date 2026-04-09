@@ -155,8 +155,6 @@ const navGroups = [
   {
     section: sb.sections.system,
     items: [
-      { key: 'footer', label: sb.nav.footer, href: '/admin/footer' },
-      { key: 'profile', label: sb.nav.profile, href: '/admin/profile' },
       { key: 'friends', label: sb.nav.friends, href: '/admin/friends' },
       { key: 'backup', label: sb.nav.backup, href: '/admin/backup' },
     ],
