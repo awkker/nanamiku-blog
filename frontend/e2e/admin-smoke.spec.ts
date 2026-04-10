@@ -83,19 +83,28 @@ test.describe('admin smoke', () => {
     expect(documentCookie).not.toContain('miku_blog_access')
     expect(documentCookie).not.toContain('miku_blog_refresh')
 
-    await page.context().addCookies([{
-      ...accessCookie!,
-      value: 'invalid-access-token-for-refresh-smoke',
-    }])
+    const meResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/v1/auth/me')
+      && response.request().method() === 'GET',
+    )
 
     const refreshResponse = page.waitForResponse((response) =>
       response.url().includes('/api/v1/auth/refresh')
       && response.request().method() === 'POST',
     )
 
+    await page.context().addCookies([{
+      ...accessCookie!,
+      value: 'invalid-access-token-for-refresh-smoke',
+    }])
+
     await page.goto('/admin/backup')
 
-    await expectPageResponseOK(refreshResponse)
+    const me = await meResponse
+    expect(me.status()).toBe(401)
+
+    const refresh = await refreshResponse
+    await expectPageResponseOK(refresh)
     await expect(page).toHaveURL(/\/admin\/backup(?:\/)?$/)
 
     const refreshedCookies = await page.context().cookies()
