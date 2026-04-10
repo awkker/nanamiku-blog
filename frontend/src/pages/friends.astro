@@ -6,6 +6,7 @@ import FriendsGrid from '../components/friends/FriendsGrid.vue'
 import GlobalToast from '../components/ui/GlobalToast.vue'
 import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
 import { siteCopy } from '../content/copy'
+import { DEFAULT_PUBLIC_AVATAR_URL } from '../lib/default-assets'
 
 const copy = siteCopy.friendsPage
 ---
@@ -66,7 +67,7 @@ const copy = siteCopy.friendsPage
         <LiquidGlassCard client:load padding="24px" maxWidth="100%">
           <div class="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <img
-              src="/picture/author.jpg"
+              src={DEFAULT_PUBLIC_AVATAR_URL}
               alt={copy.siteCard.avatarAlt}
               class="h-16 w-16 shrink-0 rounded-2xl border border-slate-200 object-cover"
             />

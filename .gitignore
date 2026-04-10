@@ -1,6 +1,17 @@
 .DS_Store
 .agents/
 skills-lock.json
+.env
+.env.*
+*.local
+backend/.env
+frontend/.env
+frontend/.env.*
+frontend/node_modules/
+frontend/.astro/
+frontend/dist/
+backend/miku-blog
+backend/coverage.out
 
 # Playwright / smoke artifacts
 frontend/test-results/

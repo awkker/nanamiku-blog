@@ -76,7 +76,7 @@ nanamiku-blog/
 cd backend
 docker-compose up -d          # PostgreSQL + Redis
 go run cmd/migrate/main.go    # 执行数据库迁移（可重复执行，已应用版本会自动跳过）
-go run cmd/seed/main.go 'YourStrongPassword123'  # 创建管理员账号（请传入强密码）
+go run cmd/seed/main.go -username admin -email admin@example.com -password 'YourStrongPassword123'  # 显式传入管理员账号信息
 go run main.go                # 启动 API 服务 :8080
 ```
 
@@ -106,6 +106,15 @@ npm run dev                   # 启动开发服务器 :4321
 
 - 前端: `http://localhost:4321`
 - 后端 API: `http://localhost:8080/api/v1/health`
+
+首次登录后台后，建议先前往 `/admin/settings` 完成以下配置：
+
+- `作者公开资料`：展示名、头像、简介、联系邮箱、公开社交链接
+- `About 页面`：成长时间线、能力分组、主推项目、本月目标、正在听、固定签名
+- `外部依赖与首页组件`：GitHub 用户名、天气地点、首页组件开关
+- `站点品牌与默认 SEO`：品牌名、站点 URL、默认描述、默认分享图
+
+前台可 DIY 图片建议统一放到 `frontend/public/picture/diy/`，后台优先填写以 `/picture/diy/` 开头的相对路径，例如 `/picture/diy/about/avatar-placeholder.svg`。
 
 ## 后端 API 概览
 
@@ -163,7 +172,7 @@ npm run dev                   # 启动开发服务器 :4321
 - `home`：开屏页（`/`）标题、副标题、Dock 文案
 - `blogTopNav`：博客导航（博客首页/说说/留言板/友情链接/关于/后台/登录）
 - `blogIndex`：博客首页（`/blog`）Hero 区、右侧作者卡、近况/歌单、按钮文案
-- `aboutPage`：关于我（`/about`）整页文案（简介、时间线、项目、写作地图、联系区等）
+- `aboutPage`：关于我（`/about`）的结构性标题、按钮文案与默认回退值；中段高 DIY 内容已迁入 `/admin/settings?section=about-page`
 - `momentsPage`：说说页（`/moments`）标题、副标题、页面内快捷导航文案
 - `guestbookPage`：留言板（`/guestbook`）标题、副标题、页面内快捷导航文案
 - `components.blogFeed`：博客首页文章流组件文案（空态/错误/标签等）

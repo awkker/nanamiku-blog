@@ -9,27 +9,27 @@ func TestNormalizeSiteProfileSettings(t *testing.T) {
 	t.Parallel()
 
 	got := normalizeSiteProfileSettings(SiteProfileSettings{
-		BrandText:          "  NanaMiku Blog  ",
+		BrandText:          "  Miku Blog Starter  ",
 		SiteTitle:          "",
 		LogoAlt:            "",
-		SiteURL:            "nanamiku.blog/",
+		SiteURL:            "example.com/",
 		DefaultDescription: "  hello world  ",
-		DefaultSocialImage: "cdn.nanamiku.blog/cover.png",
+		DefaultSocialImage: "cdn.example.com/cover.png",
 	})
 
-	if got.BrandText != "NanaMiku Blog" {
+	if got.BrandText != "Miku Blog Starter" {
 		t.Fatalf("unexpected brand text: %q", got.BrandText)
 	}
 
-	if got.SiteTitle != "NanaMiku Blog" {
+	if got.SiteTitle != "Miku Blog Starter" {
 		t.Fatalf("unexpected site title: %q", got.SiteTitle)
 	}
 
-	if got.LogoAlt != "NanaMiku Blog logo" {
+	if got.LogoAlt != "Miku Blog Starter logo" {
 		t.Fatalf("unexpected logo alt: %q", got.LogoAlt)
 	}
 
-	if got.SiteURL != "https://nanamiku.blog" {
+	if got.SiteURL != "https://example.com" {
 		t.Fatalf("unexpected site url: %q", got.SiteURL)
 	}
 
@@ -37,7 +37,7 @@ func TestNormalizeSiteProfileSettings(t *testing.T) {
 		t.Fatalf("unexpected description: %q", got.DefaultDescription)
 	}
 
-	if got.DefaultSocialImage != "https://cdn.nanamiku.blog/cover.png" {
+	if got.DefaultSocialImage != "https://cdn.example.com/cover.png" {
 		t.Fatalf("unexpected social image: %q", got.DefaultSocialImage)
 	}
 }
@@ -51,7 +51,10 @@ func TestNormalizeSiteAssetURL(t *testing.T) {
 		want string
 	}{
 		{name: "relative asset", raw: "/picture/logo-64.webp", want: "/picture/logo-64.webp"},
-		{name: "absolute asset without scheme", raw: "cdn.nanamiku.blog/cover.png", want: "https://cdn.nanamiku.blog/cover.png"},
+		{name: "local asset without leading slash", raw: "picture/author.jpg", want: "/picture/author.jpg"},
+		{name: "dot local asset path", raw: "./picture/author.jpg", want: "/picture/author.jpg"},
+		{name: "absolute asset without scheme", raw: "cdn.example.com/cover.png", want: "https://cdn.example.com/cover.png"},
+		{name: "legacy malformed picture host", raw: "https://picture/author.jpg", want: "/picture/author.jpg"},
 		{name: "invalid empty", raw: "   ", want: ""},
 	}
 
@@ -70,15 +73,15 @@ func TestNormalizeHomeHeroSettings(t *testing.T) {
 	t.Parallel()
 
 	got := normalizeHomeHeroSettings(HomeHeroSettings{
-		HeroTitle:    "  薰逸の猫窝  ",
-		HeroSubtitle: "  「月が綺麗ですね」。  ",
+		HeroTitle:    "  创作入口  ",
+		HeroSubtitle: "  把写作、作品与公开资料收拢到同一站点。  ",
 	})
 
-	if got.HeroTitle != "薰逸の猫窝" {
+	if got.HeroTitle != "创作入口" {
 		t.Fatalf("unexpected hero title: %q", got.HeroTitle)
 	}
 
-	if got.HeroSubtitle != "「月が綺麗ですね」。" {
+	if got.HeroSubtitle != "把写作、作品与公开资料收拢到同一站点。" {
 		t.Fatalf("unexpected hero subtitle: %q", got.HeroSubtitle)
 	}
 }
@@ -89,7 +92,7 @@ func TestNormalizeHomeAssetsSettings(t *testing.T) {
 	got := normalizeHomeAssetsSettings(HomeAssetsSettings{
 		HeroImages: []string{
 			" /picture/fengmian/1.webp ",
-			"cdn.nanamiku.blog/home-hero.webp",
+			"cdn.example.com/home-hero.webp",
 			"/picture/fengmian/1.webp",
 			"   ",
 		},
@@ -103,7 +106,7 @@ func TestNormalizeHomeAssetsSettings(t *testing.T) {
 		t.Fatalf("unexpected first hero image: %q", got.HeroImages[0])
 	}
 
-	if got.HeroImages[1] != "https://cdn.nanamiku.blog/home-hero.webp" {
+	if got.HeroImages[1] != "https://cdn.example.com/home-hero.webp" {
 		t.Fatalf("unexpected second hero image: %q", got.HeroImages[1])
 	}
 }
@@ -112,31 +115,31 @@ func TestNormalizeAuthorProfileSettings(t *testing.T) {
 	t.Parallel()
 
 	got := normalizeAuthorProfileSettings(AuthorProfileSettings{
-		DisplayName:      "  Xunyi  ",
-		AvatarURL:        " /picture/author.jpg ",
-		Role:             "  Front-end Developer / Writer  ",
-		Bio:              "  写前端、写系统、写日常。  ",
+		DisplayName:      "  Your Name  ",
+		AvatarURL:        " /picture/diy/about/avatar-placeholder.svg ",
+		Role:             "  Frontend / Full-stack Creator  ",
+		Bio:              "  展示文章、作品与公开资料。  ",
 		AboutDescription: "  长一点的介绍  ",
-		Location:         "  China  ",
+		Location:         "  Your City  ",
 		Since:            "  Since 2026  ",
 		Skills:           []string{" Astro ", "Vue", "Astro", ""},
-		NowItems:         []string{" 重构首页 ", "整理模板", "重构首页"},
-		Quote:            "  让每篇文章都能复用。  ",
+		NowItems:         []string{" 整理默认值 ", "补齐模板", "整理默认值"},
+		Quote:            "  让每次写作都能继续复用。  ",
 		ContactEmail:     " mailto:test@example.com ",
 		SocialLinks: []AuthorSocialLink{
-			{Label: " GitHub ", Href: "github.com/awkker", IconKey: " github "},
+			{Label: " GitHub ", Href: "github.com/yourname", IconKey: " github "},
 			{Label: "", Href: "https://example.com"},
 		},
 		ContactLinks: []AuthorContactLink{
-			{Label: " QQ ", Href: "https://example.com/qq "},
+			{Label: " Portfolio ", Href: "https://example.com/portfolio "},
 		},
 	})
 
-	if got.DisplayName != "Xunyi" {
+	if got.DisplayName != "Your Name" {
 		t.Fatalf("unexpected display name: %q", got.DisplayName)
 	}
 
-	if got.AvatarURL != "/picture/author.jpg" {
+	if got.AvatarURL != "/picture/diy/about/avatar-placeholder.svg" {
 		t.Fatalf("unexpected avatar url: %q", got.AvatarURL)
 	}
 
@@ -148,12 +151,24 @@ func TestNormalizeAuthorProfileSettings(t *testing.T) {
 		t.Fatalf("unexpected skills length: %d", len(got.Skills))
 	}
 
-	if len(got.SocialLinks) != 1 || got.SocialLinks[0].Href != "https://github.com/awkker" {
+	if len(got.SocialLinks) != 1 || got.SocialLinks[0].Href != "https://github.com/yourname" {
 		t.Fatalf("unexpected social links: %+v", got.SocialLinks)
 	}
 
-	if len(got.ContactLinks) != 1 || got.ContactLinks[0].Href != "https://example.com/qq" {
+	if len(got.ContactLinks) != 1 || got.ContactLinks[0].Href != "https://example.com/portfolio" {
 		t.Fatalf("unexpected contact links: %+v", got.ContactLinks)
+	}
+}
+
+func TestNormalizeAuthorProfileSettingsLegacyAvatar(t *testing.T) {
+	t.Parallel()
+
+	got := normalizeAuthorProfileSettings(AuthorProfileSettings{
+		AvatarURL: " /picture/author.jpg ",
+	})
+
+	if got.AvatarURL != "/picture/author.jpg" {
+		t.Fatalf("unexpected legacy avatar normalization: %q", got.AvatarURL)
 	}
 }
 
@@ -161,14 +176,14 @@ func TestNormalizeSiteIntegrationsSettings(t *testing.T) {
 	t.Parallel()
 
 	got := normalizeSiteIntegrationsSettings(SiteIntegrationsSettings{
-		GitHubUsername:  "  awkker  ",
+		GitHubUsername:  "  yourname  ",
 		WeatherLocation: "  Tokyo  ",
 		ShowWeather:     true,
 		ShowMusic:       false,
 		ShowClock:       true,
 	})
 
-	if got.GitHubUsername != "awkker" {
+	if got.GitHubUsername != "yourname" {
 		t.Fatalf("unexpected github username: %q", got.GitHubUsername)
 	}
 
@@ -295,9 +310,9 @@ func TestDecodeAuthorProfileSettingsNormalizesLegacyPayload(t *testing.T) {
 
 	raw := json.RawMessage(`{
 		"display_name": "  Nana  ",
-		"avatar_url": "cdn.nanamiku.blog/avatar.png",
+		"avatar_url": "cdn.example.com/avatar.png",
 		"contact_email": "mailto:hello@example.com",
-		"social_links": [{"label":" GitHub ","href":"github.com/awkker","icon_key":" github "}]
+		"social_links": [{"label":" GitHub ","href":"github.com/yourname","icon_key":" github "}]
 	}`)
 
 	got, err := decodeAuthorProfileSettings(raw)
@@ -308,14 +323,31 @@ func TestDecodeAuthorProfileSettingsNormalizesLegacyPayload(t *testing.T) {
 	if got.DisplayName != "Nana" {
 		t.Fatalf("unexpected display name: %q", got.DisplayName)
 	}
-	if got.AvatarURL != "https://cdn.nanamiku.blog/avatar.png" {
+	if got.AvatarURL != "https://cdn.example.com/avatar.png" {
 		t.Fatalf("unexpected avatar url: %q", got.AvatarURL)
 	}
 	if got.ContactEmail != "hello@example.com" {
 		t.Fatalf("unexpected contact email: %q", got.ContactEmail)
 	}
-	if len(got.SocialLinks) != 1 || got.SocialLinks[0].Href != "https://github.com/awkker" {
+	if len(got.SocialLinks) != 1 || got.SocialLinks[0].Href != "https://github.com/yourname" {
 		t.Fatalf("unexpected social links: %+v", got.SocialLinks)
+	}
+}
+
+func TestDecodeAuthorProfileSettingsFixesMalformedLocalAvatar(t *testing.T) {
+	t.Parallel()
+
+	raw := json.RawMessage(`{
+		"avatar_url": "https://picture/author.jpg"
+	}`)
+
+	got, err := decodeAuthorProfileSettings(raw)
+	if err != nil {
+		t.Fatalf("decodeAuthorProfileSettings() error = %v", err)
+	}
+
+	if got.AvatarURL != "/picture/author.jpg" {
+		t.Fatalf("unexpected avatar url: %q", got.AvatarURL)
 	}
 }
 
@@ -329,7 +361,7 @@ func TestNormalizePublicLink(t *testing.T) {
 	}{
 		{name: "relative", raw: "/friends", want: "/friends"},
 		{name: "mailto", raw: "mailto:test@example.com", want: "mailto:test@example.com"},
-		{name: "bare domain", raw: "github.com/awkker", want: "https://github.com/awkker"},
+		{name: "bare domain", raw: "github.com/yourname", want: "https://github.com/yourname"},
 		{name: "empty", raw: "   ", want: ""},
 	}
 
@@ -341,5 +373,69 @@ func TestNormalizePublicLink(t *testing.T) {
 				t.Fatalf("normalizePublicLink(%q) = %q, want %q", tc.raw, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestNormalizeAboutPageSettings(t *testing.T) {
+	t.Parallel()
+
+	got := normalizeAboutPageSettings(AboutPageSettings{
+		IntroCards: []AboutIntroCard{
+			{Title: " 当前主线 ", Description: " 整理设置中心 "},
+			{Title: " 当前主线 ", Description: " 整理设置中心 "},
+		},
+		Milestones: []AboutMilestone{
+			{Year: " 2026 ", Title: " 收口 About ", Summary: " 接入后台 ", Result: " 链路打通 "},
+		},
+		CapabilityGroups: []AboutCapabilityGroup{
+			{Title: " 前端体验 ", Desc: " 关注结构 ", Stack: []string{" Astro ", "Vue", "Astro"}},
+		},
+		FeaturedProjects: []AboutFeaturedProject{
+			{Name: " Starter Site Kit ", Focus: " 模板 ", Role: " 配置治理 ", Metric: " 可安全开源 ", Href: "github.com/yourname/miku-blog-starter"},
+		},
+		MonthlyGoals: []string{" 补齐 About 页配置 ", "补齐 About 页配置"},
+		ListeningNow: []string{" Lo-fi Focus Mix "},
+		Signature: AboutSignatureSettings{
+			Description: " 让内容维护更顺畅。 ",
+			Footer:      " 持续迭代中。 ",
+		},
+	})
+
+	if len(got.IntroCards) != 1 || got.IntroCards[0].Title != "当前主线" {
+		t.Fatalf("unexpected intro cards: %+v", got.IntroCards)
+	}
+	if len(got.CapabilityGroups) != 1 || len(got.CapabilityGroups[0].Stack) != 2 {
+		t.Fatalf("unexpected capability groups: %+v", got.CapabilityGroups)
+	}
+	if got.FeaturedProjects[0].Href != "https://github.com/yourname/miku-blog-starter" {
+		t.Fatalf("unexpected project href: %+v", got.FeaturedProjects)
+	}
+	if len(got.MonthlyGoals) != 1 || got.MonthlyGoals[0] != "补齐 About 页配置" {
+		t.Fatalf("unexpected monthly goals: %+v", got.MonthlyGoals)
+	}
+}
+
+func TestDecodeAboutPageSettingsNormalizesLegacyPayload(t *testing.T) {
+	t.Parallel()
+
+	raw := json.RawMessage(`{
+		"intro_cards":[{"title":" 当前主线 ","description":" 整理设置中心 "}],
+		"featured_projects":[{"name":" Starter Site Kit ","focus":" 模板 ","role":" 配置治理 ","metric":" 可安全开源 ","href":"github.com/yourname/miku-blog-starter"}],
+		"signature":{"description":" 让内容维护更顺畅。 ","footer":" 持续迭代中。 "}
+	}`)
+
+	got, err := decodeAboutPageSettings(raw)
+	if err != nil {
+		t.Fatalf("decodeAboutPageSettings() error = %v", err)
+	}
+
+	if len(got.IntroCards) != 1 || got.IntroCards[0].Title != "当前主线" {
+		t.Fatalf("unexpected intro cards: %+v", got.IntroCards)
+	}
+	if len(got.FeaturedProjects) != 1 || got.FeaturedProjects[0].Href != "https://github.com/yourname/miku-blog-starter" {
+		t.Fatalf("unexpected featured projects: %+v", got.FeaturedProjects)
+	}
+	if got.Signature.Description != "让内容维护更顺畅。" {
+		t.Fatalf("unexpected signature: %+v", got.Signature)
 	}
 }

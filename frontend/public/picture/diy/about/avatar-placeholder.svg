@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="avatar-title avatar-desc">
+  <title id="avatar-title">Avatar Placeholder</title>
+  <desc id="avatar-desc">Generic open-source avatar placeholder.</desc>
+  <defs>
+    <linearGradient id="avatar-bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ecfeff" />
+      <stop offset="0.52" stop-color="#d9f7f4" />
+      <stop offset="1" stop-color="#f5edff" />
+    </linearGradient>
+    <linearGradient id="avatar-ring" x1="56" y1="48" x2="208" y2="216" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#39c5bb" />
+      <stop offset="1" stop-color="#c084fc" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#avatar-bg)" />
+  <rect x="16" y="16" width="224" height="224" rx="44" fill="none" stroke="url(#avatar-ring)" stroke-width="8" />
+  <circle cx="128" cy="98" r="40" fill="#ffffff" fill-opacity="0.88" />
+  <path d="M68 202c10-33 34-54 60-54s50 21 60 54" fill="#ffffff" fill-opacity="0.88" />
+  <circle cx="196" cy="64" r="14" fill="#39c5bb" fill-opacity="0.2" />
+  <circle cx="62" cy="188" r="18" fill="#c084fc" fill-opacity="0.16" />
+</svg>

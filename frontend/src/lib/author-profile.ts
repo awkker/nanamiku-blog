@@ -1,9 +1,11 @@
 import { siteCopy } from '../content/copy'
+import { DEFAULT_PUBLIC_AUTHOR_AVATAR_URL, DEFAULT_PUBLIC_AVATAR_URL } from './default-assets'
 
 const MAX_SKILLS = 8
 const MAX_NOW_ITEMS = 8
 const MAX_SOCIAL_LINKS = 6
 const MAX_CONTACT_LINKS = 6
+const LOCAL_ASSET_FILE_RE = /\.(avif|gif|jpe?g|png|svg|webp)$/i
 
 export interface AuthorSocialLink {
   label: string
@@ -63,8 +65,40 @@ function normalizeAssetURL(input: unknown): string {
   const trimmed = trimText(input)
   if (!trimmed) return ''
   if (trimmed.startsWith('/')) return trimmed
+  if (trimmed.startsWith('./') || trimmed.startsWith('../')) {
+    return `/${trimmed.replace(/^(\.\.\/|\.\/)+/, '').replace(/^\/+/, '')}`
+  }
+  if (looksLikeLocalAssetPath(trimmed)) {
+    return `/${trimmed.replace(/^\/+/, '')}`
+  }
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed
   return `https://${trimmed.replace(/^\/+/, '')}`
+}
+
+function looksLikeLocalAssetPath(input: string): boolean {
+  if (!input.includes('/') || !LOCAL_ASSET_FILE_RE.test(input)) {
+    return false
+  }
+
+  const [head] = input.split('/')
+  return Boolean(head) && !head.includes('.')
+}
+
+function normalizeAuthorAvatarURL(input: unknown): string {
+  const normalized = normalizeAssetURL(input)
+  if (/^https?:\/\/picture\//.test(normalized) && LOCAL_ASSET_FILE_RE.test(normalized)) {
+    return normalized.replace(/^https?:\/\/picture\//, '/picture/')
+  }
+  return normalized
+}
+
+export function resolveAuthorAvatarURL(input: unknown): string {
+  return normalizeAuthorAvatarURL(input) || DEFAULT_PUBLIC_AUTHOR_AVATAR_URL
+}
+
+export function getAuthorAvatarFallbackChain(input: unknown): string[] {
+  return [normalizeAuthorAvatarURL(input), DEFAULT_PUBLIC_AUTHOR_AVATAR_URL, DEFAULT_PUBLIC_AVATAR_URL]
+    .filter((item, index, list): item is string => Boolean(item) && list.indexOf(item) === index)
 }
 
 function normalizePublicLink(input: unknown): string {
@@ -150,13 +184,58 @@ function deriveSocialIconKey(label: string): string {
 
 function defaultContactEmail() {
   const fromHref = trimText(siteCopy.aboutPage.contactSection.emailHref).replace(/^mailto:/i, '')
-  return fromHref.split('?')[0] || 'chw0536@126.com'
+  return fromHref.split('?')[0] || ''
+}
+
+export function extractGitHubUsernameFromURL(input: string): string {
+  const href = trimText(input)
+  if (!href) {
+    return ''
+  }
+
+  try {
+    const url = new URL(href.startsWith('http://') || href.startsWith('https://') ? href : `https://${href}`)
+    if (!/(^|\.)github\.com$/i.test(url.hostname)) {
+      return ''
+    }
+
+    const [username] = url.pathname
+      .split('/')
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+
+    return username || ''
+  } catch {
+    return ''
+  }
+}
+
+export function resolveGitHubUsername(preferred: string, socialLinks: AuthorSocialLink[]): string {
+  const direct = trimText(preferred)
+  if (direct) {
+    return direct
+  }
+
+  for (const link of socialLinks) {
+    const iconKey = trimText(link.iconKey).toLowerCase()
+    const label = trimText(link.label).toLowerCase()
+    if (iconKey !== 'github' && !label.includes('github')) {
+      continue
+    }
+
+    const derived = extractGitHubUsernameFromURL(link.href)
+    if (derived) {
+      return derived
+    }
+  }
+
+  return ''
 }
 
 export function getDefaultAuthorProfileSettings(): AuthorProfileSettings {
   return {
     displayName: trimText(siteCopy.blogIndex.authorCard.name) || trimText(siteCopy.aboutPage.profileCard.name),
-    avatarUrl: '/picture/author.jpg',
+    avatarUrl: resolveAuthorAvatarURL(''),
     role: trimText(siteCopy.blogIndex.authorCard.role) || trimText(siteCopy.aboutPage.profileCard.role),
     bio: trimText(siteCopy.blogIndex.authorCard.bio),
     aboutDescription: trimText(siteCopy.aboutPage.heroDescription),
@@ -189,7 +268,7 @@ export function normalizeAuthorProfileSettings(input: unknown): AuthorProfileSet
 
   return {
     displayName: trimText(source.displayName ?? source.display_name) || defaults.displayName,
-    avatarUrl: normalizeAssetURL(source.avatarUrl ?? source.avatar_url) || defaults.avatarUrl,
+    avatarUrl: resolveAuthorAvatarURL(source.avatarUrl ?? source.avatar_url),
     role: trimText(source.role) || defaults.role,
     bio: trimText(source.bio) || defaults.bio,
     aboutDescription: trimText(source.aboutDescription ?? source.about_description) || defaults.aboutDescription,

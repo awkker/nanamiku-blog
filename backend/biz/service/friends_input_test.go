@@ -7,25 +7,25 @@ import (
 
 func TestNormalizeFriendLinkInput(t *testing.T) {
 	result, err := normalizeFriendLinkInput(FriendLinkInput{
-		Name:        "  NanaMiku Blog  ",
-		Description: "  在代码与日常之间写一点温柔的记录。  ",
-		URL:         "nanamiku.blog",
+		Name:        "  Miku Blog Starter  ",
+		Description: "  一个可继续 DIY 的亮色博客模板。  ",
+		URL:         "example.com",
 		AvatarURL:   "https://cdn.example.com/avatar.png",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if result.Name != "NanaMiku Blog" {
+	if result.Name != "Miku Blog Starter" {
 		t.Fatalf("unexpected name: %q", result.Name)
 	}
-	if result.Description != "在代码与日常之间写一点温柔的记录。" {
+	if result.Description != "一个可继续 DIY 的亮色博客模板。" {
 		t.Fatalf("unexpected description: %q", result.Description)
 	}
-	if result.URL != "https://nanamiku.blog" {
+	if result.URL != "https://example.com" {
 		t.Fatalf("unexpected url: %q", result.URL)
 	}
-	if result.Domain != "nanamiku.blog" {
+	if result.Domain != "example.com" {
 		t.Fatalf("unexpected domain: %q", result.Domain)
 	}
 	if result.AvatarURL != "https://cdn.example.com/avatar.png" {

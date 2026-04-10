@@ -12,11 +12,19 @@
 
 ## 1. Fallback 规则
 
-后台设置中心统一遵守以下回退顺序：
+后台设置中心统一遵守以下回退规则：
+
+初始化顺序：
 
 1. 前端 `copy/` 中的静态默认值
 2. 对应 Nano Stores 的本地缓存值
 3. 后端 `site_settings` 实时配置
+
+运行时最终优先级：
+
+1. 后端 `site_settings` 实时配置
+2. 对应 Nano Stores 的本地缓存值
+3. 前端 `copy/` 中的静态默认值
 
 具体约束：
 
@@ -34,6 +42,7 @@
 | `home_hero` | 首页首屏标题与副标题 | `/admin/settings?section=home-hero` | 首页 Hero 文案与打字机副标题 | `frontend/src/content/copy/site.ts` + 本地缓存 |
 | `home_assets` | 首页视觉资源 | `/admin/settings?section=home-assets` | 首页背景图与换图逻辑 | `frontend/src/content/copy/site.ts` + 本地缓存 |
 | `author_profile` | 作者展示资料 | `/admin/settings?section=author-profile` | Blog 侧栏、About 首屏、About 联系区 | `frontend/src/content/copy/site.ts` + Store fallback |
+| `about_page` | About 中段个性化内容 | `/admin/settings?section=about-page` | About 补充卡片、时间线、能力分组、主推项目、目标与签名 | `frontend/src/content/copy/site.ts` + 本地缓存 |
 | `site_integrations` | GitHub、天气与首页组件开关 | `/admin/settings?section=site-integrations` | About GitHub、首页天气/音乐/时钟、后台依赖状态 | `frontend/src/content/copy/site.ts` + Store fallback |
 
 ## 3. 前端 Store 对照
@@ -45,6 +54,7 @@
 | `frontend/src/stores/homeHero.ts` | `home_hero` | 负责首页首屏文案与本地缓存 |
 | `frontend/src/stores/homeAssets.ts` | `home_assets` | 负责首页背景资源与本地缓存 |
 | `frontend/src/stores/authorProfile.ts` | `author_profile` | 负责作者展示身份资料 |
+| `frontend/src/stores/aboutPage.ts` | `about_page` | 负责 About 中段高 DIY 内容与本地缓存 |
 | `frontend/src/stores/siteIntegrations.ts` | `site_integrations` | 负责外部依赖配置与首页顶部组件开关 |
 
 ## 4. 旧入口清理结果
@@ -82,6 +92,7 @@
 
 - 首页门面内容
 - 作者公开展示资料
+- About 页中段高 DIY 内容
 - 页尾备案与运营说明
 - GitHub 用户名、天气地点
 - 首页顶部组件开关

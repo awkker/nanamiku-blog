@@ -1,6 +1,7 @@
 import { atom, computed } from 'nanostores'
 
 import { api, ApiError } from '../lib/api'
+import { DEFAULT_PUBLIC_AVATAR_URL } from '../lib/default-assets'
 import {
   emitAuthStateChanged,
   ensureSessionUser,
@@ -42,7 +43,7 @@ export interface AccountUpdateResult {
 }
 
 function normalizeAvatarURL(url?: string): string {
-  return (url || '').trim() || '/picture/author.jpg'
+  return (url || '').trim() || DEFAULT_PUBLIC_AVATAR_URL
 }
 
 function toAuthUser(me: MeResponse): AuthUser {

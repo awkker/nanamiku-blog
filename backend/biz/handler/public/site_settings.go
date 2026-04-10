@@ -22,6 +22,7 @@ type siteSettingsService interface {
 	GetHomeAssetsSettings(ctx context.Context) (*service.HomeAssetsSettings, error)
 	GetAuthorProfileSettings(ctx context.Context) (*service.AuthorProfileSettings, error)
 	GetSiteIntegrationsSettings(ctx context.Context) (*service.SiteIntegrationsSettings, error)
+	GetAboutPageSettings(ctx context.Context) (*service.AboutPageSettings, error)
 }
 
 func NewSiteSettingsHandler(svc siteSettingsService) *SiteSettingsHandler {
@@ -82,6 +83,16 @@ func (h *SiteSettingsHandler) GetSiteIntegrations(ctx context.Context, c *app.Re
 	settings, err := h.svc.GetSiteIntegrationsSettings(ctx)
 	if err != nil {
 		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to get site integrations settings"))
+		return
+	}
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}
+
+func (h *SiteSettingsHandler) GetAboutPage(ctx context.Context, c *app.RequestContext) {
+	settings, err := h.svc.GetAboutPageSettings(ctx)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to get about page settings"))
 		return
 	}
 

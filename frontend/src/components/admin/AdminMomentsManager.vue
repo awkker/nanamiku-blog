@@ -264,6 +264,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { api, ApiError, type PagedData } from '../../lib/api'
+import { DEFAULT_PUBLIC_AVATAR_URL } from '../../lib/default-assets'
 import { adminCopy } from '../../content/copy'
 import { showToast } from '../../stores/ui'
 import AdminPlainCard from '../ui/AdminPlainCard.vue'
@@ -324,7 +325,7 @@ function mapMoment(item: ApiMoment): MomentItem {
   return {
     id: item.id,
     author: item.author_name,
-    authorAvatar: item.author_avatar_url || '/picture/author.jpg',
+    authorAvatar: item.author_avatar_url || DEFAULT_PUBLIC_AVATAR_URL,
     content: item.content,
     images: item.image_urls || [],
     likes: Number(item.like_count) || 0,

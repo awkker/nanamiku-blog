@@ -67,12 +67,12 @@
                   </svg>
                 </div>
                 <img
-                  :src="settings.avatarUrl"
+                  :src="displayAvatarUrl"
                   :alt="copy.profileCard.avatarAlt"
                   class="h-14 w-14 rounded-xl border border-slate-200 object-cover transition-opacity duration-300"
                   :class="avatarReady ? 'opacity-100' : 'opacity-0'"
-                  @load="avatarReady = true"
-                  @error="avatarReady = true"
+                  @load="handleAvatarLoaded"
+                  @error="handleAvatarError"
                 />
               </div>
               <div>
@@ -112,6 +112,7 @@ import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { siteCopy } from '../../content/copy'
+import { getAuthorAvatarFallbackChain } from '../../lib/author-profile'
 import {
   authorProfileSettings,
   hydrateAuthorProfileSettings,
@@ -139,26 +140,54 @@ const heroActionClasses = [
 const authorStore = useStore(authorProfileSettings)
 const integrationsStore = useStore(siteIntegrationsSettings)
 const avatarReady = ref(false)
+const avatarFallbackIndex = ref(0)
 
 const settings = computed(() => authorStore.value)
 const postCount = computed(() => props.postCount)
 const heroTitle = computed(() => settings.value.displayName ? `我是 ${settings.value.displayName}` : copy.heroTitle)
 const aboutDescription = computed(() => settings.value.aboutDescription || copy.heroDescription)
 const identityTags = computed(() => settings.value.skills.length > 0 ? settings.value.skills : copy.identityTags)
-const githubUsername = computed(() => integrationsStore.value.githubUsername || '')
-const contactEmail = computed(() => settings.value.contactEmail || 'chw0536@126.com')
-const heroActions = computed(() => ([
-  copy.heroActions[0],
-  copy.heroActions[1],
-  {
-    ...copy.heroActions[2],
-    href: `mailto:${contactEmail.value}?subject=${encodeURIComponent('来自博客的联系')}`,
-  },
-]))
+const githubUsername = computed(() => (integrationsStore.value.githubUsername || '').trim())
+const contactEmail = computed(() => (settings.value.contactEmail || '').trim())
+const heroActions = computed(() => {
+  const actions = [
+    copy.heroActions[0],
+    copy.heroActions[1],
+  ]
 
-watch(() => settings.value.avatarUrl, () => {
+  if (contactEmail.value) {
+    actions.push({
+      ...copy.heroActions[2],
+      href: `mailto:${contactEmail.value}?subject=${encodeURIComponent('来自博客的联系')}`,
+    })
+  }
+
+  return actions
+})
+
+const avatarSources = computed(() => getAuthorAvatarFallbackChain(settings.value.avatarUrl))
+const displayAvatarUrl = computed(() => {
+  return avatarSources.value[avatarFallbackIndex.value] || avatarSources.value[0] || ''
+})
+
+watch(() => avatarSources.value.join('||'), () => {
   avatarReady.value = false
+  avatarFallbackIndex.value = 0
 }, { immediate: true })
+
+function handleAvatarLoaded() {
+  avatarReady.value = true
+}
+
+function handleAvatarError() {
+  if (avatarFallbackIndex.value < avatarSources.value.length - 1) {
+    avatarFallbackIndex.value += 1
+    avatarReady.value = false
+    return
+  }
+
+  avatarReady.value = true
+}
 
 onMounted(() => {
   void Promise.all([

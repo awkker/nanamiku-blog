@@ -17,12 +17,12 @@
                 </svg>
               </div>
               <img
-                :src="settings.avatarUrl"
+                :src="displayAvatarUrl"
                 :alt="copy.authorCard.avatarAlt"
                 class="h-full w-full rounded-full object-cover transition-[opacity,transform] duration-700 hover:rotate-[360deg]"
                 :class="avatarReady ? 'opacity-100' : 'opacity-0'"
-                @load="avatarReady = true"
-                @error="avatarReady = true"
+                @load="handleAvatarLoaded"
+                @error="handleAvatarError"
               />
             </div>
           </div>
@@ -105,6 +105,7 @@ import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { siteCopy } from '../../content/copy'
+import { getAuthorAvatarFallbackChain } from '../../lib/author-profile'
 import {
   authorProfileSettings,
   hydrateAuthorProfileSettings,
@@ -115,10 +116,10 @@ import LiquidGlassCard from '../ui/LiquidGlassCard.vue'
 const copy = siteCopy.blogIndex
 const store = useStore(authorProfileSettings)
 const avatarReady = ref(false)
+const avatarFallbackIndex = ref(0)
 
 const settings = computed(() => ({
   displayName: store.value.displayName,
-  avatarUrl: store.value.avatarUrl,
   role: store.value.role,
   bio: store.value.bio,
   location: store.value.location,
@@ -128,9 +129,29 @@ const settings = computed(() => ({
   nowItems: store.value.nowItems,
 }))
 
-watch(() => settings.value.avatarUrl, () => {
+const avatarSources = computed(() => getAuthorAvatarFallbackChain(store.value.avatarUrl))
+const displayAvatarUrl = computed(() => {
+  return avatarSources.value[avatarFallbackIndex.value] || avatarSources.value[0] || ''
+})
+
+watch(() => avatarSources.value.join('||'), () => {
   avatarReady.value = false
+  avatarFallbackIndex.value = 0
 }, { immediate: true })
+
+function handleAvatarLoaded() {
+  avatarReady.value = true
+}
+
+function handleAvatarError() {
+  if (avatarFallbackIndex.value < avatarSources.value.length - 1) {
+    avatarFallbackIndex.value += 1
+    avatarReady.value = false
+    return
+  }
+
+  avatarReady.value = true
+}
 
 function iconPath(iconKey: string) {
   const normalized = (iconKey || '').trim().toLowerCase()

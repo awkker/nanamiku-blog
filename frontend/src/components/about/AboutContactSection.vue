@@ -7,6 +7,7 @@
       </div>
       <div class="flex flex-wrap gap-2">
         <a
+          v-if="emailHref"
           :href="emailHref"
           class="inline-flex items-center rounded-xl border border-miku/40 bg-miku-soft px-4 py-2 text-sm font-semibold text-miku transition hover:border-miku/60"
         >
@@ -41,6 +42,7 @@ import { useStore } from '@nanostores/vue'
 import { computed, onMounted } from 'vue'
 
 import { siteCopy } from '../../content/copy'
+import { resolveGitHubUsername } from '../../lib/author-profile'
 import {
   authorProfileSettings,
   hydrateAuthorProfileSettings,
@@ -61,7 +63,7 @@ const emailHref = computed(() => {
 })
 
 const githubHref = computed(() => {
-  const username = (integrationsStore.value.githubUsername || '').trim()
+  const username = resolveGitHubUsername(integrationsStore.value.githubUsername, authorStore.value.socialLinks)
   return username ? `https://github.com/${username}` : ''
 })
 
