@@ -57,7 +57,6 @@ export const adminCopy = {
     },
     hero: {
       consoleLabel: 'Miku Blog Console',
-      avatarAlt: '管理员头像',
       title: '欢迎回来',
       subtitle: '仅管理员可访问后台系统',
     },

@@ -1,6 +1,7 @@
 ---
 import BaseHead from '../components/base/BaseHead.astro'
 import LoginForm from '../components/auth/LoginForm.vue'
+import LoginOrbitScene from '../components/auth/LoginOrbitScene.vue'
 import BackToTopRocket from '../components/ui/BackToTopRocket.astro'
 import { adminCopy } from '../content/copy'
 
@@ -36,12 +37,25 @@ const copy = adminCopy.loginForm
       })();
     </script>
   </head>
-  <body class="min-h-screen text-slate-900">
-    <main class="relative min-h-screen overflow-hidden px-4 py-10">
-      <div class="absolute inset-0 bg-[url('/picture/ui.png')] bg-cover bg-center bg-no-repeat" />
+  <body class="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f2fffc_48%,#faf7ff_100%)] text-slate-900">
+    <main class="relative min-h-screen overflow-hidden">
+      <div
+        class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(57,197,187,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(192,132,252,0.16),transparent_26%)]"
+      />
+      <div
+        class="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.10)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.10)_1px,transparent_1px)] bg-[size:84px_84px] opacity-45"
+      />
+      <div class="absolute left-[-12rem] top-[-8rem] h-[26rem] w-[26rem] rounded-full bg-miku/12 blur-3xl" />
+      <div class="absolute bottom-[-12rem] right-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[#c084fc]/14 blur-3xl" />
 
-      <div class="relative z-10 flex min-h-screen items-center justify-center">
-        <LoginForm client:load />
+      <div class="relative z-10 mx-auto flex min-h-screen w-full max-w-[1600px] items-center px-4 py-6 sm:px-6 lg:px-10">
+        <div class="grid w-full items-center gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(380px,480px)]">
+          <LoginOrbitScene client:load />
+
+          <div class="flex items-center justify-center lg:py-8">
+            <LoginForm client:load />
+          </div>
+        </div>
       </div>
     </main>
     <BackToTopRocket threshold={220} />
