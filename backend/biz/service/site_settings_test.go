@@ -111,6 +111,47 @@ func TestNormalizeHomeAssetsSettings(t *testing.T) {
 	}
 }
 
+func TestNormalizeBlogIndexSettings(t *testing.T) {
+	t.Parallel()
+
+	got := normalizeBlogIndexSettings(BlogIndexSettings{
+		HeroBadge:       " CREATOR SPACE ",
+		HeroTitle:       " NanaMiku Blog ",
+		HeroDescription: " 展示博客模板的首屏内容。 ",
+		HeroActions: []BlogIndexHeroAction{
+			{Label: " 看最新文章 ", Href: " #latest-posts "},
+			{Label: " 看最新文章 ", Href: " #latest-posts "},
+			{Label: "", Href: "/blog"},
+		},
+		QuickStats: []BlogIndexQuickStat{
+			{Label: " 模板栈 ", Value: " Astro + Vue + Go "},
+			{Label: " 模板栈 ", Value: " Astro + Vue + Go "},
+		},
+		FocusCard: BlogIndexFocusCard{
+			Badge:       " 本月在做什么 ",
+			Title:       " 打磨创作者模板 ",
+			Description: " 继续收口默认配置。 ",
+			Footnote:    " 文章来自后台管理面板发布 ",
+		},
+		ScrollCue: BlogIndexScrollCue{
+			Label: " 向下阅读 ",
+		},
+	})
+
+	if got.HeroBadge != "CREATOR SPACE" || got.HeroTitle != "NanaMiku Blog" {
+		t.Fatalf("unexpected hero fields: %+v", got)
+	}
+	if len(got.HeroActions) != 1 || got.HeroActions[0].Href != "#latest-posts" {
+		t.Fatalf("unexpected hero actions: %+v", got.HeroActions)
+	}
+	if len(got.QuickStats) != 1 || got.QuickStats[0].Value != "Astro + Vue + Go" {
+		t.Fatalf("unexpected quick stats: %+v", got.QuickStats)
+	}
+	if got.ScrollCue.AriaLabel != "向下阅读" {
+		t.Fatalf("unexpected scroll cue: %+v", got.ScrollCue)
+	}
+}
+
 func TestNormalizeAuthorProfileSettings(t *testing.T) {
 	t.Parallel()
 
@@ -341,6 +382,35 @@ func TestDecodeAuthorProfileSettingsFixesMalformedLocalAvatar(t *testing.T) {
 
 	if got.AvatarURL != "/picture/author.jpg" {
 		t.Fatalf("unexpected avatar url: %q", got.AvatarURL)
+	}
+}
+
+func TestDecodeBlogIndexSettingsNormalizesPayload(t *testing.T) {
+	t.Parallel()
+
+	raw := json.RawMessage(`{
+		"hero_badge":" CREATOR SPACE ",
+		"hero_title":" NanaMiku Blog ",
+		"hero_description":" 展示博客模板的首屏内容。 ",
+		"hero_actions":[{"label":" 看最新文章 ","href":" /blog "}],
+		"quick_stats":[{"label":" 默认主线 ","value":" 公开资料收口与可配置化 "}],
+		"focus_card":{"badge":" 本月在做什么 ","title":" 打磨创作者模板 ","description":" 继续收口默认配置。 ","footnote":" 文章来自后台管理面板发布 "},
+		"scroll_cue":{"label":" 向下阅读 "}
+	}`)
+
+	got, err := decodeBlogIndexSettings(raw)
+	if err != nil {
+		t.Fatalf("decodeBlogIndexSettings() error = %v", err)
+	}
+
+	if got.HeroTitle != "NanaMiku Blog" {
+		t.Fatalf("unexpected hero title: %q", got.HeroTitle)
+	}
+	if len(got.HeroActions) != 1 || got.HeroActions[0].Href != "/blog" {
+		t.Fatalf("unexpected hero actions: %+v", got.HeroActions)
+	}
+	if got.ScrollCue.AriaLabel != "向下阅读" {
+		t.Fatalf("unexpected scroll cue: %+v", got.ScrollCue)
 	}
 }
 

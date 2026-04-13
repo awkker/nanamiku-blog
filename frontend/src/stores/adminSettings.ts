@@ -4,6 +4,7 @@ export type AdminSettingsSectionKey =
   | 'site-profile'
   | 'home-hero'
   | 'home-assets'
+  | 'blog-index'
   | 'author-profile'
   | 'site-integrations'
   | 'site-footer'
@@ -13,6 +14,7 @@ export const adminSettingsSectionKeys: AdminSettingsSectionKey[] = [
   'site-profile',
   'home-hero',
   'home-assets',
+  'blog-index',
   'author-profile',
   'site-integrations',
   'site-footer',

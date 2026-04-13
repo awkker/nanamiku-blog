@@ -20,6 +20,7 @@ type siteSettingsService interface {
 	GetSiteProfileSettings(ctx context.Context) (*service.SiteProfileSettings, error)
 	GetHomeHeroSettings(ctx context.Context) (*service.HomeHeroSettings, error)
 	GetHomeAssetsSettings(ctx context.Context) (*service.HomeAssetsSettings, error)
+	GetBlogIndexSettings(ctx context.Context) (*service.BlogIndexSettings, error)
 	GetAuthorProfileSettings(ctx context.Context) (*service.AuthorProfileSettings, error)
 	GetSiteIntegrationsSettings(ctx context.Context) (*service.SiteIntegrationsSettings, error)
 }
@@ -62,6 +63,16 @@ func (h *SiteSettingsHandler) GetHomeAssets(ctx context.Context, c *app.RequestC
 	settings, err := h.svc.GetHomeAssetsSettings(ctx)
 	if err != nil {
 		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to get home assets settings"))
+		return
+	}
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}
+
+func (h *SiteSettingsHandler) GetBlogIndex(ctx context.Context, c *app.RequestContext) {
+	settings, err := h.svc.GetBlogIndexSettings(ctx)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to get blog index settings"))
 		return
 	}
 

@@ -21,10 +21,13 @@ const (
 	siteSettingsSiteProfileKey  = "site_profile"
 	siteSettingsHomeHeroKey     = "home_hero"
 	siteSettingsHomeAssetsKey   = "home_assets"
+	siteSettingsBlogIndexKey    = "blog_index"
 	siteSettingsAuthorKey       = "author_profile"
 	siteSettingsIntegrationsKey = "site_integrations"
 	maxFooterCustomTexts        = 8
 	maxHomeAssetImages          = 8
+	maxBlogIndexActions         = 3
+	maxBlogIndexStats           = 3
 	maxAuthorSkills             = 8
 	maxAuthorNowItems           = 8
 	maxAuthorSocialLinks        = 6
@@ -85,6 +88,48 @@ type HomeAssetsSettings struct {
 
 type homeAssetsSettingsDoc struct {
 	HeroImages []string `json:"hero_images"`
+}
+
+type BlogIndexHeroAction struct {
+	Label string `json:"label"`
+	Href  string `json:"href"`
+}
+
+type BlogIndexQuickStat struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+}
+
+type BlogIndexFocusCard struct {
+	Badge       string `json:"badge"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Footnote    string `json:"footnote"`
+}
+
+type BlogIndexScrollCue struct {
+	Label     string `json:"label"`
+	AriaLabel string `json:"aria_label"`
+}
+
+type BlogIndexSettings struct {
+	HeroBadge       string                `json:"hero_badge"`
+	HeroTitle       string                `json:"hero_title"`
+	HeroDescription string                `json:"hero_description"`
+	HeroActions     []BlogIndexHeroAction `json:"hero_actions"`
+	QuickStats      []BlogIndexQuickStat  `json:"quick_stats"`
+	FocusCard       BlogIndexFocusCard    `json:"focus_card"`
+	ScrollCue       BlogIndexScrollCue    `json:"scroll_cue"`
+}
+
+type blogIndexSettingsDoc struct {
+	HeroBadge       string                `json:"hero_badge"`
+	HeroTitle       string                `json:"hero_title"`
+	HeroDescription string                `json:"hero_description"`
+	HeroActions     []BlogIndexHeroAction `json:"hero_actions"`
+	QuickStats      []BlogIndexQuickStat  `json:"quick_stats"`
+	FocusCard       BlogIndexFocusCard    `json:"focus_card"`
+	ScrollCue       BlogIndexScrollCue    `json:"scroll_cue"`
 }
 
 type AuthorSocialLink struct {
@@ -319,6 +364,55 @@ func (s *SiteSettingsService) SaveHomeAssetsSettings(ctx context.Context, input 
 	return settings, nil
 }
 
+func (s *SiteSettingsService) GetBlogIndexSettings(ctx context.Context) (*BlogIndexSettings, error) {
+	row, err := s.q.GetSiteSetting(ctx, siteSettingsBlogIndexKey)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get blog index settings: %w", err)
+	}
+
+	settings, err := decodeBlogIndexSettings(row.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode blog index settings: %w", err)
+	}
+
+	return settings, nil
+}
+
+func (s *SiteSettingsService) SaveBlogIndexSettings(ctx context.Context, input BlogIndexSettings, adminID uuid.UUID) (*BlogIndexSettings, error) {
+	normalized := normalizeBlogIndexSettings(input)
+	payload, err := json.Marshal(blogIndexSettingsDoc{
+		HeroBadge:       normalized.HeroBadge,
+		HeroTitle:       normalized.HeroTitle,
+		HeroDescription: normalized.HeroDescription,
+		HeroActions:     normalized.HeroActions,
+		QuickStats:      normalized.QuickStats,
+		FocusCard:       normalized.FocusCard,
+		ScrollCue:       normalized.ScrollCue,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal blog index settings: %w", err)
+	}
+
+	row, err := s.q.UpsertSiteSetting(ctx, query.UpsertSiteSettingParams{
+		Key:       siteSettingsBlogIndexKey,
+		Value:     payload,
+		UpdatedBy: pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("save blog index settings: %w", err)
+	}
+
+	settings, err := decodeBlogIndexSettings(row.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode saved blog index settings: %w", err)
+	}
+
+	return settings, nil
+}
+
 func (s *SiteSettingsService) GetAuthorProfileSettings(ctx context.Context) (*AuthorProfileSettings, error) {
 	row, err := s.q.GetSiteSetting(ctx, siteSettingsAuthorKey)
 	if err != nil {
@@ -496,6 +590,32 @@ func decodeHomeAssetsSettings(raw json.RawMessage) (*HomeAssetsSettings, error) 
 	return &normalized, nil
 }
 
+func decodeBlogIndexSettings(raw json.RawMessage) (*BlogIndexSettings, error) {
+	if len(raw) == 0 {
+		return &BlogIndexSettings{
+			HeroActions: []BlogIndexHeroAction{},
+			QuickStats:  []BlogIndexQuickStat{},
+		}, nil
+	}
+
+	var doc blogIndexSettingsDoc
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+
+	normalized := normalizeBlogIndexSettings(BlogIndexSettings{
+		HeroBadge:       doc.HeroBadge,
+		HeroTitle:       doc.HeroTitle,
+		HeroDescription: doc.HeroDescription,
+		HeroActions:     doc.HeroActions,
+		QuickStats:      doc.QuickStats,
+		FocusCard:       doc.FocusCard,
+		ScrollCue:       doc.ScrollCue,
+	})
+
+	return &normalized, nil
+}
+
 func decodeAuthorProfileSettings(raw json.RawMessage) (*AuthorProfileSettings, error) {
 	if len(raw) == 0 {
 		return &AuthorProfileSettings{
@@ -589,6 +709,32 @@ func normalizeHomeHeroSettings(input HomeHeroSettings) HomeHeroSettings {
 func normalizeHomeAssetsSettings(input HomeAssetsSettings) HomeAssetsSettings {
 	return HomeAssetsSettings{
 		HeroImages: sanitizeHomeAssetImages(input.HeroImages),
+	}
+}
+
+func normalizeBlogIndexSettings(input BlogIndexSettings) BlogIndexSettings {
+	scrollCueLabel := strings.TrimSpace(input.ScrollCue.Label)
+	scrollCueAriaLabel := strings.TrimSpace(input.ScrollCue.AriaLabel)
+	if scrollCueAriaLabel == "" {
+		scrollCueAriaLabel = scrollCueLabel
+	}
+
+	return BlogIndexSettings{
+		HeroBadge:       strings.TrimSpace(input.HeroBadge),
+		HeroTitle:       strings.TrimSpace(input.HeroTitle),
+		HeroDescription: strings.TrimSpace(input.HeroDescription),
+		HeroActions:     sanitizeBlogIndexActions(input.HeroActions),
+		QuickStats:      sanitizeBlogIndexStats(input.QuickStats),
+		FocusCard: BlogIndexFocusCard{
+			Badge:       strings.TrimSpace(input.FocusCard.Badge),
+			Title:       strings.TrimSpace(input.FocusCard.Title),
+			Description: strings.TrimSpace(input.FocusCard.Description),
+			Footnote:    strings.TrimSpace(input.FocusCard.Footnote),
+		},
+		ScrollCue: BlogIndexScrollCue{
+			Label:     scrollCueLabel,
+			AriaLabel: scrollCueAriaLabel,
+		},
 	}
 }
 
@@ -752,6 +898,70 @@ func sanitizeHomeAssetImages(images []string) []string {
 	return result
 }
 
+func sanitizeBlogIndexActions(items []BlogIndexHeroAction) []BlogIndexHeroAction {
+	if len(items) == 0 {
+		return []BlogIndexHeroAction{}
+	}
+
+	result := make([]BlogIndexHeroAction, 0, min(len(items), maxBlogIndexActions))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		label := strings.TrimSpace(item.Label)
+		href := normalizePublicLink(item.Href)
+		if label == "" || href == "" {
+			continue
+		}
+
+		key := label + "\n" + href
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		result = append(result, BlogIndexHeroAction{
+			Label: label,
+			Href:  href,
+		})
+		if len(result) >= maxBlogIndexActions {
+			break
+		}
+	}
+
+	return result
+}
+
+func sanitizeBlogIndexStats(items []BlogIndexQuickStat) []BlogIndexQuickStat {
+	if len(items) == 0 {
+		return []BlogIndexQuickStat{}
+	}
+
+	result := make([]BlogIndexQuickStat, 0, min(len(items), maxBlogIndexStats))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		label := strings.TrimSpace(item.Label)
+		value := strings.TrimSpace(item.Value)
+		if label == "" || value == "" {
+			continue
+		}
+
+		key := label + "\n" + value
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		result = append(result, BlogIndexQuickStat{
+			Label: label,
+			Value: value,
+		})
+		if len(result) >= maxBlogIndexStats {
+			break
+		}
+	}
+
+	return result
+}
+
 func sanitizeStringItems(items []string, limit int) []string {
 	if len(items) == 0 {
 		return []string{}
@@ -814,6 +1024,7 @@ func normalizePublicLink(raw string) string {
 	}
 
 	if strings.HasPrefix(trimmed, "/") ||
+		strings.HasPrefix(trimmed, "#") ||
 		strings.HasPrefix(trimmed, "http://") ||
 		strings.HasPrefix(trimmed, "https://") ||
 		strings.HasPrefix(trimmed, "mailto:") ||

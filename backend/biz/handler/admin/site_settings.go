@@ -22,6 +22,7 @@ type siteSettingsAdminService interface {
 	SaveSiteProfileSettings(ctx context.Context, input service.SiteProfileSettings, adminID uuid.UUID) (*service.SiteProfileSettings, error)
 	SaveHomeHeroSettings(ctx context.Context, input service.HomeHeroSettings, adminID uuid.UUID) (*service.HomeHeroSettings, error)
 	SaveHomeAssetsSettings(ctx context.Context, input service.HomeAssetsSettings, adminID uuid.UUID) (*service.HomeAssetsSettings, error)
+	SaveBlogIndexSettings(ctx context.Context, input service.BlogIndexSettings, adminID uuid.UUID) (*service.BlogIndexSettings, error)
 	SaveAuthorProfileSettings(ctx context.Context, input service.AuthorProfileSettings, adminID uuid.UUID) (*service.AuthorProfileSettings, error)
 	SaveSiteIntegrationsSettings(ctx context.Context, input service.SiteIntegrationsSettings, adminID uuid.UUID) (*service.SiteIntegrationsSettings, error)
 }
@@ -56,6 +57,38 @@ type updateHomeHeroSettingsReq struct {
 
 type updateHomeAssetsSettingsReq struct {
 	HeroImages []string `json:"hero_images"`
+}
+
+type updateBlogIndexActionReq struct {
+	Label string `json:"label"`
+	Href  string `json:"href"`
+}
+
+type updateBlogIndexStatReq struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+}
+
+type updateBlogIndexFocusCardReq struct {
+	Badge       string `json:"badge"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Footnote    string `json:"footnote"`
+}
+
+type updateBlogIndexScrollCueReq struct {
+	Label     string `json:"label"`
+	AriaLabel string `json:"aria_label"`
+}
+
+type updateBlogIndexSettingsReq struct {
+	HeroBadge       string                      `json:"hero_badge"`
+	HeroTitle       string                      `json:"hero_title"`
+	HeroDescription string                      `json:"hero_description"`
+	HeroActions     []updateBlogIndexActionReq  `json:"hero_actions"`
+	QuickStats      []updateBlogIndexStatReq    `json:"quick_stats"`
+	FocusCard       updateBlogIndexFocusCardReq `json:"focus_card"`
+	ScrollCue       updateBlogIndexScrollCueReq `json:"scroll_cue"`
 }
 
 type updateAuthorSocialLinkReq struct {
@@ -210,6 +243,67 @@ func (h *SiteSettingsAdminHandler) UpdateHomeAssets(ctx context.Context, c *app.
 	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "home_assets", map[string]interface{}{
 		"hero_image_count": len(settings.HeroImages),
 		"hero_images":      settings.HeroImages,
+	}, getClientIP(c))
+
+	c.JSON(consts.StatusOK, dto.OK(settings))
+}
+
+func (h *SiteSettingsAdminHandler) UpdateBlogIndex(ctx context.Context, c *app.RequestContext) {
+	adminID := getAdminID(c)
+	if adminID == uuid.Nil {
+		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
+		return
+	}
+
+	var req updateBlogIndexSettingsReq
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
+		return
+	}
+
+	heroActions := make([]service.BlogIndexHeroAction, 0, len(req.HeroActions))
+	for _, item := range req.HeroActions {
+		heroActions = append(heroActions, service.BlogIndexHeroAction{
+			Label: item.Label,
+			Href:  item.Href,
+		})
+	}
+
+	quickStats := make([]service.BlogIndexQuickStat, 0, len(req.QuickStats))
+	for _, item := range req.QuickStats {
+		quickStats = append(quickStats, service.BlogIndexQuickStat{
+			Label: item.Label,
+			Value: item.Value,
+		})
+	}
+
+	settings, err := h.svc.SaveBlogIndexSettings(ctx, service.BlogIndexSettings{
+		HeroBadge:       req.HeroBadge,
+		HeroTitle:       req.HeroTitle,
+		HeroDescription: req.HeroDescription,
+		HeroActions:     heroActions,
+		QuickStats:      quickStats,
+		FocusCard: service.BlogIndexFocusCard{
+			Badge:       req.FocusCard.Badge,
+			Title:       req.FocusCard.Title,
+			Description: req.FocusCard.Description,
+			Footnote:    req.FocusCard.Footnote,
+		},
+		ScrollCue: service.BlogIndexScrollCue{
+			Label:     req.ScrollCue.Label,
+			AriaLabel: req.ScrollCue.AriaLabel,
+		},
+	}, adminID)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to save blog index settings"))
+		return
+	}
+
+	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "blog_index", map[string]interface{}{
+		"hero_title":         settings.HeroTitle,
+		"hero_actions_count": len(settings.HeroActions),
+		"quick_stats_count":  len(settings.QuickStats),
+		"focus_title":        settings.FocusCard.Title,
 	}, getClientIP(c))
 
 	c.JSON(consts.StatusOK, dto.OK(settings))

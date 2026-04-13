@@ -297,6 +297,7 @@ const settingsMenuGroups = computed(() => ([
       { key: 'site-profile' as AdminSettingsSectionKey, label: settingsCopy.sections.siteProfile.title, href: '/admin/settings?section=site-profile' },
       { key: 'home-hero' as AdminSettingsSectionKey, label: settingsCopy.sections.homeHero.title, href: '/admin/settings?section=home-hero' },
       { key: 'home-assets' as AdminSettingsSectionKey, label: settingsCopy.sections.homeAssets.title, href: '/admin/settings?section=home-assets' },
+      { key: 'blog-index' as AdminSettingsSectionKey, label: settingsCopy.sections.blogIndex.title, href: '/admin/settings?section=blog-index' },
     ],
   },
   {

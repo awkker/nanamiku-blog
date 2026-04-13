@@ -18,6 +18,7 @@ type stubSiteSettingsAdminService struct {
 	saveSiteProfile      func(context.Context, service.SiteProfileSettings, uuid.UUID) (*service.SiteProfileSettings, error)
 	saveHomeHero         func(context.Context, service.HomeHeroSettings, uuid.UUID) (*service.HomeHeroSettings, error)
 	saveHomeAssets       func(context.Context, service.HomeAssetsSettings, uuid.UUID) (*service.HomeAssetsSettings, error)
+	saveBlogIndex        func(context.Context, service.BlogIndexSettings, uuid.UUID) (*service.BlogIndexSettings, error)
 	saveAuthorProfile    func(context.Context, service.AuthorProfileSettings, uuid.UUID) (*service.AuthorProfileSettings, error)
 	saveSiteIntegrations func(context.Context, service.SiteIntegrationsSettings, uuid.UUID) (*service.SiteIntegrationsSettings, error)
 }
@@ -48,6 +49,13 @@ func (s *stubSiteSettingsAdminService) SaveHomeAssetsSettings(ctx context.Contex
 		return s.saveHomeAssets(ctx, input, adminID)
 	}
 	return &service.HomeAssetsSettings{}, nil
+}
+
+func (s *stubSiteSettingsAdminService) SaveBlogIndexSettings(ctx context.Context, input service.BlogIndexSettings, adminID uuid.UUID) (*service.BlogIndexSettings, error) {
+	if s.saveBlogIndex != nil {
+		return s.saveBlogIndex(ctx, input, adminID)
+	}
+	return &service.BlogIndexSettings{}, nil
 }
 
 func (s *stubSiteSettingsAdminService) SaveAuthorProfileSettings(ctx context.Context, input service.AuthorProfileSettings, adminID uuid.UUID) (*service.AuthorProfileSettings, error) {
@@ -225,5 +233,64 @@ func TestSiteSettingsAdminHandlerUpdateSiteIntegrationsServiceError(t *testing.T
 	resp := decodeAdminResponse(t, ctx)
 	if resp.Message != "failed to save site integrations settings" {
 		t.Fatalf("unexpected response message: %q", resp.Message)
+	}
+}
+
+func TestSiteSettingsAdminHandlerUpdateBlogIndexSuccess(t *testing.T) {
+	t.Parallel()
+
+	adminID := uuid.New()
+	logger := &stubAuditLogger{}
+	var received service.BlogIndexSettings
+
+	handler := NewSiteSettingsAdminHandler(&stubSiteSettingsAdminService{
+		saveBlogIndex: func(_ context.Context, input service.BlogIndexSettings, inputAdminID uuid.UUID) (*service.BlogIndexSettings, error) {
+			if inputAdminID != adminID {
+				t.Fatalf("unexpected admin id: %s", inputAdminID)
+			}
+			received = input
+			return &service.BlogIndexSettings{
+				HeroBadge:       "CREATOR SPACE",
+				HeroTitle:       "NanaMiku Blog",
+				HeroDescription: "展示博客模板的首屏内容。",
+				HeroActions: []service.BlogIndexHeroAction{
+					{Label: "看最新文章", Href: "#latest-posts"},
+				},
+				QuickStats: []service.BlogIndexQuickStat{
+					{Label: "模板栈", Value: "Astro + Vue + Go"},
+				},
+				FocusCard: service.BlogIndexFocusCard{
+					Badge:       "本月在做什么",
+					Title:       "打磨创作者模板",
+					Description: "继续收口默认配置。",
+					Footnote:    "文章来自后台管理面板发布",
+				},
+				ScrollCue: service.BlogIndexScrollCue{
+					Label:     "向下阅读",
+					AriaLabel: "向下阅读",
+				},
+			}, nil
+		},
+	}, logger)
+
+	ctx := newAdminTestContext(
+		consts.MethodPut,
+		"/api/v1/admin/site-settings/blog-index",
+		`{"hero_badge":" CREATOR SPACE ","hero_title":" NanaMiku Blog ","hero_description":" 展示博客模板的首屏内容。 ","hero_actions":[{"label":" 看最新文章 ","href":" #latest-posts "}],"quick_stats":[{"label":" 模板栈 ","value":" Astro + Vue + Go "}],"focus_card":{"badge":" 本月在做什么 ","title":" 打磨创作者模板 ","description":" 继续收口默认配置。 ","footnote":" 文章来自后台管理面板发布 "},"scroll_cue":{"label":" 向下阅读 ","aria_label":" 向下阅读 "}}`,
+	)
+	ctx.Set("admin_id", adminID)
+
+	handler.UpdateBlogIndex(context.Background(), ctx)
+
+	if ctx.Response.StatusCode() != consts.StatusOK {
+		t.Fatalf("unexpected status code: %d", ctx.Response.StatusCode())
+	}
+
+	if received.HeroTitle != " NanaMiku Blog " || len(received.HeroActions) != 1 {
+		t.Fatalf("request payload was not bound as expected: %+v", received)
+	}
+
+	if len(logger.calls) != 1 || logger.calls[0].targetID != "blog_index" {
+		t.Fatalf("unexpected audit log calls: %+v", logger.calls)
 	}
 }

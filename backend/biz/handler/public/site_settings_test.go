@@ -21,6 +21,8 @@ type stubSiteSettingsService struct {
 	homeHeroErr      error
 	homeAssets       *service.HomeAssetsSettings
 	homeAssetsErr    error
+	blogIndex        *service.BlogIndexSettings
+	blogIndexErr     error
 	authorProfile    *service.AuthorProfileSettings
 	authorProfileErr error
 	integrations     *service.SiteIntegrationsSettings
@@ -41,6 +43,10 @@ func (s *stubSiteSettingsService) GetHomeHeroSettings(context.Context) (*service
 
 func (s *stubSiteSettingsService) GetHomeAssetsSettings(context.Context) (*service.HomeAssetsSettings, error) {
 	return s.homeAssets, s.homeAssetsErr
+}
+
+func (s *stubSiteSettingsService) GetBlogIndexSettings(context.Context) (*service.BlogIndexSettings, error) {
+	return s.blogIndex, s.blogIndexErr
 }
 
 func (s *stubSiteSettingsService) GetAuthorProfileSettings(context.Context) (*service.AuthorProfileSettings, error) {
@@ -126,5 +132,44 @@ func TestSiteSettingsHandlerGetSiteIntegrationsError(t *testing.T) {
 	}
 	if resp.Message != "failed to get site integrations settings" {
 		t.Fatalf("unexpected response message: %q", resp.Message)
+	}
+}
+
+func TestSiteSettingsHandlerGetBlogIndexSuccess(t *testing.T) {
+	t.Parallel()
+
+	handler := NewSiteSettingsHandler(&stubSiteSettingsService{
+		blogIndex: &service.BlogIndexSettings{
+			HeroBadge:       "CREATOR SPACE",
+			HeroTitle:       "NanaMiku Blog",
+			HeroDescription: "展示博客模板的首屏内容。",
+			HeroActions: []service.BlogIndexHeroAction{
+				{Label: "看最新文章", Href: "#latest-posts"},
+			},
+			QuickStats: []service.BlogIndexQuickStat{
+				{Label: "模板栈", Value: "Astro + Vue + Go"},
+			},
+		},
+	})
+
+	ctx := newTestContext(consts.MethodGet, "/api/v1/site-settings/blog-index")
+	handler.GetBlogIndex(context.Background(), ctx)
+
+	if ctx.Response.StatusCode() != consts.StatusOK {
+		t.Fatalf("unexpected status code: %d", ctx.Response.StatusCode())
+	}
+
+	resp := decodeResponse(t, ctx)
+	if resp.Code != 0 {
+		t.Fatalf("unexpected response code: %d", resp.Code)
+	}
+
+	var data service.BlogIndexSettings
+	if err := json.Unmarshal(resp.Data, &data); err != nil {
+		t.Fatalf("failed to decode data: %v", err)
+	}
+
+	if data.HeroTitle != "NanaMiku Blog" || len(data.HeroActions) != 1 {
+		t.Fatalf("unexpected payload: %+v", data)
 	}
 }

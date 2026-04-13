@@ -145,6 +145,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 		api.GET("/site-settings/site-profile", siteSettingsH.GetSiteProfile)
 		api.GET("/site-settings/home-hero", siteSettingsH.GetHomeHero)
 		api.GET("/site-settings/home-assets", siteSettingsH.GetHomeAssets)
+		api.GET("/site-settings/blog-index", siteSettingsH.GetBlogIndex)
 		api.GET("/site-settings/author-profile", siteSettingsH.GetAuthorProfile)
 		api.GET("/site-settings/site-integrations", siteSettingsH.GetSiteIntegrations)
 		api.POST("/analytics/collect", middleware.RateLimit(rdb, "analytics:collect", 240, 1*time.Minute), analyticsH.Collect)
@@ -203,6 +204,7 @@ func RegisterRoutes(h *server.Hertz, db *pgxpool.Pool, rdb *redis.Client, cfg *C
 			adm.PUT("/site-settings/site-profile", siteSettingsAdminH.UpdateSiteProfile)
 			adm.PUT("/site-settings/home-hero", siteSettingsAdminH.UpdateHomeHero)
 			adm.PUT("/site-settings/home-assets", siteSettingsAdminH.UpdateHomeAssets)
+			adm.PUT("/site-settings/blog-index", siteSettingsAdminH.UpdateBlogIndex)
 			adm.PUT("/site-settings/author-profile", siteSettingsAdminH.UpdateAuthorProfile)
 			adm.PUT("/site-settings/site-integrations", siteSettingsAdminH.UpdateSiteIntegrations)
 

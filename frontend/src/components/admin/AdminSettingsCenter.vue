@@ -1,33 +1,9 @@
 <template>
   <section class="space-y-5">
     <div :class="heroClass">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div class="max-w-3xl">
-          <p class="text-[11px] uppercase tracking-[0.26em] text-miku/80">{{ copy.overview.badge }}</p>
-          <h1 class="mt-3 text-3xl font-semibold tracking-[0.02em] text-slate-900">{{ copy.page.title }}</h1>
-          <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{{ copy.page.subtitle }}</p>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-500">{{ copy.overview.description }}</p>
-        </div>
-
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="rounded-[22px] border border-white/70 bg-white/78 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-            <p class="text-xs uppercase tracking-[0.18em] text-slate-400">{{ copy.overview.mergedLabel }}</p>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <span
-                v-for="item in copy.overview.mergedItems"
-                :key="item"
-                class="rounded-full border border-miku/20 bg-miku/10 px-3 py-1 text-xs font-medium text-miku"
-              >
-                {{ item }}
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-[22px] border border-white/70 bg-white/78 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-            <p class="text-xs uppercase tracking-[0.18em] text-slate-400">{{ copy.overview.fallbackLabel }}</p>
-            <p class="mt-3 text-sm font-semibold text-slate-900">{{ copy.overview.fallbackValue }}</p>
-          </div>
-        </div>
+      <div class="max-w-3xl">
+        <h1 class="text-3xl font-semibold tracking-[0.02em] text-slate-900">{{ copy.page.title }}</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{{ copy.page.subtitle }}</p>
       </div>
     </div>
 
@@ -194,6 +170,200 @@
             <p v-if="homeHeroImages.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
               {{ copy.forms.homeAssets.emptyHint }}
             </p>
+          </div>
+        </div>
+
+        <div v-else-if="activeSection === 'blog-index'" :class="surfaceClass">
+          <div>
+            <p class="text-sm font-semibold text-slate-900">{{ copy.forms.blogIndex.title }}</p>
+            <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.blogIndex.subtitle }}</p>
+          </div>
+
+          <div class="mt-5 grid gap-3 md:grid-cols-2">
+            <input
+              v-model="blogHeroBadge"
+              type="text"
+              :placeholder="copy.forms.blogIndex.heroBadgePlaceholder"
+              :class="inputClass"
+              :aria-label="copy.forms.blogIndex.heroBadgeLabel"
+              :disabled="loading || savingBlogIndex"
+            />
+            <input
+              v-model="blogHeroTitle"
+              type="text"
+              :placeholder="copy.forms.blogIndex.heroTitlePlaceholder"
+              :class="inputClass"
+              :aria-label="copy.forms.blogIndex.heroTitleLabel"
+              :disabled="loading || savingBlogIndex"
+            />
+            <textarea
+              v-model="blogHeroDescription"
+              rows="4"
+              :placeholder="copy.forms.blogIndex.heroDescriptionPlaceholder"
+              :class="`${textareaClass} md:col-span-2`"
+              :aria-label="copy.forms.blogIndex.heroDescriptionLabel"
+              :disabled="loading || savingBlogIndex"
+            />
+          </div>
+
+          <div class="mt-5 rounded-[22px] border border-slate-200/80 bg-white/72 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-slate-900">{{ copy.forms.blogIndex.actionsTitle }}</p>
+                <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.blogIndex.actionsSubtitle }}</p>
+              </div>
+
+              <button
+                type="button"
+                class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
+                :aria-label="copy.forms.blogIndex.addActionButtonAria"
+                :disabled="loading || savingBlogIndex || blogHeroActions.length >= maxBlogIndexActions"
+                @click="addBlogHeroAction"
+              >
+                {{ copy.forms.blogIndex.addActionButton }}
+              </button>
+            </div>
+
+            <div class="mt-4 space-y-2.5">
+              <div
+                v-for="(action, index) in blogHeroActions"
+                :key="`blog-index-action-${index}`"
+                class="grid gap-2 md:grid-cols-[1fr_1fr_auto]"
+              >
+                <input
+                  v-model="blogHeroActions[index].label"
+                  type="text"
+                  :placeholder="copy.forms.blogIndex.actionLabelPlaceholder"
+                  :class="inputClass"
+                  :disabled="loading || savingBlogIndex"
+                />
+                <input
+                  v-model="blogHeroActions[index].href"
+                  type="text"
+                  :placeholder="copy.forms.blogIndex.actionHrefPlaceholder"
+                  :class="inputClass"
+                  :disabled="loading || savingBlogIndex"
+                />
+                <button
+                  type="button"
+                  class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
+                  :aria-label="copy.forms.blogIndex.removeButtonAria"
+                  :disabled="loading || savingBlogIndex"
+                  @click="removeBlogHeroAction(index)"
+                >
+                  {{ copy.forms.blogIndex.removeButton }}
+                </button>
+              </div>
+
+              <p v-if="blogHeroActions.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
+                {{ copy.forms.blogIndex.emptyActionsHint }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-[22px] border border-slate-200/80 bg-white/72 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-slate-900">{{ copy.forms.blogIndex.statsTitle }}</p>
+                <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.blogIndex.statsSubtitle }}</p>
+              </div>
+
+              <button
+                type="button"
+                class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
+                :aria-label="copy.forms.blogIndex.addStatButtonAria"
+                :disabled="loading || savingBlogIndex || blogQuickStats.length >= maxBlogIndexStats"
+                @click="addBlogQuickStat"
+              >
+                {{ copy.forms.blogIndex.addStatButton }}
+              </button>
+            </div>
+
+            <div class="mt-4 space-y-2.5">
+              <div
+                v-for="(stat, index) in blogQuickStats"
+                :key="`blog-index-stat-${index}`"
+                class="grid gap-2 md:grid-cols-[1fr_1fr_auto]"
+              >
+                <input
+                  v-model="blogQuickStats[index].label"
+                  type="text"
+                  :placeholder="copy.forms.blogIndex.statLabelPlaceholder"
+                  :class="inputClass"
+                  :disabled="loading || savingBlogIndex"
+                />
+                <input
+                  v-model="blogQuickStats[index].value"
+                  type="text"
+                  :placeholder="copy.forms.blogIndex.statValuePlaceholder"
+                  :class="inputClass"
+                  :disabled="loading || savingBlogIndex"
+                />
+                <button
+                  type="button"
+                  class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
+                  :aria-label="copy.forms.blogIndex.removeButtonAria"
+                  :disabled="loading || savingBlogIndex"
+                  @click="removeBlogQuickStat(index)"
+                >
+                  {{ copy.forms.blogIndex.removeButton }}
+                </button>
+              </div>
+
+              <p v-if="blogQuickStats.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
+                {{ copy.forms.blogIndex.emptyStatsHint }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-[22px] border border-slate-200/80 bg-white/72 p-4">
+            <div>
+              <p class="text-sm font-semibold text-slate-900">{{ copy.forms.blogIndex.focusTitle }}</p>
+              <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.blogIndex.focusSubtitle }}</p>
+            </div>
+
+            <div class="mt-4 grid gap-3 md:grid-cols-2">
+              <input
+                v-model="blogFocusBadge"
+                type="text"
+                :placeholder="copy.forms.blogIndex.focusBadgePlaceholder"
+                :class="inputClass"
+                :aria-label="copy.forms.blogIndex.focusBadgeLabel"
+                :disabled="loading || savingBlogIndex"
+              />
+              <input
+                v-model="blogFocusTitle"
+                type="text"
+                :placeholder="copy.forms.blogIndex.focusTitlePlaceholder"
+                :class="inputClass"
+                :aria-label="copy.forms.blogIndex.focusTitleLabel"
+                :disabled="loading || savingBlogIndex"
+              />
+              <textarea
+                v-model="blogFocusDescription"
+                rows="4"
+                :placeholder="copy.forms.blogIndex.focusDescriptionPlaceholder"
+                :class="`${textareaClass} md:col-span-2`"
+                :aria-label="copy.forms.blogIndex.focusDescriptionLabel"
+                :disabled="loading || savingBlogIndex"
+              />
+              <input
+                v-model="blogFocusFootnote"
+                type="text"
+                :placeholder="copy.forms.blogIndex.focusFootnotePlaceholder"
+                :class="inputClass"
+                :aria-label="copy.forms.blogIndex.focusFootnoteLabel"
+                :disabled="loading || savingBlogIndex"
+              />
+              <input
+                v-model="blogScrollCueLabel"
+                type="text"
+                :placeholder="copy.forms.blogIndex.scrollCuePlaceholder"
+                :class="inputClass"
+                :aria-label="copy.forms.blogIndex.scrollCueLabel"
+                :disabled="loading || savingBlogIndex"
+              />
+            </div>
           </div>
         </div>
 
@@ -771,6 +941,57 @@
             </div>
           </div>
 
+          <div v-else-if="activeSection === 'blog-index'" class="mt-5 space-y-4">
+            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
+              <p class="text-xs font-medium text-slate-500">{{ copy.preview.blogHeroBadgeLabel }}</p>
+              <p class="mt-2 text-xs uppercase tracking-[0.2em] text-miku">{{ blogHeroBadgePreview }}</p>
+              <p class="mt-4 text-2xl font-semibold text-slate-900">{{ blogHeroTitlePreview }}</p>
+              <p class="mt-3 text-sm leading-7 text-slate-600">{{ blogHeroDescriptionPreview }}</p>
+            </div>
+
+            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
+              <p class="text-xs font-medium text-slate-500">{{ copy.preview.blogActionsLabel }}</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span
+                  v-for="item in blogHeroActionsPreview"
+                  :key="`${item.label}-${item.href}`"
+                  class="rounded-full border border-miku/20 bg-miku/10 px-3 py-1 text-xs font-medium text-miku"
+                >
+                  {{ item.label }}
+                </span>
+              </div>
+            </div>
+
+            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
+              <p class="text-xs font-medium text-slate-500">{{ copy.preview.blogStatsLabel }}</p>
+              <div class="mt-3 grid gap-3">
+                <div
+                  v-for="item in blogQuickStatsPreview"
+                  :key="`${item.label}-${item.value}`"
+                  class="rounded-[16px] border border-slate-200 bg-white px-3 py-3"
+                >
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">{{ item.label }}</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-900">{{ item.value }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
+              <p class="text-xs font-medium text-slate-500">{{ copy.preview.blogFocusLabel }}</p>
+              <p class="mt-3 text-xs uppercase tracking-[0.2em] text-miku">{{ blogFocusCardPreview.badge }}</p>
+              <p class="mt-2 text-sm font-semibold text-slate-900">{{ blogFocusCardPreview.title }}</p>
+              <p class="mt-2 text-sm leading-7 text-slate-600">{{ blogFocusCardPreview.description }}</p>
+              <p class="mt-4 rounded-[16px] border border-slate-200 bg-slate-50/80 px-3 py-2 text-xs leading-6 text-slate-500">
+                {{ blogFocusCardPreview.footnote }}
+              </p>
+            </div>
+
+            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
+              <p class="text-xs font-medium text-slate-500">{{ copy.preview.blogScrollCueLabel }}</p>
+              <p class="mt-2 text-sm font-semibold text-slate-900">{{ blogScrollCuePreview }}</p>
+            </div>
+          </div>
+
           <div v-else-if="activeSection === 'author-profile'" class="mt-5 space-y-4">
             <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
               <div class="flex items-start gap-3">
@@ -972,6 +1193,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { adminCopy } from '../../content/copy'
 import { api, ApiError } from '../../lib/api'
+import type {
+  BlogIndexHeroAction,
+  BlogIndexQuickStat,
+  BlogIndexSettings,
+} from '../../lib/blog-index'
 import { DEFAULT_PUBLIC_AUTHOR_AVATAR_URL, DEFAULT_PUBLIC_AVATAR_URL } from '../../lib/default-assets'
 import {
   resolveAuthorAvatarURL,
@@ -993,6 +1219,12 @@ import {
   resetAuthorProfileSettings,
   saveAuthorProfileSettings,
 } from '../../stores/authorProfile'
+import {
+  blogIndexSettings,
+  hydrateBlogIndexSettings,
+  resetBlogIndexSettings,
+  saveBlogIndexSettings,
+} from '../../stores/blogIndex'
 import {
   hydrateSiteFooterSettings,
   resetSiteFooterSettings,
@@ -1075,12 +1307,15 @@ const inputClass = 'w-full rounded-[18px] border border-slate-200/90 bg-white/90
 const textareaClass = `${inputClass} min-h-[110px] resize-y`
 const maxCustomTexts = 8
 const maxHomeAssetImages = 8
+const maxBlogIndexActions = 3
+const maxBlogIndexStats = 3
 const maxAuthorSkills = 8
 const maxAuthorNowItems = 8
 const maxAuthorSocialLinks = 6
 
 const homeHeroStore = useStore(homeHeroSettings)
 const homeAssetsStore = useStore(homeAssetsSettings)
+const blogIndexStore = useStore(blogIndexSettings)
 const siteProfileStore = useStore(siteProfileSettings)
 const siteFooterStore = useStore(siteFooterSettings)
 const authorProfileStore = useStore(authorProfileSettings)
@@ -1091,6 +1326,7 @@ const activeSection = ref<SectionKey>('site-profile')
 const loading = ref(false)
 const savingHomeHero = ref(false)
 const savingHomeAssets = ref(false)
+const savingBlogIndex = ref(false)
 const savingSiteProfile = ref(false)
 const savingAuthorProfile = ref(false)
 const savingSiteIntegrations = ref(false)
@@ -1110,6 +1346,16 @@ const defaultSocialImage = ref('')
 const homeHeroTitle = ref('')
 const homeHeroSubtitle = ref('')
 const homeHeroImages = ref<string[]>([])
+const blogHeroBadge = ref('')
+const blogHeroTitle = ref('')
+const blogHeroDescription = ref('')
+const blogHeroActions = ref<BlogIndexHeroAction[]>([])
+const blogQuickStats = ref<BlogIndexQuickStat[]>([])
+const blogFocusBadge = ref('')
+const blogFocusTitle = ref('')
+const blogFocusDescription = ref('')
+const blogFocusFootnote = ref('')
+const blogScrollCueLabel = ref('')
 
 const authorDisplayName = ref('')
 const authorAvatarUrl = ref(DEFAULT_PUBLIC_AUTHOR_AVATAR_URL)
@@ -1142,6 +1388,7 @@ const accountPassword = ref('')
 
 const homeHeroSnapshot = ref('')
 const homeAssetsSnapshot = ref('')
+const blogIndexSnapshot = ref('')
 const siteProfileSnapshot = ref('')
 const authorProfileSnapshot = ref('')
 const siteIntegrationsSnapshot = ref('')
@@ -1176,6 +1423,44 @@ function cleanHeroImages(images: string[]) {
     .map((image) => trimText(image))
     .filter((image, index, list) => image.length > 0 && list.indexOf(image) === index)
     .slice(0, maxHomeAssetImages)
+}
+
+function cleanBlogHeroActionDrafts(items: BlogIndexHeroAction[]) {
+  const result: BlogIndexHeroAction[] = []
+  for (const item of items) {
+    const label = trimText(item.label)
+    const href = trimText(item.href)
+    if (!label || !href) {
+      continue
+    }
+    if (result.some((current) => current.label === label && current.href === href)) {
+      continue
+    }
+    result.push({ label, href })
+    if (result.length >= maxBlogIndexActions) {
+      break
+    }
+  }
+  return result
+}
+
+function cleanBlogQuickStatDrafts(items: BlogIndexQuickStat[]) {
+  const result: BlogIndexQuickStat[] = []
+  for (const item of items) {
+    const label = trimText(item.label)
+    const value = trimText(item.value)
+    if (!label || !value) {
+      continue
+    }
+    if (result.some((current) => current.label === label && current.value === value)) {
+      continue
+    }
+    result.push({ label, value })
+    if (result.length >= maxBlogIndexStats) {
+      break
+    }
+  }
+  return result
 }
 
 function cleanTextItems(items: string[], limit: number) {
@@ -1240,6 +1525,26 @@ function getHomeAssetsDraft(): HomeAssetsSettings {
   }
 }
 
+function getBlogIndexDraft(): BlogIndexSettings {
+  return {
+    heroBadge: trimText(blogHeroBadge.value),
+    heroTitle: trimText(blogHeroTitle.value),
+    heroDescription: trimText(blogHeroDescription.value),
+    heroActions: cleanBlogHeroActionDrafts(blogHeroActions.value),
+    quickStats: cleanBlogQuickStatDrafts(blogQuickStats.value),
+    focusCard: {
+      badge: trimText(blogFocusBadge.value),
+      title: trimText(blogFocusTitle.value),
+      description: trimText(blogFocusDescription.value),
+      footnote: trimText(blogFocusFootnote.value),
+    },
+    scrollCue: {
+      label: trimText(blogScrollCueLabel.value),
+      ariaLabel: trimText(blogScrollCueLabel.value),
+    },
+  }
+}
+
 function getAuthorProfileDraft(): AuthorProfileSettings {
   return {
     displayName: trimText(authorDisplayName.value),
@@ -1297,6 +1602,10 @@ function serializeHomeAssets(settings: HomeAssetsSettings) {
   return JSON.stringify(settings)
 }
 
+function serializeBlogIndex(settings: BlogIndexSettings) {
+  return JSON.stringify(settings)
+}
+
 function serializeAuthorProfile(settings: AuthorProfileSettings) {
   return JSON.stringify(settings)
 }
@@ -1329,6 +1638,19 @@ function syncHomeHeroFromStore() {
 
 function syncHomeAssetsFromStore() {
   homeHeroImages.value = [...homeAssetsStore.value.heroImages]
+}
+
+function syncBlogIndexFromStore() {
+  blogHeroBadge.value = blogIndexStore.value.heroBadge
+  blogHeroTitle.value = blogIndexStore.value.heroTitle
+  blogHeroDescription.value = blogIndexStore.value.heroDescription
+  blogHeroActions.value = blogIndexStore.value.heroActions.map((item) => ({ ...item }))
+  blogQuickStats.value = blogIndexStore.value.quickStats.map((item) => ({ ...item }))
+  blogFocusBadge.value = blogIndexStore.value.focusCard.badge
+  blogFocusTitle.value = blogIndexStore.value.focusCard.title
+  blogFocusDescription.value = blogIndexStore.value.focusCard.description
+  blogFocusFootnote.value = blogIndexStore.value.focusCard.footnote
+  blogScrollCueLabel.value = blogIndexStore.value.scrollCue.label
 }
 
 function syncAuthorProfileFromStore() {
@@ -1387,6 +1709,7 @@ async function loadAdminProfile() {
 function commitSnapshots() {
   homeHeroSnapshot.value = serializeHomeHero(getHomeHeroDraft())
   homeAssetsSnapshot.value = serializeHomeAssets(getHomeAssetsDraft())
+  blogIndexSnapshot.value = serializeBlogIndex(getBlogIndexDraft())
   siteProfileSnapshot.value = serializeSiteProfile(getSiteProfileDraft())
   authorProfileSnapshot.value = serializeAuthorProfile(getAuthorProfileDraft())
   siteIntegrationsSnapshot.value = serializeSiteIntegrations(getSiteIntegrationsDraft())
@@ -1413,6 +1736,20 @@ function addHeroImage() {
   homeHeroImages.value.push('')
 }
 
+function addBlogHeroAction() {
+  if (blogHeroActions.value.length >= maxBlogIndexActions) {
+    return
+  }
+  blogHeroActions.value.push({ label: '', href: '' })
+}
+
+function addBlogQuickStat() {
+  if (blogQuickStats.value.length >= maxBlogIndexStats) {
+    return
+  }
+  blogQuickStats.value.push({ label: '', value: '' })
+}
+
 function addAuthorSkill() {
   if (authorSkills.value.length >= maxAuthorSkills) {
     return
@@ -1436,6 +1773,14 @@ function addAuthorSocialLink() {
 
 function removeHeroImage(index: number) {
   homeHeroImages.value = homeHeroImages.value.filter((_, currentIndex) => currentIndex !== index)
+}
+
+function removeBlogHeroAction(index: number) {
+  blogHeroActions.value = blogHeroActions.value.filter((_, currentIndex) => currentIndex !== index)
+}
+
+function removeBlogQuickStat(index: number) {
+  blogQuickStats.value = blogQuickStats.value.filter((_, currentIndex) => currentIndex !== index)
 }
 
 function removeLine(index: number) {
@@ -1559,6 +1904,7 @@ async function load() {
     await Promise.all([
       hydrateHomeHeroSettings(),
       hydrateHomeAssetsSettings(),
+      hydrateBlogIndexSettings(),
       hydrateSiteProfileSettings(),
       hydrateAuthorProfileSettings(),
       hydrateSiteIntegrationsSettings(),
@@ -1567,6 +1913,7 @@ async function load() {
     ])
     syncHomeHeroFromStore()
     syncHomeAssetsFromStore()
+    syncBlogIndexFromStore()
     syncSiteProfileFromStore()
     syncAuthorProfileFromStore()
     syncSiteIntegrationsFromStore()
@@ -1581,6 +1928,7 @@ async function load() {
 
 const homeHeroDirty = computed(() => serializeHomeHero(getHomeHeroDraft()) !== homeHeroSnapshot.value)
 const homeAssetsDirty = computed(() => serializeHomeAssets(getHomeAssetsDraft()) !== homeAssetsSnapshot.value)
+const blogIndexDirty = computed(() => serializeBlogIndex(getBlogIndexDraft()) !== blogIndexSnapshot.value)
 const siteProfileDirty = computed(() => serializeSiteProfile(getSiteProfileDraft()) !== siteProfileSnapshot.value)
 const authorProfileDirty = computed(() => serializeAuthorProfile(getAuthorProfileDraft()) !== authorProfileSnapshot.value)
 const siteIntegrationsDirty = computed(() => serializeSiteIntegrations(getSiteIntegrationsDraft()) !== siteIntegrationsSnapshot.value)
@@ -1602,6 +1950,11 @@ const sections = computed(() => ([
     key: 'home-assets' as SectionKey,
     ...copy.sections.homeAssets,
     dirty: homeAssetsDirty.value,
+  },
+  {
+    key: 'blog-index' as SectionKey,
+    ...copy.sections.blogIndex,
+    dirty: blogIndexDirty.value,
   },
   {
     key: 'author-profile' as SectionKey,
@@ -1639,6 +1992,9 @@ const currentSectionDirty = computed(() => {
   if (activeSection.value === 'home-assets') {
     return homeAssetsDirty.value
   }
+  if (activeSection.value === 'blog-index') {
+    return blogIndexDirty.value
+  }
   if (activeSection.value === 'author-profile') {
     return authorProfileDirty.value
   }
@@ -1662,6 +2018,9 @@ const isCurrentSaving = computed(() => {
   }
   if (activeSection.value === 'home-assets') {
     return savingHomeAssets.value
+  }
+  if (activeSection.value === 'blog-index') {
+    return savingBlogIndex.value
   }
   if (activeSection.value === 'author-profile') {
     return savingAuthorProfile.value
@@ -1723,6 +2082,25 @@ const homeHeroImagesPreview = computed(() => {
 const homeAssetsCountPreview = computed(() => {
   return `${copy.preview.heroImageCountPrefix}${homeHeroImagesPreview.value.length}${copy.preview.heroImageCountSuffix}`
 })
+
+const blogHeroBadgePreview = computed(() => trimText(blogHeroBadge.value) || copy.actions.emptyValue)
+const blogHeroTitlePreview = computed(() => trimText(blogHeroTitle.value) || copy.actions.emptyValue)
+const blogHeroDescriptionPreview = computed(() => trimText(blogHeroDescription.value) || copy.actions.emptyValue)
+const blogHeroActionsPreview = computed(() => {
+  const actions = cleanBlogHeroActionDrafts(blogHeroActions.value)
+  return actions.length > 0 ? actions : [{ label: copy.actions.emptyValue, href: '#' }]
+})
+const blogQuickStatsPreview = computed(() => {
+  const stats = cleanBlogQuickStatDrafts(blogQuickStats.value)
+  return stats.length > 0 ? stats : [{ label: copy.actions.emptyValue, value: copy.actions.emptyValue }]
+})
+const blogFocusCardPreview = computed(() => ({
+  badge: trimText(blogFocusBadge.value) || copy.actions.emptyValue,
+  title: trimText(blogFocusTitle.value) || copy.actions.emptyValue,
+  description: trimText(blogFocusDescription.value) || copy.actions.emptyValue,
+  footnote: trimText(blogFocusFootnote.value) || copy.actions.emptyValue,
+}))
+const blogScrollCuePreview = computed(() => trimText(blogScrollCueLabel.value) || copy.actions.emptyValue)
 
 const authorAvatarPreview = computed(() => resolveAuthorAvatarURL(authorAvatarUrl.value))
 const authorDisplayNamePreview = computed(() => trimText(authorDisplayName.value) || copy.actions.emptyValue)
@@ -1863,6 +2241,16 @@ function validateHomeAssetsSection() {
   return cleanHeroImages(homeHeroImages.value).length > 0
 }
 
+function validateBlogIndexSection() {
+  return Boolean(
+    trimText(blogHeroTitle.value)
+    && trimText(blogHeroDescription.value)
+    && trimText(blogFocusTitle.value)
+    && cleanBlogHeroActionDrafts(blogHeroActions.value).length > 0
+    && cleanBlogQuickStatDrafts(blogQuickStats.value).length > 0,
+  )
+}
+
 function validateAuthorProfileSection() {
   return [
     authorDisplayName.value,
@@ -1980,6 +2368,43 @@ async function resetHomeAssetsSection() {
     showToast(message, 'error')
   } finally {
     savingHomeAssets.value = false
+  }
+}
+
+async function saveBlogIndexSection() {
+  if (!validateBlogIndexSection()) {
+    showToast(copy.forms.blogIndex.validationRequired, 'error')
+    return
+  }
+
+  savingBlogIndex.value = true
+  try {
+    await saveBlogIndexSettings(getBlogIndexDraft())
+    syncBlogIndexFromStore()
+    blogIndexSnapshot.value = serializeBlogIndex(getBlogIndexDraft())
+    markSaved(copy.sections.blogIndex.title)
+    showToast(copy.toasts.blogIndexSaved, 'success')
+  } catch (err) {
+    const message = err instanceof ApiError ? err.message : copy.toasts.blogIndexFailed
+    showToast(message, 'error')
+  } finally {
+    savingBlogIndex.value = false
+  }
+}
+
+async function resetBlogIndexSection() {
+  savingBlogIndex.value = true
+  try {
+    await resetBlogIndexSettings()
+    syncBlogIndexFromStore()
+    blogIndexSnapshot.value = serializeBlogIndex(getBlogIndexDraft())
+    markSaved(copy.sections.blogIndex.title)
+    showToast(copy.toasts.blogIndexReset, 'success')
+  } catch (err) {
+    const message = err instanceof ApiError ? err.message : copy.toasts.blogIndexFailed
+    showToast(message, 'error')
+  } finally {
+    savingBlogIndex.value = false
   }
 }
 
@@ -2149,6 +2574,11 @@ async function saveCurrentSection() {
     return
   }
 
+  if (activeSection.value === 'blog-index') {
+    await saveBlogIndexSection()
+    return
+  }
+
   if (activeSection.value === 'author-profile') {
     await saveAuthorProfileSection()
     return
@@ -2180,6 +2610,11 @@ async function resetCurrentSection() {
 
   if (activeSection.value === 'home-assets') {
     await resetHomeAssetsSection()
+    return
+  }
+
+  if (activeSection.value === 'blog-index') {
+    await resetBlogIndexSection()
     return
   }
 
