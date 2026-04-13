@@ -1,5 +1,6 @@
 import { siteCopy } from '../content/copy'
 
+// 首页背景图最多保留 8 张，避免设置过多时影响首屏和管理复杂度。
 const MAX_HERO_IMAGES = 8
 
 export interface HomeAssetsSettings {
@@ -15,6 +16,11 @@ function trimText(input: unknown): string {
 }
 
 function normalizeAssetURL(input: unknown): string {
+  // 允许用户写：
+  // - `/picture/xxx.webp`
+  // - `https://...`
+  // - `example.com/xxx`
+  // 最终这里统一整理成可直接使用的 URL。
   const trimmed = trimText(input)
   if (!trimmed) return ''
   if (trimmed.startsWith('/')) return trimmed
@@ -23,6 +29,11 @@ function normalizeAssetURL(input: unknown): string {
 }
 
 function sanitizeHeroImages(input: unknown): string[] {
+  // 过滤规则：
+  // - 必须是数组
+  // - 空值丢弃
+  // - 去重
+  // - 最多 8 张
   if (!Array.isArray(input)) {
     return []
   }
@@ -48,6 +59,8 @@ export function getDefaultHomeAssetsSettings(): HomeAssetsSettings {
 }
 
 export function normalizeHomeAssetsSettings(input: unknown): HomeAssetsSettings {
+  // 如果后端根本没传 heroImages，就沿用默认值；
+  // 如果传了但内容非法，也会最终回退到默认值。
   const defaults = getDefaultHomeAssetsSettings()
   if (!input || typeof input !== 'object') {
     return defaults

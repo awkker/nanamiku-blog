@@ -9,6 +9,7 @@ import {
   type SiteIntegrationsSettingsPayload,
 } from '../lib/site-integrations'
 
+// 首页右上角的小组件开关（天气、音乐、时钟）统一放在这里管理。
 const STORAGE_KEY = 'miku_site_integrations_settings'
 
 function readCachedSiteIntegrationsSettings(): SiteIntegrationsSettings | null {
@@ -39,6 +40,9 @@ function writeCachedSiteIntegrationsSettings(settings: SiteIntegrationsSettings)
 
 export const siteIntegrationsSettings = atom<SiteIntegrationsSettings>(getDefaultSiteIntegrationsSettings())
 
+// 与 `homeHero.ts` 同样的策略：
+// - `hydrated` 避免重复请求
+// - `hydrationPromise` 避免并发请求重复打到后端
 let hydrated = false
 let hydrationPromise: Promise<SiteIntegrationsSettings> | null = null
 
@@ -70,6 +74,7 @@ export async function hydrateSiteIntegrationsSettings(force = false): Promise<Si
   hydrationPromise = api
     .get<SiteIntegrationsSettingsPayload | undefined>('/site-settings/site-integrations')
     .then((data) => {
+      // 后台配置最终会整理成前端固定使用的 camelCase 结构。
       const normalized = normalizeSiteIntegrationsSettings(data)
       siteIntegrationsSettings.set(normalized)
       writeCachedSiteIntegrationsSettings(normalized)
@@ -77,6 +82,7 @@ export async function hydrateSiteIntegrationsSettings(force = false): Promise<Si
       return normalized
     })
     .catch(() => {
+      // 小组件设置失败时不阻断页面，只保留当前已有状态。
       const fallback = siteIntegrationsSettings.get()
       siteIntegrationsSettings.set(fallback)
       return fallback

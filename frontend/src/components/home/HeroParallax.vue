@@ -38,6 +38,10 @@ const hp = siteCopy.components.heroParallax
 
 import { heroImages, heroIndex, shuffleHeroImage } from '../../stores/heroImage'
 
+// `heroImages` / `heroIndex` 是首页背景图的共享状态：
+// - `HeroParallax` 负责把当前图片显示出来
+// - `HeroShuffleBtn` 负责切换索引
+// 两边通过同一个 store 协作，所以不会出现按钮切了图、背景没变的情况。
 const $heroIndex = useStore(heroIndex)
 const $heroImages = useStore(heroImages)
 const currentIndex = ref($heroIndex.value)
@@ -45,10 +49,12 @@ const mounted = ref(false)
 const currentHeroImages = computed(() => $heroImages.value)
 
 watch($heroIndex, (v) => {
+  // store 里当前图片索引一旦变化，立刻同步到本组件的展示状态。
   currentIndex.value = v
 })
 
 watch($heroImages, (images) => {
+  // 如果后台把图片列表改短了，旧索引可能越界，这里要兜底归零。
   if (currentIndex.value >= images.length) {
     currentIndex.value = 0
   }
@@ -60,6 +66,10 @@ const layerRef = ref<HTMLElement | null>(null)
 const RANGE = 10
 const SHIFT = 18
 
+// 这里维护两组值：
+// - rx/ry/tx/ty：当前真正应用到 DOM 上的值
+// - targetRx/...：鼠标移动后“目标应该去到哪里”
+// 再用 `lerp()` 在每一帧慢慢逼近，从而做出柔和的缓动效果。
 let rx = 0
 let ry = 0
 let tx = 0
@@ -73,6 +83,8 @@ let rafId = 0
 const layerTransform = ref('rotateX(0deg) rotateY(0deg) translateX(0px) translateY(0px)')
 
 function onMouseMove(e: MouseEvent) {
+  // 把鼠标位置归一化成 -1 到 1 的比例，
+  // 这样无论屏幕多大，视差公式都能复用。
   const w = window.innerWidth
   const h = window.innerHeight
   const xRatio = (e.clientX / w - 0.5) * 2
@@ -85,6 +97,7 @@ function onMouseMove(e: MouseEvent) {
 }
 
 function onMouseLeave() {
+  // 鼠标离开后，把目标值重置到中心点，背景就会缓慢回正。
   targetRx = 0
   targetRy = 0
   targetTx = 0
@@ -92,6 +105,7 @@ function onMouseLeave() {
 }
 
 function lerp(a: number, b: number, t: number) {
+  // 线性插值：每帧走一小步，而不是瞬间跳到目标值。
   return a + (b - a) * t
 }
 
@@ -108,9 +122,11 @@ function loop() {
 }
 
 onMounted(() => {
+  // 背景图资源同样先从缓存恢复，再异步同步后台配置。
   primeHomeAssetsSettingsFromCache()
   void hydrateHomeAssetsSettings()
   mounted.value = true
+  // 首页第一次进入时随机挑一张图，避免每次都从同一张开始。
   shuffleHeroImage()
   currentIndex.value = heroIndex.get()
 
@@ -123,6 +139,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 清理事件和动画帧，避免页面切走后还在后台持续执行。
   const el = containerRef.value
   if (el) {
     el.removeEventListener('mousemove', onMouseMove)

@@ -2,6 +2,10 @@ import { atom } from 'nanostores'
 
 export type ThemeMode = 'light' | 'night'
 
+// 主题模式同时要影响三处：
+// 1. store 本身，供 Vue 组件读取
+// 2. documentElement，上屏时立刻生效
+// 3. localStorage，保证刷新后记住用户选择
 const STORAGE_KEY = 'miku_blog_theme_mode'
 const NIGHT_CLASS = 'theme-night'
 
@@ -30,6 +34,7 @@ export function setThemeMode(next: ThemeMode, persist = true) {
   applyThemeToDocument(mode)
 
   if (typeof window !== 'undefined') {
+    // 自定义事件用于通知像 `LiquidGlassCard` 这类需要立即响应主题变化的组件。
     window.dispatchEvent(new CustomEvent('miku-theme-change', {
       detail: { mode },
     }))
@@ -52,6 +57,7 @@ export function hydrateThemeMode() {
     return
   }
 
+  // 首次挂载时先从 localStorage 恢复主题，再同步到 DOM 和 store。
   const saved = normalizeThemeMode(window.localStorage.getItem(STORAGE_KEY))
   setThemeMode(saved, false)
 
@@ -63,6 +69,7 @@ export function hydrateThemeMode() {
   if (!storageBound) {
     storageBound = true
     window.addEventListener('storage', (event) => {
+      // 多标签页切换主题时，其他标签页也能跟着同步。
       if (event.key !== STORAGE_KEY) {
         return
       }

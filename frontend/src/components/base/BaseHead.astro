@@ -1,4 +1,16 @@
 ---
+/**
+ * 全站 Head 组件
+ *
+ * 这个文件是 Astro 页面头部信息的统一入口，主要做 3 件事：
+ * 1. 引入全局样式，让所有页面都能拿到基础变量和通用样式
+ * 2. 输出 SEO / Open Graph / Twitter 所需的静态元信息
+ * 3. 在浏览器端做两类“运行时补充”：
+ *    - 先同步主题模式，避免页面首屏亮暗闪烁
+ *    - 再把后台动态站点资料（标题、描述、品牌名等）写回到 document
+ *
+ * 所以它既处理“构建期的默认值”，也处理“运行时的动态覆盖”。
+ */
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
 import '../../styles/global.css';
@@ -7,6 +19,8 @@ import FallbackImage from '../../assets/blog-placeholder-1.jpg';
 import { SITE_DEFAULT_OG_IMAGE, SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 interface Props {
+	// 页面自己的标题和描述是必填项。
+	// 这样每个页面都必须明确声明自己在搜索引擎和分享卡片里怎么展示。
 	title: string;
 	description: string;
 	image?: ImageMetadata | string;
@@ -17,6 +31,8 @@ interface Props {
 	robots?: string;
 }
 
+// canonical URL 表示“当前页面的规范地址”。
+// 搜索引擎会用它来避免把同一内容的多个地址当成重复页面。
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 
 const {
@@ -31,11 +47,15 @@ const {
 } = Astro.props;
 
 function resolveImageURL(value: ImageMetadata | string): URL {
+	// 页面可以传 Astro 图片对象，也可以直接传字符串路径。
+	// 这里统一把它转成绝对 URL，方便后面的 OG/Twitter 元信息直接使用。
 	const src = typeof value === 'string' ? value : value?.src || FallbackImage.src;
 	return new URL(src, Astro.site ?? Astro.url);
 }
 
 function toISODate(value?: Date | string): string | undefined {
+	// 文章发布时间这类字段对搜索引擎更友好的是 ISO 字符串。
+	// 这里把 Date / string 两种输入统一整理成标准格式。
 	if (!value) {
 		return undefined;
 	}
@@ -60,6 +80,8 @@ const faviconVersion = '20260402';
   (() => {
     try {
       const root = document.documentElement;
+      // 主题值会提前从 localStorage 取出并写回到 html 节点。
+      // 这样在 Vue 岛屿挂载前，页面就已经处于正确主题，不会出现闪一下的情况。
       const mode = window.localStorage.getItem('miku_blog_theme_mode') === 'night' ? 'night' : 'light';
       root.classList.toggle('theme-night', mode === 'night');
       root.setAttribute('data-theme', mode);
@@ -144,6 +166,9 @@ const faviconVersion = '20260402';
 <script type="module">
   import { syncSiteProfileIntoDocument } from '../../lib/site-profile-runtime';
 
+  // 构建期产出的 meta 只是默认值。
+  // 真正上线后，站点标题/描述/Logo 可能会被后台配置覆盖，
+  // 所以这里在客户端再同步一遍运行时资料到 document。
   void syncSiteProfileIntoDocument();
 </script>
 
@@ -157,6 +182,10 @@ const faviconVersion = '20260402';
       return;
     }
 
+    // 下面这段是一个非常轻量的访问埋点：
+    // - 给访客分配一个 30 分钟有效的 session id
+    // - 上报当前页面路径、标题、来源、时区等基础信息
+    // - 尽量使用 sendBeacon，减少页面跳转时的丢包
     const SESSION_KEY = 'miku_analytics_sid';
     const LAST_ACTIVE_KEY = 'miku_analytics_sid_last';
     const SESSION_TTL_MS = 30 * 60 * 1000;

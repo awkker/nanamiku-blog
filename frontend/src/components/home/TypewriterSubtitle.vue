@@ -24,6 +24,7 @@ let cursor = 0
 let timer: ReturnType<typeof setInterval> | null = null
 
 function stopTimer() {
+  // 打字机效果依赖定时器，任何重新开始前都要先把旧定时器关掉。
   if (timer) {
     clearInterval(timer)
     timer = null
@@ -35,6 +36,7 @@ function startTyping() {
   cursor = 0
   visibleText.value = ''
 
+  // 空文案时直接返回，避免无意义定时器。
   if (!props.text.length) {
     return
   }
@@ -54,6 +56,7 @@ onMounted(() => {
 })
 
 watch(() => props.text, (next, prev) => {
+  // 当后台配置把副标题改掉后，重新从头播放一遍打字机动画。
   if (!mounted.value || next === prev) {
     return
   }

@@ -2,6 +2,8 @@ import { fetchWithSessionRetry } from './auth-session'
 
 const API_BASE = '/api/v1'
 
+// 前端和后端之间约定的统一响应包结构。
+// 正常情况下，真正业务数据都在 `data` 字段里。
 export interface ApiResponse<T = unknown> {
   code: number
   message: string
@@ -19,11 +21,13 @@ async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  // 统一补上 JSON header，避免每个调用点重复写。
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   }
 
+  // 底层 fetch 已经带有“401 后自动 refresh 再重试”的能力。
   const res = await fetchWithSessionRetry(`${API_BASE}${path}`, {
     ...options,
     headers,
@@ -48,11 +52,13 @@ async function request<T>(
   }
 
   if (!res.ok) {
+    // HTTP 层失败，例如 404 / 500。
     const message = body?.message || rawText || `Request failed (${res.status})`
     throw new ApiError(message, body?.code ?? -1, res.status)
   }
 
   if (!body || body.code !== 0) {
+    // HTTP 成功但业务 code 非 0，也视为失败。
     throw new ApiError(body?.message || rawText || `Request failed (${res.status})`, body?.code ?? -1, res.status)
   }
 

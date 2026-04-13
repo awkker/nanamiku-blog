@@ -20,7 +20,6 @@ type stubSiteSettingsAdminService struct {
 	saveHomeAssets       func(context.Context, service.HomeAssetsSettings, uuid.UUID) (*service.HomeAssetsSettings, error)
 	saveAuthorProfile    func(context.Context, service.AuthorProfileSettings, uuid.UUID) (*service.AuthorProfileSettings, error)
 	saveSiteIntegrations func(context.Context, service.SiteIntegrationsSettings, uuid.UUID) (*service.SiteIntegrationsSettings, error)
-	saveAboutPage        func(context.Context, service.AboutPageSettings, uuid.UUID) (*service.AboutPageSettings, error)
 }
 
 func (s *stubSiteSettingsAdminService) SaveFooterSettings(ctx context.Context, input service.FooterSettings, adminID uuid.UUID) (*service.FooterSettings, error) {
@@ -63,13 +62,6 @@ func (s *stubSiteSettingsAdminService) SaveSiteIntegrationsSettings(ctx context.
 		return s.saveSiteIntegrations(ctx, input, adminID)
 	}
 	return &service.SiteIntegrationsSettings{}, nil
-}
-
-func (s *stubSiteSettingsAdminService) SaveAboutPageSettings(ctx context.Context, input service.AboutPageSettings, adminID uuid.UUID) (*service.AboutPageSettings, error) {
-	if s.saveAboutPage != nil {
-		return s.saveAboutPage(ctx, input, adminID)
-	}
-	return &service.AboutPageSettings{}, nil
 }
 
 type stubAuditLogger struct {
@@ -233,60 +225,5 @@ func TestSiteSettingsAdminHandlerUpdateSiteIntegrationsServiceError(t *testing.T
 	resp := decodeAdminResponse(t, ctx)
 	if resp.Message != "failed to save site integrations settings" {
 		t.Fatalf("unexpected response message: %q", resp.Message)
-	}
-}
-
-func TestSiteSettingsAdminHandlerUpdateAboutPageSuccess(t *testing.T) {
-	t.Parallel()
-
-	adminID := uuid.New()
-	logger := &stubAuditLogger{}
-	var received service.AboutPageSettings
-
-	handler := NewSiteSettingsAdminHandler(&stubSiteSettingsAdminService{
-		saveAboutPage: func(_ context.Context, input service.AboutPageSettings, _ uuid.UUID) (*service.AboutPageSettings, error) {
-			received = input
-			return &service.AboutPageSettings{
-				IntroCards: []service.AboutIntroCard{
-					{Title: "当前主线", Description: "整理公开资料配置"},
-				},
-				Milestones: []service.AboutMilestone{
-					{Year: "2026", Title: "收口 About 页", Summary: "把高 DIY 内容接进设置中心。", Result: "前后台配置链路打通"},
-				},
-				CapabilityGroups: []service.AboutCapabilityGroup{
-					{Title: "前端体验", Desc: "关注信息层次。", Stack: []string{"Astro", "Vue"}},
-				},
-				FeaturedProjects: []service.AboutFeaturedProject{
-					{Name: "Starter Site Kit", Focus: "模板基座", Role: "配置治理", Metric: "可安全开源", Href: "/blog"},
-				},
-				MonthlyGoals: []string{"补齐 About 页配置"},
-				ListeningNow: []string{"Lo-fi Focus Mix"},
-				Signature: service.AboutSignatureSettings{
-					Description: "让内容维护更顺畅。",
-					Footer:      "持续迭代中。",
-				},
-			}, nil
-		},
-	}, logger)
-
-	ctx := newAdminTestContext(
-		consts.MethodPut,
-		"/api/v1/admin/site-settings/about-page",
-		`{"intro_cards":[{"title":" 当前主线 ","description":" 整理公开资料配置 "}],"milestones":[{"year":" 2026 ","title":" 收口 About 页 ","summary":" 把高 DIY 内容接进设置中心。 ","result":" 前后台配置链路打通 "}],"capability_groups":[{"title":" 前端体验 ","desc":" 关注信息层次。 ","stack":[" Astro ","Vue"]}],"featured_projects":[{"name":" Starter Site Kit ","focus":" 模板基座 ","role":" 配置治理 ","metric":" 可安全开源 ","href":" /blog "}],"monthly_goals":[" 补齐 About 页配置 "],"listening_now":[" Lo-fi Focus Mix "],"signature":{"description":" 让内容维护更顺畅。 ","footer":" 持续迭代中。 "}}`,
-	)
-	ctx.Set("admin_id", adminID)
-
-	handler.UpdateAboutPage(context.Background(), ctx)
-
-	if ctx.Response.StatusCode() != consts.StatusOK {
-		t.Fatalf("unexpected status code: %d", ctx.Response.StatusCode())
-	}
-
-	if len(received.IntroCards) != 1 || received.IntroCards[0].Title != " 当前主线 " {
-		t.Fatalf("request payload was not bound as expected: %+v", received)
-	}
-
-	if len(logger.calls) != 1 || logger.calls[0].targetID != "about_page" {
-		t.Fatalf("unexpected audit log calls: %+v", logger.calls)
 	}
 }

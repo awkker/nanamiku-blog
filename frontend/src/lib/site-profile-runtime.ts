@@ -6,6 +6,18 @@ import {
   type SiteProfileSettingsPayload,
 } from './site-profile'
 
+/**
+ * 运行时站点资料同步器
+ *
+ * `BaseHead.astro` 在构建期会先输出一套默认 SEO / 品牌信息，
+ * 但后台设置可能在运行时把站点名、描述、分享图等改掉。
+ *
+ * 这个文件的作用就是：
+ * 1. 去后台拿最新站点资料
+ * 2. 在浏览器里把 document 上对应节点改成最新值
+ *
+ * 这样既保留了 SSG 的默认可用性，又支持后台动态配置。
+ */
 const SITE_PROFILE_ENDPOINT = '/api/v1/site-settings/site-profile'
 interface ApiResponse<T = unknown> {
   code: number
@@ -21,6 +33,7 @@ declare global {
 }
 
 function resolvePublicURL(pathOrURL: string, siteURL: string): string {
+  // 支持把相对路径（如 `/favicon.png`）补成完整公开地址。
   if (!pathOrURL) return ''
   try {
     return new URL(pathOrURL, siteURL).toString()
@@ -35,10 +48,12 @@ async function fetchSiteProfile(): Promise<SiteProfileSettings> {
   }
 
   if (window.__mikuSiteProfile) {
+    // 已经拿过数据时直接复用缓存，避免每个页面都重复请求。
     return window.__mikuSiteProfile
   }
 
   if (window.__mikuSiteProfilePromise) {
+    // 首次请求还在进行中时，其它调用直接等待同一个 Promise。
     return window.__mikuSiteProfilePromise
   }
 
@@ -70,6 +85,7 @@ async function fetchSiteProfile(): Promise<SiteProfileSettings> {
 }
 
 function updateTextContent(selector: string, value: string) {
+  // 统一封装 DOM 批量更新，便于下面复用。
   document.querySelectorAll<HTMLElement>(selector).forEach((node) => {
     node.textContent = value
   })
@@ -82,6 +98,9 @@ function updateAttribute(selector: string, attr: string, value: string) {
 }
 
 function replaceTitleTokens(original: string, siteTitle: string): string {
+  // 页面标题里可能预埋了默认站点名，比如：
+  // `NanaMiku Blog | 某个页面`
+  // 这里会把默认 token 替换成后台配置后的站点名。
   if (!original) return siteTitle
 
   const tokens = getDefaultSiteProfileTitleTokens()
@@ -113,6 +132,8 @@ function updateTitleLikeElement(selector: string, siteTitle: string) {
 
 function updateDescriptionLikeElement(selector: string, description: string) {
   document.querySelectorAll(selector).forEach((node) => {
+    // 只替换“仍在使用默认描述”的节点，
+    // 这样页面自己显式传入的 description 不会被站点默认值覆盖。
     if (node.getAttribute('data-site-uses-default') !== 'true') return
 
     if (node.tagName.toLowerCase() === 'title') {
@@ -126,6 +147,7 @@ function updateDescriptionLikeElement(selector: string, description: string) {
 
 function updateImageMeta(selector: string, imageURL: string) {
   document.querySelectorAll(selector).forEach((node) => {
+    // 同理，只覆盖默认分享图，不碰页面自己指定的文章封面图。
     if (node.getAttribute('data-site-uses-default') !== 'true') return
     node.setAttribute('content', imageURL)
   })
@@ -142,6 +164,7 @@ function updatePageURLs(siteURL: string) {
 }
 
 function applySiteProfile(settings: SiteProfileSettings) {
+  // 这里统一把“站点级资料”同步到页面上所有打了 data-* 标记的节点。
   const socialImageURL = resolvePublicURL(settings.defaultSocialImage, settings.siteUrl)
 
   updateTextContent('[data-site-brand-text]', settings.brandText)
@@ -159,6 +182,7 @@ export async function syncSiteProfileIntoDocument(): Promise<SiteProfileSettings
 
   const apply = () => applySiteProfile(settings)
   if (document.readyState === 'loading') {
+    // 如果 DOM 还没准备好，就等 `DOMContentLoaded` 再写。
     document.addEventListener('DOMContentLoaded', apply, { once: true })
   } else {
     apply()

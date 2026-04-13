@@ -23,20 +23,11 @@ const (
 	siteSettingsHomeAssetsKey   = "home_assets"
 	siteSettingsAuthorKey       = "author_profile"
 	siteSettingsIntegrationsKey = "site_integrations"
-	siteSettingsAboutPageKey    = "about_page"
 	maxFooterCustomTexts        = 8
 	maxHomeAssetImages          = 8
 	maxAuthorSkills             = 8
 	maxAuthorNowItems           = 8
 	maxAuthorSocialLinks        = 6
-	maxAuthorContactLinks       = 6
-	maxAboutIntroCards          = 6
-	maxAboutMilestones          = 8
-	maxAboutCapabilityGroups    = 6
-	maxAboutCapabilityStack     = 8
-	maxAboutFeaturedProjects    = 6
-	maxAboutMonthlyGoals        = 8
-	maxAboutListeningNow        = 8
 )
 
 type SiteSettingsService struct {
@@ -102,41 +93,34 @@ type AuthorSocialLink struct {
 	IconKey string `json:"icon_key"`
 }
 
-type AuthorContactLink struct {
-	Label string `json:"label"`
-	Href  string `json:"href"`
-}
-
 type AuthorProfileSettings struct {
-	DisplayName      string              `json:"display_name"`
-	AvatarURL        string              `json:"avatar_url"`
-	Role             string              `json:"role"`
-	Bio              string              `json:"bio"`
-	AboutDescription string              `json:"about_description"`
-	Location         string              `json:"location"`
-	Since            string              `json:"since"`
-	Skills           []string            `json:"skills"`
-	NowItems         []string            `json:"now_items"`
-	Quote            string              `json:"quote"`
-	ContactEmail     string              `json:"contact_email"`
-	SocialLinks      []AuthorSocialLink  `json:"social_links"`
-	ContactLinks     []AuthorContactLink `json:"contact_links"`
+	DisplayName      string             `json:"display_name"`
+	AvatarURL        string             `json:"avatar_url"`
+	Role             string             `json:"role"`
+	Bio              string             `json:"bio"`
+	AboutDescription string             `json:"about_description"`
+	Location         string             `json:"location"`
+	Since            string             `json:"since"`
+	Skills           []string           `json:"skills"`
+	NowItems         []string           `json:"now_items"`
+	Quote            string             `json:"quote"`
+	ContactEmail     string             `json:"contact_email"`
+	SocialLinks      []AuthorSocialLink `json:"social_links"`
 }
 
 type authorProfileSettingsDoc struct {
-	DisplayName      string              `json:"display_name"`
-	AvatarURL        string              `json:"avatar_url"`
-	Role             string              `json:"role"`
-	Bio              string              `json:"bio"`
-	AboutDescription string              `json:"about_description"`
-	Location         string              `json:"location"`
-	Since            string              `json:"since"`
-	Skills           []string            `json:"skills"`
-	NowItems         []string            `json:"now_items"`
-	Quote            string              `json:"quote"`
-	ContactEmail     string              `json:"contact_email"`
-	SocialLinks      []AuthorSocialLink  `json:"social_links"`
-	ContactLinks     []AuthorContactLink `json:"contact_links"`
+	DisplayName      string             `json:"display_name"`
+	AvatarURL        string             `json:"avatar_url"`
+	Role             string             `json:"role"`
+	Bio              string             `json:"bio"`
+	AboutDescription string             `json:"about_description"`
+	Location         string             `json:"location"`
+	Since            string             `json:"since"`
+	Skills           []string           `json:"skills"`
+	NowItems         []string           `json:"now_items"`
+	Quote            string             `json:"quote"`
+	ContactEmail     string             `json:"contact_email"`
+	SocialLinks      []AuthorSocialLink `json:"social_links"`
 }
 
 type SiteIntegrationsSettings struct {
@@ -153,57 +137,6 @@ type siteIntegrationsSettingsDoc struct {
 	ShowWeather     bool   `json:"show_weather"`
 	ShowMusic       bool   `json:"show_music"`
 	ShowClock       bool   `json:"show_clock"`
-}
-
-type AboutIntroCard struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
-type AboutMilestone struct {
-	Year    string `json:"year"`
-	Title   string `json:"title"`
-	Summary string `json:"summary"`
-	Result  string `json:"result"`
-}
-
-type AboutCapabilityGroup struct {
-	Title string   `json:"title"`
-	Desc  string   `json:"desc"`
-	Stack []string `json:"stack"`
-}
-
-type AboutFeaturedProject struct {
-	Name   string `json:"name"`
-	Focus  string `json:"focus"`
-	Role   string `json:"role"`
-	Metric string `json:"metric"`
-	Href   string `json:"href"`
-}
-
-type AboutSignatureSettings struct {
-	Description string `json:"description"`
-	Footer      string `json:"footer"`
-}
-
-type AboutPageSettings struct {
-	IntroCards       []AboutIntroCard       `json:"intro_cards"`
-	Milestones       []AboutMilestone       `json:"milestones"`
-	CapabilityGroups []AboutCapabilityGroup `json:"capability_groups"`
-	FeaturedProjects []AboutFeaturedProject `json:"featured_projects"`
-	MonthlyGoals     []string               `json:"monthly_goals"`
-	ListeningNow     []string               `json:"listening_now"`
-	Signature        AboutSignatureSettings `json:"signature"`
-}
-
-type aboutPageSettingsDoc struct {
-	IntroCards       []AboutIntroCard       `json:"intro_cards"`
-	Milestones       []AboutMilestone       `json:"milestones"`
-	CapabilityGroups []AboutCapabilityGroup `json:"capability_groups"`
-	FeaturedProjects []AboutFeaturedProject `json:"featured_projects"`
-	MonthlyGoals     []string               `json:"monthly_goals"`
-	ListeningNow     []string               `json:"listening_now"`
-	Signature        AboutSignatureSettings `json:"signature"`
 }
 
 func (s *SiteSettingsService) GetFooterSettings(ctx context.Context) (*FooterSettings, error) {
@@ -418,7 +351,6 @@ func (s *SiteSettingsService) SaveAuthorProfileSettings(ctx context.Context, inp
 		Quote:            normalized.Quote,
 		ContactEmail:     normalized.ContactEmail,
 		SocialLinks:      normalized.SocialLinks,
-		ContactLinks:     normalized.ContactLinks,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal author profile settings: %w", err)
@@ -483,55 +415,6 @@ func (s *SiteSettingsService) SaveSiteIntegrationsSettings(ctx context.Context, 
 	settings, err := decodeSiteIntegrationsSettings(row.Value)
 	if err != nil {
 		return nil, fmt.Errorf("decode saved site integrations settings: %w", err)
-	}
-
-	return settings, nil
-}
-
-func (s *SiteSettingsService) GetAboutPageSettings(ctx context.Context) (*AboutPageSettings, error) {
-	row, err := s.q.GetSiteSetting(ctx, siteSettingsAboutPageKey)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("get about page settings: %w", err)
-	}
-
-	settings, err := decodeAboutPageSettings(row.Value)
-	if err != nil {
-		return nil, fmt.Errorf("decode about page settings: %w", err)
-	}
-
-	return settings, nil
-}
-
-func (s *SiteSettingsService) SaveAboutPageSettings(ctx context.Context, input AboutPageSettings, adminID uuid.UUID) (*AboutPageSettings, error) {
-	normalized := normalizeAboutPageSettings(input)
-	payload, err := json.Marshal(aboutPageSettingsDoc{
-		IntroCards:       normalized.IntroCards,
-		Milestones:       normalized.Milestones,
-		CapabilityGroups: normalized.CapabilityGroups,
-		FeaturedProjects: normalized.FeaturedProjects,
-		MonthlyGoals:     normalized.MonthlyGoals,
-		ListeningNow:     normalized.ListeningNow,
-		Signature:        normalized.Signature,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("marshal about page settings: %w", err)
-	}
-
-	row, err := s.q.UpsertSiteSetting(ctx, query.UpsertSiteSettingParams{
-		Key:       siteSettingsAboutPageKey,
-		Value:     payload,
-		UpdatedBy: pgtype.UUID{Bytes: adminID, Valid: adminID != uuid.Nil},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("save about page settings: %w", err)
-	}
-
-	settings, err := decodeAboutPageSettings(row.Value)
-	if err != nil {
-		return nil, fmt.Errorf("decode saved about page settings: %w", err)
 	}
 
 	return settings, nil
@@ -616,10 +499,9 @@ func decodeHomeAssetsSettings(raw json.RawMessage) (*HomeAssetsSettings, error) 
 func decodeAuthorProfileSettings(raw json.RawMessage) (*AuthorProfileSettings, error) {
 	if len(raw) == 0 {
 		return &AuthorProfileSettings{
-			Skills:       []string{},
-			NowItems:     []string{},
-			SocialLinks:  []AuthorSocialLink{},
-			ContactLinks: []AuthorContactLink{},
+			Skills:      []string{},
+			NowItems:    []string{},
+			SocialLinks: []AuthorSocialLink{},
 		}, nil
 	}
 
@@ -641,7 +523,6 @@ func decodeAuthorProfileSettings(raw json.RawMessage) (*AuthorProfileSettings, e
 		Quote:            doc.Quote,
 		ContactEmail:     doc.ContactEmail,
 		SocialLinks:      doc.SocialLinks,
-		ContactLinks:     doc.ContactLinks,
 	})
 
 	return &normalized, nil
@@ -663,37 +544,6 @@ func decodeSiteIntegrationsSettings(raw json.RawMessage) (*SiteIntegrationsSetti
 		ShowWeather:     doc.ShowWeather,
 		ShowMusic:       doc.ShowMusic,
 		ShowClock:       doc.ShowClock,
-	})
-
-	return &normalized, nil
-}
-
-func decodeAboutPageSettings(raw json.RawMessage) (*AboutPageSettings, error) {
-	if len(raw) == 0 {
-		return &AboutPageSettings{
-			IntroCards:       []AboutIntroCard{},
-			Milestones:       []AboutMilestone{},
-			CapabilityGroups: []AboutCapabilityGroup{},
-			FeaturedProjects: []AboutFeaturedProject{},
-			MonthlyGoals:     []string{},
-			ListeningNow:     []string{},
-			Signature:        AboutSignatureSettings{},
-		}, nil
-	}
-
-	var doc aboutPageSettingsDoc
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return nil, err
-	}
-
-	normalized := normalizeAboutPageSettings(AboutPageSettings{
-		IntroCards:       doc.IntroCards,
-		Milestones:       doc.Milestones,
-		CapabilityGroups: doc.CapabilityGroups,
-		FeaturedProjects: doc.FeaturedProjects,
-		MonthlyGoals:     doc.MonthlyGoals,
-		ListeningNow:     doc.ListeningNow,
-		Signature:        doc.Signature,
 	})
 
 	return &normalized, nil
@@ -756,7 +606,6 @@ func normalizeAuthorProfileSettings(input AuthorProfileSettings) AuthorProfileSe
 		Quote:            strings.TrimSpace(input.Quote),
 		ContactEmail:     sanitizeContactEmail(input.ContactEmail),
 		SocialLinks:      sanitizeAuthorSocialLinks(input.SocialLinks),
-		ContactLinks:     sanitizeAuthorContactLinks(input.ContactLinks),
 	}
 }
 
@@ -771,21 +620,6 @@ func normalizeSiteIntegrationsSettings(input SiteIntegrationsSettings) SiteInteg
 		ShowWeather:     input.ShowWeather,
 		ShowMusic:       input.ShowMusic,
 		ShowClock:       input.ShowClock,
-	}
-}
-
-func normalizeAboutPageSettings(input AboutPageSettings) AboutPageSettings {
-	return AboutPageSettings{
-		IntroCards:       sanitizeAboutIntroCards(input.IntroCards),
-		Milestones:       sanitizeAboutMilestones(input.Milestones),
-		CapabilityGroups: sanitizeAboutCapabilityGroups(input.CapabilityGroups),
-		FeaturedProjects: sanitizeAboutFeaturedProjects(input.FeaturedProjects),
-		MonthlyGoals:     sanitizeStringItems(input.MonthlyGoals, maxAboutMonthlyGoals),
-		ListeningNow:     sanitizeStringItems(input.ListeningNow, maxAboutListeningNow),
-		Signature: AboutSignatureSettings{
-			Description: strings.TrimSpace(input.Signature.Description),
-			Footer:      strings.TrimSpace(input.Signature.Footer),
-		},
 	}
 }
 
@@ -971,186 +805,6 @@ func sanitizeAuthorSocialLinks(items []AuthorSocialLink) []AuthorSocialLink {
 	}
 
 	return result
-}
-
-func sanitizeAuthorContactLinks(items []AuthorContactLink) []AuthorContactLink {
-	if len(items) == 0 {
-		return []AuthorContactLink{}
-	}
-
-	result := make([]AuthorContactLink, 0, min(len(items), maxAuthorContactLinks))
-	for _, item := range items {
-		label := strings.TrimSpace(item.Label)
-		href := normalizePublicLink(item.Href)
-		if label == "" || href == "" {
-			continue
-		}
-		result = append(result, AuthorContactLink{
-			Label: label,
-			Href:  href,
-		})
-		if len(result) >= maxAuthorContactLinks {
-			break
-		}
-	}
-
-	return result
-}
-
-func sanitizeAboutIntroCards(items []AboutIntroCard) []AboutIntroCard {
-	if len(items) == 0 {
-		return []AboutIntroCard{}
-	}
-
-	result := make([]AboutIntroCard, 0, min(len(items), maxAboutIntroCards))
-	for _, item := range items {
-		title := strings.TrimSpace(item.Title)
-		description := strings.TrimSpace(item.Description)
-		if title == "" || description == "" {
-			continue
-		}
-		if containsAboutIntroCard(result, title, description) {
-			continue
-		}
-		result = append(result, AboutIntroCard{
-			Title:       title,
-			Description: description,
-		})
-		if len(result) >= maxAboutIntroCards {
-			break
-		}
-	}
-
-	return result
-}
-
-func sanitizeAboutMilestones(items []AboutMilestone) []AboutMilestone {
-	if len(items) == 0 {
-		return []AboutMilestone{}
-	}
-
-	result := make([]AboutMilestone, 0, min(len(items), maxAboutMilestones))
-	for _, item := range items {
-		year := strings.TrimSpace(item.Year)
-		title := strings.TrimSpace(item.Title)
-		summary := strings.TrimSpace(item.Summary)
-		resultText := strings.TrimSpace(item.Result)
-		if year == "" || title == "" || summary == "" || resultText == "" {
-			continue
-		}
-		if containsAboutMilestone(result, year, title) {
-			continue
-		}
-		result = append(result, AboutMilestone{
-			Year:    year,
-			Title:   title,
-			Summary: summary,
-			Result:  resultText,
-		})
-		if len(result) >= maxAboutMilestones {
-			break
-		}
-	}
-
-	return result
-}
-
-func sanitizeAboutCapabilityGroups(items []AboutCapabilityGroup) []AboutCapabilityGroup {
-	if len(items) == 0 {
-		return []AboutCapabilityGroup{}
-	}
-
-	result := make([]AboutCapabilityGroup, 0, min(len(items), maxAboutCapabilityGroups))
-	for _, item := range items {
-		title := strings.TrimSpace(item.Title)
-		desc := strings.TrimSpace(item.Desc)
-		stack := sanitizeStringItems(item.Stack, maxAboutCapabilityStack)
-		if title == "" || desc == "" || len(stack) == 0 {
-			continue
-		}
-		if containsAboutCapabilityGroup(result, title, desc) {
-			continue
-		}
-		result = append(result, AboutCapabilityGroup{
-			Title: title,
-			Desc:  desc,
-			Stack: stack,
-		})
-		if len(result) >= maxAboutCapabilityGroups {
-			break
-		}
-	}
-
-	return result
-}
-
-func sanitizeAboutFeaturedProjects(items []AboutFeaturedProject) []AboutFeaturedProject {
-	if len(items) == 0 {
-		return []AboutFeaturedProject{}
-	}
-
-	result := make([]AboutFeaturedProject, 0, min(len(items), maxAboutFeaturedProjects))
-	for _, item := range items {
-		name := strings.TrimSpace(item.Name)
-		focus := strings.TrimSpace(item.Focus)
-		role := strings.TrimSpace(item.Role)
-		metric := strings.TrimSpace(item.Metric)
-		href := normalizePublicLink(item.Href)
-		if name == "" || focus == "" || role == "" || metric == "" || href == "" {
-			continue
-		}
-		if containsAboutFeaturedProject(result, name, href) {
-			continue
-		}
-		result = append(result, AboutFeaturedProject{
-			Name:   name,
-			Focus:  focus,
-			Role:   role,
-			Metric: metric,
-			Href:   href,
-		})
-		if len(result) >= maxAboutFeaturedProjects {
-			break
-		}
-	}
-
-	return result
-}
-
-func containsAboutIntroCard(items []AboutIntroCard, title, description string) bool {
-	for _, item := range items {
-		if item.Title == title && item.Description == description {
-			return true
-		}
-	}
-	return false
-}
-
-func containsAboutMilestone(items []AboutMilestone, year, title string) bool {
-	for _, item := range items {
-		if item.Year == year && item.Title == title {
-			return true
-		}
-	}
-	return false
-}
-
-func containsAboutCapabilityGroup(items []AboutCapabilityGroup, title, desc string) bool {
-	for _, item := range items {
-		if item.Title == title && item.Desc == desc {
-			return true
-		}
-	}
-	return false
-}
-
-func containsAboutFeaturedProject(items []AboutFeaturedProject, name, href string) bool {
-	for _, item := range items {
-		if item.Name == name && item.Href == href {
-			return true
-		}
-	}
-	return false
 }
 
 func normalizePublicLink(raw string) string {

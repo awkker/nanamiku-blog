@@ -24,7 +24,6 @@ type siteSettingsAdminService interface {
 	SaveHomeAssetsSettings(ctx context.Context, input service.HomeAssetsSettings, adminID uuid.UUID) (*service.HomeAssetsSettings, error)
 	SaveAuthorProfileSettings(ctx context.Context, input service.AuthorProfileSettings, adminID uuid.UUID) (*service.AuthorProfileSettings, error)
 	SaveSiteIntegrationsSettings(ctx context.Context, input service.SiteIntegrationsSettings, adminID uuid.UUID) (*service.SiteIntegrationsSettings, error)
-	SaveAboutPageSettings(ctx context.Context, input service.AboutPageSettings, adminID uuid.UUID) (*service.AboutPageSettings, error)
 }
 
 type siteSettingsAuditLogger interface {
@@ -65,25 +64,19 @@ type updateAuthorSocialLinkReq struct {
 	IconKey string `json:"icon_key"`
 }
 
-type updateAuthorContactLinkReq struct {
-	Label string `json:"label"`
-	Href  string `json:"href"`
-}
-
 type updateAuthorProfileSettingsReq struct {
-	DisplayName      string                       `json:"display_name"`
-	AvatarURL        string                       `json:"avatar_url"`
-	Role             string                       `json:"role"`
-	Bio              string                       `json:"bio"`
-	AboutDescription string                       `json:"about_description"`
-	Location         string                       `json:"location"`
-	Since            string                       `json:"since"`
-	Skills           []string                     `json:"skills"`
-	NowItems         []string                     `json:"now_items"`
-	Quote            string                       `json:"quote"`
-	ContactEmail     string                       `json:"contact_email"`
-	SocialLinks      []updateAuthorSocialLinkReq  `json:"social_links"`
-	ContactLinks     []updateAuthorContactLinkReq `json:"contact_links"`
+	DisplayName      string                      `json:"display_name"`
+	AvatarURL        string                      `json:"avatar_url"`
+	Role             string                      `json:"role"`
+	Bio              string                      `json:"bio"`
+	AboutDescription string                      `json:"about_description"`
+	Location         string                      `json:"location"`
+	Since            string                      `json:"since"`
+	Skills           []string                    `json:"skills"`
+	NowItems         []string                    `json:"now_items"`
+	Quote            string                      `json:"quote"`
+	ContactEmail     string                      `json:"contact_email"`
+	SocialLinks      []updateAuthorSocialLinkReq `json:"social_links"`
 }
 
 type updateSiteIntegrationsSettingsReq struct {
@@ -92,47 +85,6 @@ type updateSiteIntegrationsSettingsReq struct {
 	ShowWeather     bool   `json:"show_weather"`
 	ShowMusic       bool   `json:"show_music"`
 	ShowClock       bool   `json:"show_clock"`
-}
-
-type updateAboutIntroCardReq struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
-type updateAboutMilestoneReq struct {
-	Year    string `json:"year"`
-	Title   string `json:"title"`
-	Summary string `json:"summary"`
-	Result  string `json:"result"`
-}
-
-type updateAboutCapabilityGroupReq struct {
-	Title string   `json:"title"`
-	Desc  string   `json:"desc"`
-	Stack []string `json:"stack"`
-}
-
-type updateAboutFeaturedProjectReq struct {
-	Name   string `json:"name"`
-	Focus  string `json:"focus"`
-	Role   string `json:"role"`
-	Metric string `json:"metric"`
-	Href   string `json:"href"`
-}
-
-type updateAboutSignatureReq struct {
-	Description string `json:"description"`
-	Footer      string `json:"footer"`
-}
-
-type updateAboutPageSettingsReq struct {
-	IntroCards       []updateAboutIntroCardReq       `json:"intro_cards"`
-	Milestones       []updateAboutMilestoneReq       `json:"milestones"`
-	CapabilityGroups []updateAboutCapabilityGroupReq `json:"capability_groups"`
-	FeaturedProjects []updateAboutFeaturedProjectReq `json:"featured_projects"`
-	MonthlyGoals     []string                        `json:"monthly_goals"`
-	ListeningNow     []string                        `json:"listening_now"`
-	Signature        updateAboutSignatureReq         `json:"signature"`
 }
 
 func (h *SiteSettingsAdminHandler) UpdateFooter(ctx context.Context, c *app.RequestContext) {
@@ -285,14 +237,6 @@ func (h *SiteSettingsAdminHandler) UpdateAuthorProfile(ctx context.Context, c *a
 		})
 	}
 
-	contactLinks := make([]service.AuthorContactLink, 0, len(req.ContactLinks))
-	for _, item := range req.ContactLinks {
-		contactLinks = append(contactLinks, service.AuthorContactLink{
-			Label: item.Label,
-			Href:  item.Href,
-		})
-	}
-
 	settings, err := h.svc.SaveAuthorProfileSettings(ctx, service.AuthorProfileSettings{
 		DisplayName:      req.DisplayName,
 		AvatarURL:        req.AvatarURL,
@@ -306,7 +250,6 @@ func (h *SiteSettingsAdminHandler) UpdateAuthorProfile(ctx context.Context, c *a
 		Quote:            req.Quote,
 		ContactEmail:     req.ContactEmail,
 		SocialLinks:      socialLinks,
-		ContactLinks:     contactLinks,
 	}, adminID)
 	if err != nil {
 		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to save author profile settings"))
@@ -314,11 +257,10 @@ func (h *SiteSettingsAdminHandler) UpdateAuthorProfile(ctx context.Context, c *a
 	}
 
 	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "author_profile", map[string]interface{}{
-		"display_name":        settings.DisplayName,
-		"role":                settings.Role,
-		"skills_count":        len(settings.Skills),
-		"social_links_count":  len(settings.SocialLinks),
-		"contact_links_count": len(settings.ContactLinks),
+		"display_name":       settings.DisplayName,
+		"role":               settings.Role,
+		"skills_count":       len(settings.Skills),
+		"social_links_count": len(settings.SocialLinks),
 	}, getClientIP(c))
 
 	c.JSON(consts.StatusOK, dto.OK(settings))
@@ -355,86 +297,6 @@ func (h *SiteSettingsAdminHandler) UpdateSiteIntegrations(ctx context.Context, c
 		"show_weather":     settings.ShowWeather,
 		"show_music":       settings.ShowMusic,
 		"show_clock":       settings.ShowClock,
-	}, getClientIP(c))
-
-	c.JSON(consts.StatusOK, dto.OK(settings))
-}
-
-func (h *SiteSettingsAdminHandler) UpdateAboutPage(ctx context.Context, c *app.RequestContext) {
-	adminID := getAdminID(c)
-	if adminID == uuid.Nil {
-		c.JSON(consts.StatusUnauthorized, dto.Err(errcode.ErrUnauthorized, "unauthorized"))
-		return
-	}
-
-	var req updateAboutPageSettingsReq
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(consts.StatusBadRequest, dto.Err(errcode.ErrBadRequest, "invalid request"))
-		return
-	}
-
-	introCards := make([]service.AboutIntroCard, 0, len(req.IntroCards))
-	for _, item := range req.IntroCards {
-		introCards = append(introCards, service.AboutIntroCard{
-			Title:       item.Title,
-			Description: item.Description,
-		})
-	}
-
-	milestones := make([]service.AboutMilestone, 0, len(req.Milestones))
-	for _, item := range req.Milestones {
-		milestones = append(milestones, service.AboutMilestone{
-			Year:    item.Year,
-			Title:   item.Title,
-			Summary: item.Summary,
-			Result:  item.Result,
-		})
-	}
-
-	capabilityGroups := make([]service.AboutCapabilityGroup, 0, len(req.CapabilityGroups))
-	for _, item := range req.CapabilityGroups {
-		capabilityGroups = append(capabilityGroups, service.AboutCapabilityGroup{
-			Title: item.Title,
-			Desc:  item.Desc,
-			Stack: item.Stack,
-		})
-	}
-
-	featuredProjects := make([]service.AboutFeaturedProject, 0, len(req.FeaturedProjects))
-	for _, item := range req.FeaturedProjects {
-		featuredProjects = append(featuredProjects, service.AboutFeaturedProject{
-			Name:   item.Name,
-			Focus:  item.Focus,
-			Role:   item.Role,
-			Metric: item.Metric,
-			Href:   item.Href,
-		})
-	}
-
-	settings, err := h.svc.SaveAboutPageSettings(ctx, service.AboutPageSettings{
-		IntroCards:       introCards,
-		Milestones:       milestones,
-		CapabilityGroups: capabilityGroups,
-		FeaturedProjects: featuredProjects,
-		MonthlyGoals:     req.MonthlyGoals,
-		ListeningNow:     req.ListeningNow,
-		Signature: service.AboutSignatureSettings{
-			Description: req.Signature.Description,
-			Footer:      req.Signature.Footer,
-		},
-	}, adminID)
-	if err != nil {
-		c.JSON(consts.StatusInternalServerError, dto.Err(errcode.ErrInternal, "failed to save about page settings"))
-		return
-	}
-
-	_ = h.modSvc.LogAudit(ctx, adminID, "update", "site_setting", "about_page", map[string]interface{}{
-		"intro_cards_count":       len(settings.IntroCards),
-		"milestones_count":        len(settings.Milestones),
-		"capability_groups_count": len(settings.CapabilityGroups),
-		"featured_projects_count": len(settings.FeaturedProjects),
-		"monthly_goals_count":     len(settings.MonthlyGoals),
-		"listening_now_count":     len(settings.ListeningNow),
 	}, getClientIP(c))
 
 	c.JSON(consts.StatusOK, dto.OK(settings))

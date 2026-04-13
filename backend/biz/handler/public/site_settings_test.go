@@ -25,8 +25,6 @@ type stubSiteSettingsService struct {
 	authorProfileErr error
 	integrations     *service.SiteIntegrationsSettings
 	integrationsErr  error
-	aboutPage        *service.AboutPageSettings
-	aboutPageErr     error
 }
 
 func (s *stubSiteSettingsService) GetFooterSettings(context.Context) (*service.FooterSettings, error) {
@@ -51,10 +49,6 @@ func (s *stubSiteSettingsService) GetAuthorProfileSettings(context.Context) (*se
 
 func (s *stubSiteSettingsService) GetSiteIntegrationsSettings(context.Context) (*service.SiteIntegrationsSettings, error) {
 	return s.integrations, s.integrationsErr
-}
-
-func (s *stubSiteSettingsService) GetAboutPageSettings(context.Context) (*service.AboutPageSettings, error) {
-	return s.aboutPage, s.aboutPageErr
 }
 
 type responseEnvelope struct {
@@ -132,43 +126,5 @@ func TestSiteSettingsHandlerGetSiteIntegrationsError(t *testing.T) {
 	}
 	if resp.Message != "failed to get site integrations settings" {
 		t.Fatalf("unexpected response message: %q", resp.Message)
-	}
-}
-
-func TestSiteSettingsHandlerGetAboutPageSuccess(t *testing.T) {
-	t.Parallel()
-
-	handler := NewSiteSettingsHandler(&stubSiteSettingsService{
-		aboutPage: &service.AboutPageSettings{
-			IntroCards: []service.AboutIntroCard{
-				{Title: "当前主线", Description: "整理公开资料配置"},
-			},
-			MonthlyGoals: []string{"补齐 About 页配置"},
-			Signature: service.AboutSignatureSettings{
-				Description: "让内容维护更顺畅。",
-				Footer:      "持续迭代中。",
-			},
-		},
-	})
-
-	ctx := newTestContext(consts.MethodGet, "/api/v1/site-settings/about-page")
-	handler.GetAboutPage(context.Background(), ctx)
-
-	if ctx.Response.StatusCode() != consts.StatusOK {
-		t.Fatalf("unexpected status code: %d", ctx.Response.StatusCode())
-	}
-
-	resp := decodeResponse(t, ctx)
-	if resp.Code != 0 {
-		t.Fatalf("unexpected response code: %d", resp.Code)
-	}
-
-	var data service.AboutPageSettings
-	if err := json.Unmarshal(resp.Data, &data); err != nil {
-		t.Fatalf("failed to decode data: %v", err)
-	}
-
-	if len(data.IntroCards) != 1 || data.IntroCards[0].Title != "当前主线" {
-		t.Fatalf("unexpected payload: %+v", data)
 	}
 }

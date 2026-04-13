@@ -12,6 +12,16 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { createLiquidGlass, type LiquidGlassController } from '../../utils/liquidGlass'
 import { hydrateThemeMode } from '../../stores/theme'
 
+/**
+ * 这个组件是“液态玻璃容器”的 Vue 包装层。
+ *
+ * 职责分成两部分：
+ * 1. 暴露一个简单的尺寸/效果 props API，给页面和业务组件使用
+ * 2. 在挂载后调用 `createLiquidGlass()`，把真正的玻璃折射效果挂到 DOM 上
+ *
+ * 页面层通常只改尺寸参数；
+ * 真正复杂的滤镜绘制逻辑，放在 `utils/liquidGlass.ts` 里统一管理。
+ */
 interface Props {
   width?: string
   maxWidth?: string
@@ -48,6 +58,7 @@ const isNight = ref(false)
 let themeObserver: MutationObserver | null = null
 
 const frameStyle = computed(() => ({
+  // 这里只处理尺寸相关的样式，确保页面层改宽高时不需要碰滤镜逻辑。
   width: props.width,
   maxWidth: props.maxWidth,
   padding: props.padding,
@@ -55,6 +66,8 @@ const frameStyle = computed(() => ({
 }))
 
 const liquidOptions = computed(() => ({
+  // 这里整理的是要传给底层液态玻璃引擎的效果参数。
+  // 把它单独做成 computed，后面就可以直接 watch 整组配置。
   borderRadius: props.borderRadius,
   cornerSoftness: props.cornerSoftness,
   displacementStrength: props.displacementStrength,
@@ -67,6 +80,7 @@ const liquidOptions = computed(() => ({
 }))
 
 function destroyController() {
+  // 真正占资源的是底层控制器，所以销毁时统一从这里走。
   controller?.destroy()
   controller = null
 }
@@ -84,10 +98,13 @@ function syncThemeFromDocument() {
 }
 
 function handleThemeChange() {
+  // 主题切换事件最终只落到一个动作：重新同步文档上的主题状态。
   syncThemeFromDocument()
 }
 
 function initController() {
+  // 夜间模式下这里选择停用液态玻璃滤镜，只保留普通深色卡片。
+  // 这样能减少过暗背景下的视觉噪点，也能节省一部分绘制开销。
   if (!frameRef.value || controller || isNight.value) {
     return
   }
@@ -96,6 +113,8 @@ function initController() {
 }
 
 onMounted(() => {
+  // 先保证主题状态已经从 localStorage / document 恢复，
+  // 再决定当前是否应该启用液态玻璃效果。
   hydrateThemeMode()
   syncThemeFromDocument()
   window.addEventListener('miku-theme-change', handleThemeChange)
@@ -131,6 +150,8 @@ watch(
 watch(
   isNight,
   (night) => {
+    // 主题切到夜间时直接销毁滤镜；
+    // 切回亮色时再重新初始化。
     if (night) {
       destroyController()
       return

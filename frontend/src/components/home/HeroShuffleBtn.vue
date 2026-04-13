@@ -30,6 +30,8 @@ const hsb = siteCopy.components.heroShuffleBtn
 
 import { heroImages, heroIndex, shuffleHeroImage } from '../../stores/heroImage'
 
+// 这个按钮不自己维护图片列表，而是直接读取和 `HeroParallax` 相同的 store。
+// 所以它只是“发出切换动作”，真正展示背景的仍然是背景组件。
 const $heroIndex = useStore(heroIndex)
 const $heroImages = useStore(heroImages)
 const currentIdx = ref(0)
@@ -38,6 +40,7 @@ const spinning = ref(false)
 const total = computed(() => $heroImages.value.length || 1)
 
 const btnTitle = computed(() =>
+  // title 会展示“当前第几张 / 总共几张”，鼠标悬停时更容易理解按钮作用。
   mounted.value ? `${hsb.titlePrefix} (${currentIdx.value + 1}/${total.value})` : hsb.titlePrefix
 )
 
@@ -53,6 +56,7 @@ onMounted(() => {
 })
 
 function onShuffle() {
+  // 点击时给图标一个短暂旋转反馈，但真正的换图动作还是交给 store 完成。
   spinning.value = true
   shuffleHeroImage()
   setTimeout(() => {

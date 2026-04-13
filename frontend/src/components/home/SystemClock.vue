@@ -8,6 +8,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 const clockText = ref('')
 let timer: ReturnType<typeof setInterval> | null = null
 
+// 提前创建格式化器，避免每秒都重新 new 一次 Intl 对象。
 const formatter = new Intl.DateTimeFormat('zh-CN', {
   month: '2-digit',
   day: '2-digit',
@@ -22,6 +23,7 @@ const updateClock = (): void => {
 }
 
 onMounted(() => {
+  // 先立即更新一次，避免首屏先看到空字符串。
   updateClock()
   timer = setInterval(updateClock, 1000)
 })

@@ -1,4 +1,20 @@
 ---
+/**
+ * 首页开屏页
+ *
+ * 这份页面本身只负责“拼装”首页的几个核心区块：
+ * 1. 顶部品牌栏和右上角小组件
+ * 2. 中央主视觉区（标题、副标题、背景视差）
+ * 3. 底部 Dock 导航
+ * 4. 一个很轻的前端脚本，用来根据登录态决定显示“登录”还是“后台”
+ *
+ * 设计上，这个页面尽量不自己处理复杂业务：
+ * - 文案来自 `siteCopy`
+ * - 主视觉内容交给 `HomeHeroIntro`
+ * - 背景效果交给 `HeroParallax`
+ * - 顶栏小组件交给 `HomeTopbarWidgets`
+ * - 底部玻璃面板交给 `LiquidGlassCard`
+ */
 import BaseHead from '../components/base/BaseHead.astro'
 import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
 import HomeHeroIntro from '../components/home/HomeHeroIntro.vue'
@@ -7,8 +23,17 @@ import HeroParallax from '../components/home/HeroParallax.vue'
 import HeroShuffleBtn from '../components/home/HeroShuffleBtn.vue'
 import { siteCopy } from '../content/copy'
 
+// 首页 Dock 导航统一从 copy 配置读取。
+// 这样页面模板只负责渲染结构，不在这里直接写死导航文案和跳转地址。
+//
+// 你可以把它理解成：
+// - `siteCopy` 是“可配置内容”
+// - `index.astro` 是“把这些内容摆到页面上”
 const dockItems = siteCopy.home.dockItems
 
+// Dock 中的图标目前直接在页面内维护。
+// 原因是首页 Dock 的图标集合很固定，而且只在这个页面使用，
+// 暂时没必要为了“复用”单独再抽一个 icon 文件。
 const iconPaths: Record<string, string> = {
   person:
     'M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.87 0-7 2.01-7 4.5V21h14v-2.5c0-2.49-3.13-4.5-7-4.5z',
@@ -25,12 +50,22 @@ const iconPaths: Record<string, string> = {
 <!doctype html>
 <html lang="zh-CN">
   <head>
+    <!-- 首页的 SEO 标题和描述统一走 BaseHead，避免页面里手写一堆 meta 标签。 -->
     <BaseHead title={siteCopy.home.metaTitle} description={siteCopy.home.metaDescription} />
   </head>
   <body class="overflow-hidden bg-slate-900 text-[#39c5bb]">
     <main class="relative h-screen w-screen overflow-hidden">
+      <!-- 背景视差层放在最底部，用来提供首页的氛围感。 -->
       <HeroParallax client:load />
 
+      <!--
+        顶部栏负责两件事：
+        1. 左侧展示品牌 logo 和站点名
+        2. 右侧挂载时钟、天气之类的顶部小组件
+
+        这里单独放在页面里，而不是立刻抽成通用 Header，
+        是因为首页头部视觉和普通内容页头部通常差异很大。
+      -->
       <header class="absolute left-0 top-0 z-20 flex h-8 w-full items-center justify-between border-b border-white/30 bg-white/35 px-2.5 text-sm font-medium text-[#39c5bb]/90 backdrop-blur-none min-[380px]:px-3 sm:px-4">
         <a
           href="/"
@@ -50,40 +85,61 @@ const iconPaths: Record<string, string> = {
           <span class="whitespace-nowrap" data-site-brand-text>{siteCopy.brand.text}</span>
         </a>
 
+        <!-- 右上角的小组件交给独立 Vue 岛屿处理，避免首页页面本身塞太多交互逻辑。 -->
         <HomeTopbarWidgets client:load />
       </header>
 
+      <!--
+        中央主视觉区只负责“放置”主视觉组件，不负责主视觉内部的动画和数据读取。
+        `HomeHeroIntro` 自己会去 store 里拿标题和副标题数据。
+      -->
       <section class="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
         <HomeHeroIntro client:load />
       </section>
 
+      <!--
+        底部 Dock 是首页的主导航入口。
+        这里使用 LiquidGlassCard 包一层，保持整块导航的玻璃感一致。
+      -->
       <div class="absolute bottom-4 left-1/2 z-20 w-[calc(100vw-1rem)] max-w-[760px] -translate-x-1/2 sm:w-auto sm:max-w-none">
         <LiquidGlassCard client:load width="100%" maxWidth="100%" padding="10px 12px" borderRadius={16}>
           <ul class="flex items-end gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2 sm:overflow-visible sm:pb-0">
             {
               dockItems.map((item, index) => (
                 <li>
+                  <!--
+                    `data-auth-visible` 用来交给下方脚本做登录态切换：
+                    - `guest` 只在未登录时显示
+                    - `authed` 只在已登录时显示
+                  -->
                   <a
                     href={item.href}
                     data-auth-visible={item.auth}
                     class:list={[
+                      // Dock 图标的基础布局和动效都收在这里，
+                      // 这样页面能一眼看出“单个 Dock item”长什么样。
                       'group flex w-12 flex-col items-center gap-1 rounded-2xl py-2 text-[10px] text-[#39c5bb]/90 transition duration-300 hover:scale-110 hover:bg-white/20 sm:w-16 sm:text-xs sm:hover:scale-125',
+                      // 有鉴权限制的项默认先隐藏，等客户端脚本根据会话状态再决定是否显示。
                       item.auth && 'hidden',
+                      // 这里给第二个入口加一个轻微浮动动画，用来制造一个视觉焦点。
                       index === 1 && 'animate-dock-float',
                     ]}
                   >
                     <span class="flex h-8 w-8 items-center justify-center rounded-xl border border-white/30 bg-white/15 sm:h-9 sm:w-9">
+                      <!-- SVG path 来自上面的 `iconPaths`，页面模板只负责把对应图标画出来。 -->
                       <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current stroke-[1.5] sm:h-5 sm:w-5">
                         <path d={iconPaths[item.icon]} />
                       </svg>
                     </span>
                     <span>{item.name}</span>
+                    <!-- 小白点相当于 Dock 激活态的视觉点缀，这里默认让第二项亮起。 -->
                     <span class:list={['h-1.5 w-1.5 rounded-full bg-white', index === 1 ? 'opacity-100' : 'opacity-0']} />
                   </a>
                 </li>
               ))
             }
             <li>
+              <!-- 随机切换首页背景图的按钮单独拆成组件，避免页面模板过长。 -->
               <HeroShuffleBtn client:load />
             </li>
           </ul>
@@ -96,24 +152,48 @@ const iconPaths: Record<string, string> = {
 <script>
   import { AUTH_STATE_CHANGED_EVENT, ensureSessionUser } from '../lib/auth-session';
 
+  // 这个函数的职责很单一：
+  // 根据当前是否登录，决定 Dock 里哪些入口该显示。
+  //
+  // 页面模板里先把受鉴权控制的入口打上 `data-auth-visible`，
+  // 这里再统一扫描并切换 `hidden` class。
   async function updateAuthVisibleLinks() {
+    // `ensureSessionUser()` 会尝试读取当前会话用户。
+    // 有用户对象就表示“已登录”，否则视为“访客”。
     const authed = Boolean(await ensureSessionUser());
+
+    // 页面里所有受登录态影响的入口，都统一打了 `data-auth-visible` 标记。
+    // 所以这里不需要手动维护某一个按钮，只要批量扫描并判断即可。
     const links = document.querySelectorAll('[data-auth-visible]');
 
     links.forEach((el) => {
       const mode = el.getAttribute('data-auth-visible');
+      // 规则只有两种：
+      // - mode === 'authed' 时，登录后显示
+      // - mode === 'guest' 时，未登录显示
       const shouldShow = (mode === 'authed' && authed) || (mode === 'guest' && !authed);
       el.classList.toggle('hidden', !shouldShow);
     });
   }
 
+  // 页面初次加载时先同步一次，避免默认状态和真实登录态不一致。
   void updateAuthVisibleLinks();
+
+  // 当登录态变化时，再同步一次 Dock 的显示状态。
+  // 这样用户登录或退出后，不需要手动刷新首页。
   window.addEventListener(AUTH_STATE_CHANGED_EVENT, () => {
     void updateAuthVisibleLinks();
   });
 </script>
 
 <style>
+  /* `hero-title` 和 `hero-text` 虽然定义在页面里，
+     但实际是给 `HomeHeroIntro.vue` 里的标题元素使用的。
+     这样做的目的是把“首页独有的视觉语言”留在首页页面本身管理。
+
+     也就是说：
+     - 组件负责结构和交互
+     - 页面负责首页专属视觉 */
   .hero-title {
     font-family: 'Noto Serif SC', 'Noto Serif JP', 'Songti SC', 'STSong', serif;
     font-weight: 700;
@@ -121,6 +201,8 @@ const iconPaths: Record<string, string> = {
     position: relative;
   }
 
+  /* 标题内部的渐变文字效果。
+     通过 background-clip + 位移动画，让主标题看起来更像首页开屏视觉，而不是普通正文标题。 */
   .hero-text {
     background: linear-gradient(
       90deg,
@@ -139,6 +221,7 @@ const iconPaths: Record<string, string> = {
     display: inline-block;
   }
 
+  /* 渐变流动动画本身很简单，只负责推动背景渐变左右移动。 */
   @keyframes gradient-flow {
     0% { background-position: 0% 50%; }
     100% { background-position: 200% 50%; }

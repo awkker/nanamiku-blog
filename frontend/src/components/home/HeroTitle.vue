@@ -19,15 +19,18 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// 把整句标题拆成单个字符，后面模板才能逐字绑定 hover 动画。
 const chars = computed(() => [...props.text])
 
 function onEnter(e: Event) {
   const el = e.target as HTMLElement
+  // 动画播放期间不重复加类，避免频繁 hover 时动画抖动或重叠。
   if (el.classList.contains('is-active')) return
   el.classList.add('is-active')
 }
 
 function onAnimEnd(e: AnimationEvent) {
+  // 动画结束后移除激活类，下次 hover 才能重新触发。
   ;(e.target as HTMLElement).classList.remove('is-active')
 }
 </script>

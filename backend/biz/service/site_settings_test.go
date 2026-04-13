@@ -130,9 +130,6 @@ func TestNormalizeAuthorProfileSettings(t *testing.T) {
 			{Label: " GitHub ", Href: "github.com/yourname", IconKey: " github "},
 			{Label: "", Href: "https://example.com"},
 		},
-		ContactLinks: []AuthorContactLink{
-			{Label: " Portfolio ", Href: "https://example.com/portfolio "},
-		},
 	})
 
 	if got.DisplayName != "Your Name" {
@@ -153,10 +150,6 @@ func TestNormalizeAuthorProfileSettings(t *testing.T) {
 
 	if len(got.SocialLinks) != 1 || got.SocialLinks[0].Href != "https://github.com/yourname" {
 		t.Fatalf("unexpected social links: %+v", got.SocialLinks)
-	}
-
-	if len(got.ContactLinks) != 1 || got.ContactLinks[0].Href != "https://example.com/portfolio" {
-		t.Fatalf("unexpected contact links: %+v", got.ContactLinks)
 	}
 }
 
@@ -373,69 +366,5 @@ func TestNormalizePublicLink(t *testing.T) {
 				t.Fatalf("normalizePublicLink(%q) = %q, want %q", tc.raw, got, tc.want)
 			}
 		})
-	}
-}
-
-func TestNormalizeAboutPageSettings(t *testing.T) {
-	t.Parallel()
-
-	got := normalizeAboutPageSettings(AboutPageSettings{
-		IntroCards: []AboutIntroCard{
-			{Title: " 当前主线 ", Description: " 整理设置中心 "},
-			{Title: " 当前主线 ", Description: " 整理设置中心 "},
-		},
-		Milestones: []AboutMilestone{
-			{Year: " 2026 ", Title: " 收口 About ", Summary: " 接入后台 ", Result: " 链路打通 "},
-		},
-		CapabilityGroups: []AboutCapabilityGroup{
-			{Title: " 前端体验 ", Desc: " 关注结构 ", Stack: []string{" Astro ", "Vue", "Astro"}},
-		},
-		FeaturedProjects: []AboutFeaturedProject{
-			{Name: " Starter Site Kit ", Focus: " 模板 ", Role: " 配置治理 ", Metric: " 可安全开源 ", Href: "github.com/yourname/miku-blog-starter"},
-		},
-		MonthlyGoals: []string{" 补齐 About 页配置 ", "补齐 About 页配置"},
-		ListeningNow: []string{" Lo-fi Focus Mix "},
-		Signature: AboutSignatureSettings{
-			Description: " 让内容维护更顺畅。 ",
-			Footer:      " 持续迭代中。 ",
-		},
-	})
-
-	if len(got.IntroCards) != 1 || got.IntroCards[0].Title != "当前主线" {
-		t.Fatalf("unexpected intro cards: %+v", got.IntroCards)
-	}
-	if len(got.CapabilityGroups) != 1 || len(got.CapabilityGroups[0].Stack) != 2 {
-		t.Fatalf("unexpected capability groups: %+v", got.CapabilityGroups)
-	}
-	if got.FeaturedProjects[0].Href != "https://github.com/yourname/miku-blog-starter" {
-		t.Fatalf("unexpected project href: %+v", got.FeaturedProjects)
-	}
-	if len(got.MonthlyGoals) != 1 || got.MonthlyGoals[0] != "补齐 About 页配置" {
-		t.Fatalf("unexpected monthly goals: %+v", got.MonthlyGoals)
-	}
-}
-
-func TestDecodeAboutPageSettingsNormalizesLegacyPayload(t *testing.T) {
-	t.Parallel()
-
-	raw := json.RawMessage(`{
-		"intro_cards":[{"title":" 当前主线 ","description":" 整理设置中心 "}],
-		"featured_projects":[{"name":" Starter Site Kit ","focus":" 模板 ","role":" 配置治理 ","metric":" 可安全开源 ","href":"github.com/yourname/miku-blog-starter"}],
-		"signature":{"description":" 让内容维护更顺畅。 ","footer":" 持续迭代中。 "}
-	}`)
-
-	got, err := decodeAboutPageSettings(raw)
-	if err != nil {
-		t.Fatalf("decodeAboutPageSettings() error = %v", err)
-	}
-
-	if len(got.IntroCards) != 1 || got.IntroCards[0].Title != "当前主线" {
-		t.Fatalf("unexpected intro cards: %+v", got.IntroCards)
-	}
-	if len(got.FeaturedProjects) != 1 || got.FeaturedProjects[0].Href != "https://github.com/yourname/miku-blog-starter" {
-		t.Fatalf("unexpected featured projects: %+v", got.FeaturedProjects)
-	}
-	if got.Signature.Description != "让内容维护更顺畅。" {
-		t.Fatalf("unexpected signature: %+v", got.Signature)
 	}
 }

@@ -13,11 +13,6 @@ export interface AuthorSocialLink {
   iconKey: string
 }
 
-export interface AuthorContactLink {
-  label: string
-  href: string
-}
-
 export interface AuthorProfileSettings {
   displayName: string
   avatarUrl: string
@@ -31,7 +26,6 @@ export interface AuthorProfileSettings {
   quote: string
   contactEmail: string
   socialLinks: AuthorSocialLink[]
-  contactLinks: AuthorContactLink[]
 }
 
 export interface AuthorProfileSettingsPayload {
@@ -50,10 +44,6 @@ export interface AuthorProfileSettingsPayload {
     label?: string
     href?: string
     icon_key?: string
-  }>
-  contact_links?: Array<{
-    label?: string
-    href?: string
   }>
 }
 
@@ -154,24 +144,6 @@ function sanitizeSocialLinks(input: unknown): AuthorSocialLink[] {
   return result
 }
 
-function sanitizeContactLinks(input: unknown): AuthorContactLink[] {
-  if (!Array.isArray(input)) {
-    return []
-  }
-
-  const result: AuthorContactLink[] = []
-  for (const item of input) {
-    if (!item || typeof item !== 'object') continue
-    const source = item as Record<string, unknown>
-    const label = trimText(source.label)
-    const href = normalizePublicLink(source.href)
-    if (!label || !href) continue
-    result.push({ label, href })
-    if (result.length >= MAX_CONTACT_LINKS) break
-  }
-  return result
-}
-
 function deriveSocialIconKey(label: string): string {
   const normalized = label.trim().toLowerCase()
   if (normalized.includes('github')) return 'github'
@@ -183,8 +155,7 @@ function deriveSocialIconKey(label: string): string {
 }
 
 function defaultContactEmail() {
-  const fromHref = trimText(siteCopy.aboutPage.contactSection.emailHref).replace(/^mailto:/i, '')
-  return fromHref.split('?')[0] || ''
+  return ''
 }
 
 export function extractGitHubUsernameFromURL(input: string): string {
@@ -252,7 +223,6 @@ export function getDefaultAuthorProfileSettings(): AuthorProfileSettings {
         icon_key: deriveSocialIconKey(item.label),
       })),
     ),
-    contactLinks: sanitizeContactLinks(siteCopy.aboutPage.socialLinks),
   }
 }
 
@@ -264,7 +234,6 @@ export function normalizeAuthorProfileSettings(input: unknown): AuthorProfileSet
 
   const source = input as AuthorProfileSettingsPayload & Partial<AuthorProfileSettings> & Record<string, unknown>
   const socialLinks = sanitizeSocialLinks(source.socialLinks)
-  const contactLinks = sanitizeContactLinks(source.contactLinks)
 
   return {
     displayName: trimText(source.displayName ?? source.display_name) || defaults.displayName,
@@ -281,7 +250,6 @@ export function normalizeAuthorProfileSettings(input: unknown): AuthorProfileSet
     quote: trimText(source.quote) || defaults.quote,
     contactEmail: trimText(source.contactEmail ?? source.contact_email) || defaults.contactEmail,
     socialLinks: socialLinks.length > 0 ? socialLinks : defaults.socialLinks,
-    contactLinks: contactLinks.length > 0 ? contactLinks : defaults.contactLinks,
   }
 }
 
@@ -303,6 +271,5 @@ export function toAuthorProfilePayload(settings: AuthorProfileSettings): AuthorP
       href: item.href,
       icon_key: item.iconKey,
     })),
-    contact_links: sanitizeContactLinks(settings.contactLinks),
   }
 }

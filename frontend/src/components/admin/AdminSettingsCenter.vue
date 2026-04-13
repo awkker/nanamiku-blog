@@ -449,491 +449,6 @@
             </p>
           </div>
 
-          <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p class="text-sm font-semibold text-slate-900">{{ copy.forms.authorProfile.contactLinksTitle }}</p>
-              <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.authorProfile.contactLinksSubtitle }}</p>
-            </div>
-
-            <button
-              type="button"
-              class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
-              :aria-label="copy.forms.authorProfile.addContactButtonAria"
-              :disabled="loading || savingAuthorProfile || authorContactLinks.length >= maxAuthorContactLinks"
-              @click="addAuthorContactLink"
-            >
-              {{ copy.forms.authorProfile.addContactButton }}
-            </button>
-          </div>
-
-          <div class="mt-4 space-y-2.5">
-            <div
-              v-for="(link, index) in authorContactLinks"
-              :key="`author-contact-${index}`"
-              class="grid gap-2 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.45fr)_auto]"
-            >
-              <input
-                v-model="authorContactLinks[index].label"
-                type="text"
-                :placeholder="copy.forms.authorProfile.contactLabelPlaceholder"
-                :class="inputClass"
-                :aria-label="`${copy.forms.authorProfile.contactLinksTitle}${index + 1}`"
-                :disabled="loading || savingAuthorProfile"
-              />
-              <input
-                v-model="authorContactLinks[index].href"
-                type="text"
-                :placeholder="copy.forms.authorProfile.contactHrefPlaceholder"
-                :class="inputClass"
-                :aria-label="`${copy.forms.authorProfile.contactLinksTitle}${index + 1} href`"
-                :disabled="loading || savingAuthorProfile"
-              />
-              <button
-                type="button"
-                class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
-                :aria-label="copy.forms.authorProfile.removeButtonAria"
-                :disabled="loading || savingAuthorProfile"
-                @click="removeAuthorContactLink(index)"
-              >
-                {{ copy.forms.authorProfile.removeButton }}
-              </button>
-            </div>
-
-            <p v-if="authorContactLinks.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
-              {{ copy.forms.authorProfile.emptyContactHint }}
-            </p>
-          </div>
-        </div>
-
-        <div v-else-if="activeSection === 'about-page'" :class="surfaceClass">
-          <div>
-            <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.title }}</p>
-            <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.subtitle }}</p>
-          </div>
-
-          <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.introCardsTitle }}</p>
-                <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                  {{ aboutIntroCards.length }} / {{ maxAboutIntroCards }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.introCardsSubtitle }}</p>
-            </div>
-            <button
-              type="button"
-              class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
-              :aria-label="copy.forms.aboutPage.addIntroButtonAria"
-              :disabled="loading || savingAboutPage || aboutIntroCards.length >= maxAboutIntroCards"
-              @click="addAboutIntroCard"
-            >
-              {{ copy.forms.aboutPage.addIntroButton }}
-            </button>
-          </div>
-
-          <div class="mt-4 space-y-3">
-            <div
-              v-for="(card, index) in aboutIntroCards"
-              :key="`about-intro-${index}`"
-              class="rounded-[20px] border border-slate-200/80 bg-white/75 p-4"
-            >
-              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                <input
-                  v-model="aboutIntroCards[index].title"
-                  type="text"
-                  :placeholder="copy.forms.aboutPage.introTitlePlaceholder"
-                  :class="inputClass"
-                  :aria-label="`${copy.forms.aboutPage.introCardsTitle}${index + 1}`"
-                  :disabled="loading || savingAboutPage"
-                />
-                <button
-                  type="button"
-                  class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
-                  :aria-label="copy.forms.aboutPage.removeButtonAria"
-                  :disabled="loading || savingAboutPage"
-                  @click="removeAboutIntroCard(index)"
-                >
-                  {{ copy.forms.aboutPage.removeButton }}
-                </button>
-              </div>
-              <textarea
-                v-model="aboutIntroCards[index].description"
-                rows="3"
-                :placeholder="copy.forms.aboutPage.introDescriptionPlaceholder"
-                :class="`${textareaClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.introCardsTitle}${index + 1} description`"
-                :disabled="loading || savingAboutPage"
-              />
-            </div>
-
-            <p v-if="aboutIntroCards.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
-              {{ copy.forms.aboutPage.introEmptyHint }}
-            </p>
-          </div>
-
-          <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.milestonesTitle }}</p>
-                <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                  {{ aboutMilestones.length }} / {{ maxAboutMilestones }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.milestonesSubtitle }}</p>
-            </div>
-            <button
-              type="button"
-              class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
-              :aria-label="copy.forms.aboutPage.addMilestoneButtonAria"
-              :disabled="loading || savingAboutPage || aboutMilestones.length >= maxAboutMilestones"
-              @click="addAboutMilestone"
-            >
-              {{ copy.forms.aboutPage.addMilestoneButton }}
-            </button>
-          </div>
-
-          <div class="mt-4 space-y-3">
-            <div
-              v-for="(item, index) in aboutMilestones"
-              :key="`about-milestone-${index}`"
-              class="rounded-[20px] border border-slate-200/80 bg-white/75 p-4"
-            >
-              <div class="grid gap-3 md:grid-cols-[160px_minmax(0,1fr)_auto]">
-                <input
-                  v-model="aboutMilestones[index].year"
-                  type="text"
-                  :placeholder="copy.forms.aboutPage.milestoneYearPlaceholder"
-                  :class="inputClass"
-                  :aria-label="`${copy.forms.aboutPage.milestonesTitle}${index + 1} year`"
-                  :disabled="loading || savingAboutPage"
-                />
-                <input
-                  v-model="aboutMilestones[index].title"
-                  type="text"
-                  :placeholder="copy.forms.aboutPage.milestoneTitlePlaceholder"
-                  :class="inputClass"
-                  :aria-label="`${copy.forms.aboutPage.milestonesTitle}${index + 1} title`"
-                  :disabled="loading || savingAboutPage"
-                />
-                <button
-                  type="button"
-                  class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
-                  :aria-label="copy.forms.aboutPage.removeButtonAria"
-                  :disabled="loading || savingAboutPage"
-                  @click="removeAboutMilestone(index)"
-                >
-                  {{ copy.forms.aboutPage.removeButton }}
-                </button>
-              </div>
-              <textarea
-                v-model="aboutMilestones[index].summary"
-                rows="3"
-                :placeholder="copy.forms.aboutPage.milestoneSummaryPlaceholder"
-                :class="`${textareaClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.milestonesTitle}${index + 1} summary`"
-                :disabled="loading || savingAboutPage"
-              />
-              <input
-                v-model="aboutMilestones[index].result"
-                type="text"
-                :placeholder="copy.forms.aboutPage.milestoneResultPlaceholder"
-                :class="`${inputClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.milestonesTitle}${index + 1} result`"
-                :disabled="loading || savingAboutPage"
-              />
-            </div>
-
-            <p v-if="aboutMilestones.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
-              {{ copy.forms.aboutPage.milestoneEmptyHint }}
-            </p>
-          </div>
-
-          <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.capabilityGroupsTitle }}</p>
-                <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                  {{ aboutCapabilityGroups.length }} / {{ maxAboutCapabilityGroups }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.capabilityGroupsSubtitle }}</p>
-            </div>
-            <button
-              type="button"
-              class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
-              :aria-label="copy.forms.aboutPage.addCapabilityButtonAria"
-              :disabled="loading || savingAboutPage || aboutCapabilityGroups.length >= maxAboutCapabilityGroups"
-              @click="addAboutCapabilityGroup"
-            >
-              {{ copy.forms.aboutPage.addCapabilityButton }}
-            </button>
-          </div>
-
-          <div class="mt-4 space-y-3">
-            <div
-              v-for="(group, index) in aboutCapabilityGroups"
-              :key="`about-capability-${index}`"
-              class="rounded-[20px] border border-slate-200/80 bg-white/75 p-4"
-            >
-              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                <input
-                  v-model="aboutCapabilityGroups[index].title"
-                  type="text"
-                  :placeholder="copy.forms.aboutPage.capabilityTitlePlaceholder"
-                  :class="inputClass"
-                  :aria-label="`${copy.forms.aboutPage.capabilityGroupsTitle}${index + 1} title`"
-                  :disabled="loading || savingAboutPage"
-                />
-                <button
-                  type="button"
-                  class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
-                  :aria-label="copy.forms.aboutPage.removeButtonAria"
-                  :disabled="loading || savingAboutPage"
-                  @click="removeAboutCapabilityGroup(index)"
-                >
-                  {{ copy.forms.aboutPage.removeButton }}
-                </button>
-              </div>
-              <textarea
-                v-model="aboutCapabilityGroups[index].desc"
-                rows="3"
-                :placeholder="copy.forms.aboutPage.capabilityDescPlaceholder"
-                :class="`${textareaClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.capabilityGroupsTitle}${index + 1} description`"
-                :disabled="loading || savingAboutPage"
-              />
-              <input
-                v-model="aboutCapabilityGroups[index].stackText"
-                type="text"
-                :placeholder="copy.forms.aboutPage.capabilityStackPlaceholder"
-                :class="`${inputClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.capabilityGroupsTitle}${index + 1} stack`"
-                :disabled="loading || savingAboutPage"
-              />
-            </div>
-
-            <p v-if="aboutCapabilityGroups.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
-              {{ copy.forms.aboutPage.capabilityEmptyHint }}
-            </p>
-          </div>
-
-          <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.featuredProjectsTitle }}</p>
-                <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                  {{ aboutFeaturedProjects.length }} / {{ maxAboutFeaturedProjects }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.featuredProjectsSubtitle }}</p>
-            </div>
-            <button
-              type="button"
-              class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
-              :aria-label="copy.forms.aboutPage.addProjectButtonAria"
-              :disabled="loading || savingAboutPage || aboutFeaturedProjects.length >= maxAboutFeaturedProjects"
-              @click="addAboutFeaturedProject"
-            >
-              {{ copy.forms.aboutPage.addProjectButton }}
-            </button>
-          </div>
-
-          <div class="mt-4 space-y-3">
-            <div
-              v-for="(project, index) in aboutFeaturedProjects"
-              :key="`about-project-${index}`"
-              class="rounded-[20px] border border-slate-200/80 bg-white/75 p-4"
-            >
-              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                <input
-                  v-model="aboutFeaturedProjects[index].name"
-                  type="text"
-                  :placeholder="copy.forms.aboutPage.projectNamePlaceholder"
-                  :class="inputClass"
-                  :aria-label="`${copy.forms.aboutPage.featuredProjectsTitle}${index + 1} name`"
-                  :disabled="loading || savingAboutPage"
-                />
-                <button
-                  type="button"
-                  class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
-                  :aria-label="copy.forms.aboutPage.removeButtonAria"
-                  :disabled="loading || savingAboutPage"
-                  @click="removeAboutFeaturedProject(index)"
-                >
-                  {{ copy.forms.aboutPage.removeButton }}
-                </button>
-              </div>
-              <input
-                v-model="aboutFeaturedProjects[index].focus"
-                type="text"
-                :placeholder="copy.forms.aboutPage.projectFocusPlaceholder"
-                :class="`${inputClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.featuredProjectsTitle}${index + 1} focus`"
-                :disabled="loading || savingAboutPage"
-              />
-              <textarea
-                v-model="aboutFeaturedProjects[index].role"
-                rows="3"
-                :placeholder="copy.forms.aboutPage.projectRolePlaceholder"
-                :class="`${textareaClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.featuredProjectsTitle}${index + 1} role`"
-                :disabled="loading || savingAboutPage"
-              />
-              <input
-                v-model="aboutFeaturedProjects[index].metric"
-                type="text"
-                :placeholder="copy.forms.aboutPage.projectMetricPlaceholder"
-                :class="`${inputClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.featuredProjectsTitle}${index + 1} metric`"
-                :disabled="loading || savingAboutPage"
-              />
-              <input
-                v-model="aboutFeaturedProjects[index].href"
-                type="text"
-                :placeholder="copy.forms.aboutPage.projectHrefPlaceholder"
-                :class="`${inputClass} mt-3`"
-                :aria-label="`${copy.forms.aboutPage.featuredProjectsTitle}${index + 1} href`"
-                :disabled="loading || savingAboutPage"
-              />
-            </div>
-
-            <p v-if="aboutFeaturedProjects.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
-              {{ copy.forms.aboutPage.projectEmptyHint }}
-            </p>
-          </div>
-
-          <div class="mt-8 grid gap-6 xl:grid-cols-2">
-            <div>
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.monthlyGoalsTitle }}</p>
-                    <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                      {{ aboutMonthlyGoals.length }} / {{ maxAboutMonthlyGoals }}
-                    </span>
-                  </div>
-                  <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.monthlyGoalsSubtitle }}</p>
-                </div>
-                <button
-                  type="button"
-                  class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
-                  :aria-label="copy.forms.aboutPage.addMonthlyGoalButtonAria"
-                  :disabled="loading || savingAboutPage || aboutMonthlyGoals.length >= maxAboutMonthlyGoals"
-                  @click="addAboutMonthlyGoal"
-                >
-                  {{ copy.forms.aboutPage.addMonthlyGoalButton }}
-                </button>
-              </div>
-
-              <div class="mt-4 space-y-2.5">
-                <div
-                  v-for="(goal, index) in aboutMonthlyGoals"
-                  :key="`about-goal-${index}`"
-                  class="grid gap-2 md:grid-cols-[1fr_auto]"
-                >
-                  <input
-                    v-model="aboutMonthlyGoals[index]"
-                    type="text"
-                    :placeholder="copy.forms.aboutPage.monthlyGoalPlaceholder"
-                    :class="inputClass"
-                    :aria-label="`${copy.forms.aboutPage.monthlyGoalsTitle}${index + 1}`"
-                    :disabled="loading || savingAboutPage"
-                  />
-                  <button
-                    type="button"
-                    class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
-                    :aria-label="copy.forms.aboutPage.removeButtonAria"
-                    :disabled="loading || savingAboutPage"
-                    @click="removeAboutMonthlyGoal(index)"
-                  >
-                    {{ copy.forms.aboutPage.removeButton }}
-                  </button>
-                </div>
-
-                <p v-if="aboutMonthlyGoals.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
-                  {{ copy.forms.aboutPage.monthlyGoalsEmptyHint }}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.listeningTitle }}</p>
-                    <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                      {{ aboutListeningNow.length }} / {{ maxAboutListeningNow }}
-                    </span>
-                  </div>
-                  <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.listeningSubtitle }}</p>
-                </div>
-                <button
-                  type="button"
-                  class="rounded-full border border-miku/25 bg-miku/10 px-3.5 py-2 text-xs font-medium text-miku transition hover:bg-miku/15 disabled:cursor-not-allowed disabled:opacity-45"
-                  :aria-label="copy.forms.aboutPage.addListeningButtonAria"
-                  :disabled="loading || savingAboutPage || aboutListeningNow.length >= maxAboutListeningNow"
-                  @click="addAboutListeningItem"
-                >
-                  {{ copy.forms.aboutPage.addListeningButton }}
-                </button>
-              </div>
-
-              <div class="mt-4 space-y-2.5">
-                <div
-                  v-for="(item, index) in aboutListeningNow"
-                  :key="`about-listening-${index}`"
-                  class="grid gap-2 md:grid-cols-[1fr_auto]"
-                >
-                  <input
-                    v-model="aboutListeningNow[index]"
-                    type="text"
-                    :placeholder="copy.forms.aboutPage.listeningPlaceholder"
-                    :class="inputClass"
-                    :aria-label="`${copy.forms.aboutPage.listeningTitle}${index + 1}`"
-                    :disabled="loading || savingAboutPage"
-                  />
-                  <button
-                    type="button"
-                    class="rounded-[16px] border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-45"
-                    :aria-label="copy.forms.aboutPage.removeButtonAria"
-                    :disabled="loading || savingAboutPage"
-                    @click="removeAboutListeningItem(index)"
-                  >
-                    {{ copy.forms.aboutPage.removeButton }}
-                  </button>
-                </div>
-
-                <p v-if="aboutListeningNow.length === 0" class="rounded-[18px] border border-dashed border-slate-200 bg-white/60 px-4 py-4 text-xs leading-6 text-slate-500">
-                  {{ copy.forms.aboutPage.listeningEmptyHint }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-8">
-            <p class="text-sm font-semibold text-slate-900">{{ copy.forms.aboutPage.signatureTitle }}</p>
-            <p class="mt-1 text-xs leading-6 text-slate-500">{{ copy.forms.aboutPage.signatureSubtitle }}</p>
-          </div>
-
-          <div class="mt-4 grid gap-3">
-            <textarea
-              v-model="aboutSignatureDescription"
-              rows="4"
-              :placeholder="copy.forms.aboutPage.signatureDescriptionPlaceholder"
-              :class="textareaClass"
-              :aria-label="copy.forms.aboutPage.signatureTitle"
-              :disabled="loading || savingAboutPage"
-            />
-            <input
-              v-model="aboutSignatureFooter"
-              type="text"
-              :placeholder="copy.forms.aboutPage.signatureFooterPlaceholder"
-              :class="inputClass"
-              :aria-label="`${copy.forms.aboutPage.signatureTitle} footer`"
-              :disabled="loading || savingAboutPage"
-            />
-          </div>
         </div>
 
         <div v-else-if="activeSection === 'site-integrations'" :class="surfaceClass">
@@ -1313,189 +828,6 @@
             </div>
           </div>
 
-          <div v-else-if="activeSection === 'about-page'" class="mt-5 space-y-4">
-            <div class="rounded-[20px] border border-slate-200/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.92),rgba(229,255,252,0.9),rgba(248,244,255,0.86))] p-4">
-              <div class="grid gap-3 sm:grid-cols-2">
-                <div class="rounded-[16px] border border-white/80 bg-white/78 px-3 py-3">
-                  <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutIntroLabel }}</p>
-                  <p class="mt-2 text-lg font-semibold text-slate-900">{{ aboutPagePreview.introCards.length }}</p>
-                </div>
-                <div class="rounded-[16px] border border-white/80 bg-white/78 px-3 py-3">
-                  <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutTimelineLabel }}</p>
-                  <p class="mt-2 text-lg font-semibold text-slate-900">{{ aboutPagePreview.milestones.length }}</p>
-                </div>
-                <div class="rounded-[16px] border border-white/80 bg-white/78 px-3 py-3">
-                  <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutCapabilitiesLabel }}</p>
-                  <p class="mt-2 text-lg font-semibold text-slate-900">{{ aboutPagePreview.capabilityGroups.length }}</p>
-                </div>
-                <div class="rounded-[16px] border border-white/80 bg-white/78 px-3 py-3">
-                  <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutProjectsLabel }}</p>
-                  <p class="mt-2 text-lg font-semibold text-slate-900">{{ aboutPagePreview.featuredProjects.length }}</p>
-                </div>
-                <div class="rounded-[16px] border border-white/80 bg-white/78 px-3 py-3">
-                  <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutGoalsLabel }}</p>
-                  <p class="mt-2 text-lg font-semibold text-slate-900">{{ aboutPagePreview.monthlyGoals.length }}</p>
-                </div>
-                <div class="rounded-[16px] border border-white/80 bg-white/78 px-3 py-3">
-                  <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutListeningLabel }}</p>
-                  <p class="mt-2 text-lg font-semibold text-slate-900">{{ aboutPagePreview.listeningNow.length }}</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
-              <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutIntroLabel }}</p>
-              <div class="mt-3 space-y-3">
-                <div
-                  v-for="card in aboutPagePreview.introCards.slice(0, 2)"
-                  :key="`${card.title}-${card.description}`"
-                  class="rounded-[16px] border border-slate-200 bg-white px-3 py-3"
-                >
-                  <p class="text-sm font-semibold text-slate-900">{{ card.title }}</p>
-                  <p class="mt-1 text-xs leading-6 text-slate-500">{{ card.description }}</p>
-                </div>
-                <p
-                  v-if="aboutPagePreview.introCards.length === 0"
-                  class="rounded-[16px] border border-dashed border-slate-200 bg-slate-50/70 px-3 py-4 text-xs leading-6 text-slate-500"
-                >
-                  {{ copy.actions.emptyValue }}
-                </p>
-              </div>
-            </div>
-
-            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
-              <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutTimelineLabel }}</p>
-              <div class="mt-3 space-y-3">
-                <div
-                  v-for="item in aboutPagePreview.milestones.slice(0, 2)"
-                  :key="`${item.year}-${item.title}`"
-                  class="relative overflow-hidden rounded-[16px] border border-slate-200 bg-white px-3 py-3"
-                >
-                  <span class="absolute left-0 top-0 h-full w-1 bg-[linear-gradient(180deg,rgba(57,197,187,0.85),rgba(192,132,252,0.75))]" />
-                  <div class="pl-2">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                      <p class="text-sm font-semibold text-slate-900">{{ item.title }}</p>
-                      <span class="rounded-full border border-miku/20 bg-miku/10 px-2 py-0.5 text-[11px] font-medium text-miku">
-                        {{ item.year }}
-                      </span>
-                    </div>
-                    <p class="mt-2 text-xs leading-6 text-slate-500">{{ item.summary }}</p>
-                    <p class="mt-2 text-[11px] text-slate-400">{{ item.result }}</p>
-                  </div>
-                </div>
-                <p
-                  v-if="aboutPagePreview.milestones.length === 0"
-                  class="rounded-[16px] border border-dashed border-slate-200 bg-slate-50/70 px-3 py-4 text-xs leading-6 text-slate-500"
-                >
-                  {{ copy.actions.emptyValue }}
-                </p>
-              </div>
-            </div>
-
-            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
-              <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutCapabilitiesLabel }}</p>
-              <div class="mt-3 space-y-3">
-                <div
-                  v-for="(group, index) in aboutPagePreview.capabilityGroups.slice(0, 2)"
-                  :key="`${group.title}-${group.desc}`"
-                  class="rounded-[16px] border border-slate-200 bg-white px-3 py-3"
-                >
-                  <p class="text-sm font-semibold text-slate-900">{{ group.title }}</p>
-                  <p class="mt-1 text-xs leading-6 text-slate-500">{{ group.desc }}</p>
-                  <div class="mt-3 flex flex-wrap gap-1.5">
-                    <span
-                      v-for="item in group.stack"
-                      :key="`${group.title}-${item}`"
-                      class="rounded-full border px-2.5 py-1 text-[11px] font-medium"
-                      :class="aboutPreviewCapabilityChipClass(index)"
-                    >
-                      {{ item }}
-                    </span>
-                  </div>
-                </div>
-                <p
-                  v-if="aboutPagePreview.capabilityGroups.length === 0"
-                  class="rounded-[16px] border border-dashed border-slate-200 bg-slate-50/70 px-3 py-4 text-xs leading-6 text-slate-500"
-                >
-                  {{ copy.actions.emptyValue }}
-                </p>
-              </div>
-            </div>
-
-            <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
-              <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutProjectsLabel }}</p>
-              <div class="mt-3 space-y-3">
-                <div
-                  v-for="project in aboutPagePreview.featuredProjects.slice(0, 2)"
-                  :key="`${project.name}-${project.href}`"
-                  class="rounded-[16px] border border-slate-200 bg-white px-3 py-3"
-                >
-                  <p class="text-sm font-semibold text-slate-900">{{ project.name }}</p>
-                  <p class="mt-1 text-xs text-slate-500">{{ project.focus }}</p>
-                  <p class="mt-2 text-xs leading-6 text-slate-500">{{ project.role }}</p>
-                  <p class="mt-2 rounded-[12px] border border-slate-200 bg-slate-50/80 px-2.5 py-2 text-[11px] leading-5 text-slate-500">
-                    {{ project.metric }}
-                  </p>
-                  <p class="mt-2 truncate text-[11px] text-miku">{{ project.href }}</p>
-                </div>
-                <p
-                  v-if="aboutPagePreview.featuredProjects.length === 0"
-                  class="rounded-[16px] border border-dashed border-slate-200 bg-slate-50/70 px-3 py-4 text-xs leading-6 text-slate-500"
-                >
-                  {{ copy.actions.emptyValue }}
-                </p>
-              </div>
-            </div>
-
-            <div class="grid gap-4">
-              <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
-                <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutGoalsLabel }}</p>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span
-                    v-for="goal in aboutPagePreview.monthlyGoals"
-                    :key="goal"
-                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
-                  >
-                    {{ goal }}
-                  </span>
-                  <span
-                    v-if="aboutPagePreview.monthlyGoals.length === 0"
-                    class="rounded-full border border-dashed border-slate-200 bg-slate-50/70 px-3 py-1 text-xs font-medium text-slate-500"
-                  >
-                    {{ copy.actions.emptyValue }}
-                  </span>
-                </div>
-
-                <p class="mt-4 text-xs font-medium text-slate-500">{{ copy.preview.aboutListeningLabel }}</p>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span
-                    v-for="item in aboutPagePreview.listeningNow"
-                    :key="item"
-                    class="rounded-full border border-miku/20 bg-miku/10 px-3 py-1 text-xs font-medium text-miku"
-                  >
-                    {{ item }}
-                  </span>
-                  <span
-                    v-if="aboutPagePreview.listeningNow.length === 0"
-                    class="rounded-full border border-dashed border-slate-200 bg-slate-50/70 px-3 py-1 text-xs font-medium text-slate-500"
-                  >
-                    {{ copy.actions.emptyValue }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="rounded-[20px] border border-slate-200/80 bg-white/80 p-4">
-                <p class="text-xs font-medium text-slate-500">{{ copy.preview.aboutSignatureLabel }}</p>
-                <blockquote class="mt-2 rounded-[16px] border border-slate-200 bg-slate-50/80 px-3 py-3 text-xs leading-6 text-slate-500">
-                  {{ aboutPagePreview.signature.description || copy.actions.emptyValue }}
-                  <p class="mt-2 text-[11px] text-slate-400">
-                    {{ aboutPagePreview.signature.footer || copy.actions.emptyValue }}
-                  </p>
-                </blockquote>
-              </div>
-            </div>
-          </div>
-
           <div v-else-if="activeSection === 'site-integrations'" class="mt-5 space-y-4">
             <div
               v-for="item in integrationStatusCards"
@@ -1639,21 +971,12 @@ import { useStore } from '@nanostores/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { adminCopy } from '../../content/copy'
-import {
-  normalizeAboutPageSettings,
-  type AboutCapabilityGroup,
-  type AboutFeaturedProject,
-  type AboutIntroCard,
-  type AboutMilestone,
-  type AboutPageSettings,
-} from '../../lib/about-page'
 import { api, ApiError } from '../../lib/api'
 import { DEFAULT_PUBLIC_AUTHOR_AVATAR_URL, DEFAULT_PUBLIC_AVATAR_URL } from '../../lib/default-assets'
 import {
   resolveAuthorAvatarURL,
 } from '../../lib/author-profile'
 import type {
-  AuthorContactLink,
   AuthorProfileSettings,
   AuthorSocialLink,
 } from '../../lib/author-profile'
@@ -1664,12 +987,6 @@ import {
   updateMyProfile,
   authState,
 } from '../../stores/auth'
-import {
-  aboutPageSettings,
-  hydrateAboutPageSettings,
-  resetAboutPageSettings,
-  saveAboutPageSettings,
-} from '../../stores/aboutPage'
 import {
   authorProfileSettings,
   hydrateAuthorProfileSettings,
@@ -1748,12 +1065,6 @@ interface ProbeStatus {
   detail: string
 }
 
-interface AboutCapabilityGroupDraft {
-  title: string
-  desc: string
-  stackText: string
-}
-
 const copy = adminCopy.settingsCenter
 const footerCopy = adminCopy.footerManager
 const profileCopy = adminCopy.profileManager
@@ -1767,20 +1078,12 @@ const maxHomeAssetImages = 8
 const maxAuthorSkills = 8
 const maxAuthorNowItems = 8
 const maxAuthorSocialLinks = 6
-const maxAuthorContactLinks = 6
-const maxAboutIntroCards = 6
-const maxAboutMilestones = 8
-const maxAboutCapabilityGroups = 6
-const maxAboutFeaturedProjects = 6
-const maxAboutMonthlyGoals = 8
-const maxAboutListeningNow = 8
 
 const homeHeroStore = useStore(homeHeroSettings)
 const homeAssetsStore = useStore(homeAssetsSettings)
 const siteProfileStore = useStore(siteProfileSettings)
 const siteFooterStore = useStore(siteFooterSettings)
 const authorProfileStore = useStore(authorProfileSettings)
-const aboutPageStore = useStore(aboutPageSettings)
 const siteIntegrationsStore = useStore(siteIntegrationsSettings)
 const auth = useStore(authState)
 
@@ -1790,7 +1093,6 @@ const savingHomeHero = ref(false)
 const savingHomeAssets = ref(false)
 const savingSiteProfile = ref(false)
 const savingAuthorProfile = ref(false)
-const savingAboutPage = ref(false)
 const savingSiteIntegrations = ref(false)
 const savingFooter = ref(false)
 const savingAdminProfile = ref(false)
@@ -1821,16 +1123,6 @@ const authorNowItems = ref<string[]>([])
 const authorQuote = ref('')
 const authorContactEmail = ref('')
 const authorSocialLinks = ref<AuthorSocialLink[]>([])
-const authorContactLinks = ref<AuthorContactLink[]>([])
-
-const aboutIntroCards = ref<AboutIntroCard[]>([])
-const aboutMilestones = ref<AboutMilestone[]>([])
-const aboutCapabilityGroups = ref<AboutCapabilityGroupDraft[]>([])
-const aboutFeaturedProjects = ref<AboutFeaturedProject[]>([])
-const aboutMonthlyGoals = ref<string[]>([])
-const aboutListeningNow = ref<string[]>([])
-const aboutSignatureDescription = ref('')
-const aboutSignatureFooter = ref('')
 
 const integrationsGithubUsername = ref('')
 const integrationsWeatherLocation = ref('')
@@ -1852,7 +1144,6 @@ const homeHeroSnapshot = ref('')
 const homeAssetsSnapshot = ref('')
 const siteProfileSnapshot = ref('')
 const authorProfileSnapshot = ref('')
-const aboutPageSnapshot = ref('')
 const siteIntegrationsSnapshot = ref('')
 const siteFooterSnapshot = ref('')
 const adminProfileSnapshot = ref('')
@@ -1914,129 +1205,6 @@ function cleanAuthorSocialDraftLinks(items: AuthorSocialLink[]) {
   return result
 }
 
-function cleanAuthorContactDraftLinks(items: AuthorContactLink[]) {
-  const result: AuthorContactLink[] = []
-  for (const item of items) {
-    const label = trimText(item.label)
-    const href = trimText(item.href)
-    if (!label || !href) {
-      continue
-    }
-    if (result.some((current) => current.label === label && current.href === href)) {
-      continue
-    }
-    result.push({ label, href })
-    if (result.length >= maxAuthorContactLinks) {
-      break
-    }
-  }
-  return result
-}
-
-function splitStackText(value: string) {
-  return value
-    .split(/[\n,，]+/g)
-    .map((item) => trimText(item))
-    .filter((item, index, list) => item.length > 0 && list.indexOf(item) === index)
-}
-
-function cleanAboutIntroDraftCards(items: AboutIntroCard[]) {
-  const result: AboutIntroCard[] = []
-  for (const item of items) {
-    const title = trimText(item.title)
-    const description = trimText(item.description)
-    if (!title || !description) {
-      continue
-    }
-    if (result.some((current) => current.title === title && current.description === description)) {
-      continue
-    }
-    result.push({ title, description })
-    if (result.length >= maxAboutIntroCards) {
-      break
-    }
-  }
-  return result
-}
-
-function cleanAboutMilestonesDraft(items: AboutMilestone[]) {
-  const result: AboutMilestone[] = []
-  for (const item of items) {
-    const year = trimText(item.year)
-    const title = trimText(item.title)
-    const summary = trimText(item.summary)
-    const resultText = trimText(item.result)
-    if (!year || !title || !summary || !resultText) {
-      continue
-    }
-    if (result.some((current) => current.year === year && current.title === title)) {
-      continue
-    }
-    result.push({
-      year,
-      title,
-      summary,
-      result: resultText,
-    })
-    if (result.length >= maxAboutMilestones) {
-      break
-    }
-  }
-  return result
-}
-
-function cleanAboutCapabilityDraftGroups(items: AboutCapabilityGroupDraft[]) {
-  const result: AboutCapabilityGroup[] = []
-  for (const item of items) {
-    const title = trimText(item.title)
-    const desc = trimText(item.desc)
-    const stack = splitStackText(item.stackText)
-    if (!title || !desc || stack.length === 0) {
-      continue
-    }
-    if (result.some((current) => current.title === title && current.desc === desc)) {
-      continue
-    }
-    result.push({
-      title,
-      desc,
-      stack,
-    })
-    if (result.length >= maxAboutCapabilityGroups) {
-      break
-    }
-  }
-  return result
-}
-
-function cleanAboutFeaturedProjectsDraft(items: AboutFeaturedProject[]) {
-  const result: AboutFeaturedProject[] = []
-  for (const item of items) {
-    const name = trimText(item.name)
-    const focus = trimText(item.focus)
-    const role = trimText(item.role)
-    const metric = trimText(item.metric)
-    const href = trimText(item.href)
-    if (!name || !focus || !role || !metric || !href) {
-      continue
-    }
-    if (result.some((current) => current.name === name && current.href === href)) {
-      continue
-    }
-    result.push({
-      name,
-      focus,
-      role,
-      metric,
-      href,
-    })
-    if (result.length >= maxAboutFeaturedProjects) {
-      break
-    }
-  }
-  return result
-}
-
 function formatTime(date: Date) {
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
@@ -2086,22 +1254,6 @@ function getAuthorProfileDraft(): AuthorProfileSettings {
     quote: trimText(authorQuote.value),
     contactEmail: trimText(authorContactEmail.value),
     socialLinks: cleanAuthorSocialDraftLinks(authorSocialLinks.value),
-    contactLinks: cleanAuthorContactDraftLinks(authorContactLinks.value),
-  }
-}
-
-function getAboutPageDraft(): AboutPageSettings {
-  return {
-    introCards: cleanAboutIntroDraftCards(aboutIntroCards.value),
-    milestones: cleanAboutMilestonesDraft(aboutMilestones.value),
-    capabilityGroups: cleanAboutCapabilityDraftGroups(aboutCapabilityGroups.value),
-    featuredProjects: cleanAboutFeaturedProjectsDraft(aboutFeaturedProjects.value),
-    monthlyGoals: cleanTextItems(aboutMonthlyGoals.value, maxAboutMonthlyGoals),
-    listeningNow: cleanTextItems(aboutListeningNow.value, maxAboutListeningNow),
-    signature: {
-      description: trimText(aboutSignatureDescription.value),
-      footer: trimText(aboutSignatureFooter.value),
-    },
   }
 }
 
@@ -2149,10 +1301,6 @@ function serializeAuthorProfile(settings: AuthorProfileSettings) {
   return JSON.stringify(settings)
 }
 
-function serializeAboutPage(settings: AboutPageSettings) {
-  return JSON.stringify(settings)
-}
-
 function serializeSiteIntegrations(settings: SiteIntegrationsSettings) {
   return JSON.stringify(settings)
 }
@@ -2196,22 +1344,6 @@ function syncAuthorProfileFromStore() {
   authorQuote.value = authorProfileStore.value.quote
   authorContactEmail.value = authorProfileStore.value.contactEmail
   authorSocialLinks.value = authorProfileStore.value.socialLinks.map((item) => ({ ...item }))
-  authorContactLinks.value = authorProfileStore.value.contactLinks.map((item) => ({ ...item }))
-}
-
-function syncAboutPageFromStore() {
-  aboutIntroCards.value = aboutPageStore.value.introCards.map((item) => ({ ...item }))
-  aboutMilestones.value = aboutPageStore.value.milestones.map((item) => ({ ...item }))
-  aboutCapabilityGroups.value = aboutPageStore.value.capabilityGroups.map((item) => ({
-    title: item.title,
-    desc: item.desc,
-    stackText: item.stack.join(', '),
-  }))
-  aboutFeaturedProjects.value = aboutPageStore.value.featuredProjects.map((item) => ({ ...item }))
-  aboutMonthlyGoals.value = [...aboutPageStore.value.monthlyGoals]
-  aboutListeningNow.value = [...aboutPageStore.value.listeningNow]
-  aboutSignatureDescription.value = aboutPageStore.value.signature.description
-  aboutSignatureFooter.value = aboutPageStore.value.signature.footer
 }
 
 function syncSiteIntegrationsFromStore() {
@@ -2257,7 +1389,6 @@ function commitSnapshots() {
   homeAssetsSnapshot.value = serializeHomeAssets(getHomeAssetsDraft())
   siteProfileSnapshot.value = serializeSiteProfile(getSiteProfileDraft())
   authorProfileSnapshot.value = serializeAuthorProfile(getAuthorProfileDraft())
-  aboutPageSnapshot.value = serializeAboutPage(getAboutPageDraft())
   siteIntegrationsSnapshot.value = serializeSiteIntegrations(getSiteIntegrationsDraft())
   siteFooterSnapshot.value = serializeSiteFooter(getSiteFooterDraft())
   adminProfileSnapshot.value = serializeAdminProfile()
@@ -2303,55 +1434,6 @@ function addAuthorSocialLink() {
   authorSocialLinks.value.push({ label: '', href: '', iconKey: 'link' })
 }
 
-function addAuthorContactLink() {
-  if (authorContactLinks.value.length >= maxAuthorContactLinks) {
-    return
-  }
-  authorContactLinks.value.push({ label: '', href: '' })
-}
-
-function addAboutIntroCard() {
-  if (aboutIntroCards.value.length >= maxAboutIntroCards) {
-    return
-  }
-  aboutIntroCards.value.push({ title: '', description: '' })
-}
-
-function addAboutMilestone() {
-  if (aboutMilestones.value.length >= maxAboutMilestones) {
-    return
-  }
-  aboutMilestones.value.push({ year: '', title: '', summary: '', result: '' })
-}
-
-function addAboutCapabilityGroup() {
-  if (aboutCapabilityGroups.value.length >= maxAboutCapabilityGroups) {
-    return
-  }
-  aboutCapabilityGroups.value.push({ title: '', desc: '', stackText: '' })
-}
-
-function addAboutFeaturedProject() {
-  if (aboutFeaturedProjects.value.length >= maxAboutFeaturedProjects) {
-    return
-  }
-  aboutFeaturedProjects.value.push({ name: '', focus: '', role: '', metric: '', href: '' })
-}
-
-function addAboutMonthlyGoal() {
-  if (aboutMonthlyGoals.value.length >= maxAboutMonthlyGoals) {
-    return
-  }
-  aboutMonthlyGoals.value.push('')
-}
-
-function addAboutListeningItem() {
-  if (aboutListeningNow.value.length >= maxAboutListeningNow) {
-    return
-  }
-  aboutListeningNow.value.push('')
-}
-
 function removeHeroImage(index: number) {
   homeHeroImages.value = homeHeroImages.value.filter((_, currentIndex) => currentIndex !== index)
 }
@@ -2372,34 +1454,6 @@ function removeAuthorSocialLink(index: number) {
   authorSocialLinks.value = authorSocialLinks.value.filter((_, currentIndex) => currentIndex !== index)
 }
 
-function removeAuthorContactLink(index: number) {
-  authorContactLinks.value = authorContactLinks.value.filter((_, currentIndex) => currentIndex !== index)
-}
-
-function removeAboutIntroCard(index: number) {
-  aboutIntroCards.value = aboutIntroCards.value.filter((_, currentIndex) => currentIndex !== index)
-}
-
-function removeAboutMilestone(index: number) {
-  aboutMilestones.value = aboutMilestones.value.filter((_, currentIndex) => currentIndex !== index)
-}
-
-function removeAboutCapabilityGroup(index: number) {
-  aboutCapabilityGroups.value = aboutCapabilityGroups.value.filter((_, currentIndex) => currentIndex !== index)
-}
-
-function removeAboutFeaturedProject(index: number) {
-  aboutFeaturedProjects.value = aboutFeaturedProjects.value.filter((_, currentIndex) => currentIndex !== index)
-}
-
-function removeAboutMonthlyGoal(index: number) {
-  aboutMonthlyGoals.value = aboutMonthlyGoals.value.filter((_, currentIndex) => currentIndex !== index)
-}
-
-function removeAboutListeningItem(index: number) {
-  aboutListeningNow.value = aboutListeningNow.value.filter((_, currentIndex) => currentIndex !== index)
-}
-
 function probeToneClass(state: ProbeState) {
   if (state === 'ok') {
     return 'border-miku/20 bg-miku/10 text-miku'
@@ -2417,16 +1471,6 @@ function widgetCardClass(enabled: boolean) {
   return enabled
     ? 'border-miku/25 bg-[linear-gradient(135deg,rgba(57,197,187,0.12),rgba(255,255,255,0.95))] text-slate-700'
     : 'border-slate-200 bg-white/75 text-slate-500'
-}
-
-function aboutPreviewCapabilityChipClass(index: number) {
-  if (index === 0) {
-    return 'border-miku/35 bg-miku-soft text-miku'
-  }
-  if (index === 1) {
-    return 'border-slate-200 bg-white/70 text-slate-600'
-  }
-  return 'border-[#c084fc]/35 bg-[#f3e8ff] text-[#8b5cf6]'
 }
 
 async function probeGitHubStatus() {
@@ -2517,7 +1561,6 @@ async function load() {
       hydrateHomeAssetsSettings(),
       hydrateSiteProfileSettings(),
       hydrateAuthorProfileSettings(),
-      hydrateAboutPageSettings(),
       hydrateSiteIntegrationsSettings(),
       hydrateSiteFooterSettings(),
       loadAdminProfile(),
@@ -2526,7 +1569,6 @@ async function load() {
     syncHomeAssetsFromStore()
     syncSiteProfileFromStore()
     syncAuthorProfileFromStore()
-    syncAboutPageFromStore()
     syncSiteIntegrationsFromStore()
     syncFooterFromStore()
     commitSnapshots()
@@ -2541,7 +1583,6 @@ const homeHeroDirty = computed(() => serializeHomeHero(getHomeHeroDraft()) !== h
 const homeAssetsDirty = computed(() => serializeHomeAssets(getHomeAssetsDraft()) !== homeAssetsSnapshot.value)
 const siteProfileDirty = computed(() => serializeSiteProfile(getSiteProfileDraft()) !== siteProfileSnapshot.value)
 const authorProfileDirty = computed(() => serializeAuthorProfile(getAuthorProfileDraft()) !== authorProfileSnapshot.value)
-const aboutPageDirty = computed(() => serializeAboutPage(getAboutPageDraft()) !== aboutPageSnapshot.value)
 const siteIntegrationsDirty = computed(() => serializeSiteIntegrations(getSiteIntegrationsDraft()) !== siteIntegrationsSnapshot.value)
 const siteFooterDirty = computed(() => serializeSiteFooter(getSiteFooterDraft()) !== siteFooterSnapshot.value)
 const adminProfileDirty = computed(() => serializeAdminProfile() !== adminProfileSnapshot.value)
@@ -2566,11 +1607,6 @@ const sections = computed(() => ([
     key: 'author-profile' as SectionKey,
     ...copy.sections.authorProfile,
     dirty: authorProfileDirty.value,
-  },
-  {
-    key: 'about-page' as SectionKey,
-    ...copy.sections.aboutPage,
-    dirty: aboutPageDirty.value,
   },
   {
     key: 'site-integrations' as SectionKey,
@@ -2606,9 +1642,6 @@ const currentSectionDirty = computed(() => {
   if (activeSection.value === 'author-profile') {
     return authorProfileDirty.value
   }
-  if (activeSection.value === 'about-page') {
-    return aboutPageDirty.value
-  }
   if (activeSection.value === 'site-integrations') {
     return siteIntegrationsDirty.value
   }
@@ -2632,9 +1665,6 @@ const isCurrentSaving = computed(() => {
   }
   if (activeSection.value === 'author-profile') {
     return savingAuthorProfile.value
-  }
-  if (activeSection.value === 'about-page') {
-    return savingAboutPage.value
   }
   if (activeSection.value === 'site-integrations') {
     return savingSiteIntegrations.value
@@ -2720,8 +1750,6 @@ const authorNowItemsPreview = computed(() => {
 const authorSocialLinksPreview = computed(() => {
   return cleanAuthorSocialDraftLinks(authorSocialLinks.value)
 })
-
-const aboutPagePreview = computed(() => normalizeAboutPageSettings(getAboutPageDraft()))
 
 const integrationStatusCards = computed(() => ([
   {
@@ -2992,38 +2020,6 @@ async function resetAuthorProfileSection() {
   }
 }
 
-async function saveAboutPageSection() {
-  savingAboutPage.value = true
-  try {
-    await saveAboutPageSettings(getAboutPageDraft())
-    syncAboutPageFromStore()
-    aboutPageSnapshot.value = serializeAboutPage(getAboutPageDraft())
-    markSaved(copy.sections.aboutPage.title)
-    showToast(copy.toasts.aboutPageSaved, 'success')
-  } catch (err) {
-    const message = err instanceof ApiError ? err.message : copy.toasts.aboutPageFailed
-    showToast(message, 'error')
-  } finally {
-    savingAboutPage.value = false
-  }
-}
-
-async function resetAboutPageSection() {
-  savingAboutPage.value = true
-  try {
-    await resetAboutPageSettings()
-    syncAboutPageFromStore()
-    aboutPageSnapshot.value = serializeAboutPage(getAboutPageDraft())
-    markSaved(copy.sections.aboutPage.title)
-    showToast(copy.toasts.aboutPageReset, 'success')
-  } catch (err) {
-    const message = err instanceof ApiError ? err.message : copy.toasts.aboutPageFailed
-    showToast(message, 'error')
-  } finally {
-    savingAboutPage.value = false
-  }
-}
-
 async function saveSiteIntegrationsSection() {
   savingSiteIntegrations.value = true
   try {
@@ -3158,11 +2154,6 @@ async function saveCurrentSection() {
     return
   }
 
-  if (activeSection.value === 'about-page') {
-    await saveAboutPageSection()
-    return
-  }
-
   if (activeSection.value === 'site-integrations') {
     await saveSiteIntegrationsSection()
     return
@@ -3194,11 +2185,6 @@ async function resetCurrentSection() {
 
   if (activeSection.value === 'author-profile') {
     await resetAuthorProfileSection()
-    return
-  }
-
-  if (activeSection.value === 'about-page') {
-    await resetAboutPageSection()
     return
   }
 

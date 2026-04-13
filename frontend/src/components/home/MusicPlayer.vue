@@ -83,6 +83,19 @@ import { siteCopy } from '../../content/copy'
 
 const mp = siteCopy.components.musicPlayer
 
+/**
+ * 首页音乐播放器
+ *
+ * 这里没有接后端歌单接口，而是直接维护一个前端示例歌单：
+ * - 对首页来说，这样足够轻量，首屏也更可控
+ * - 如果未来要接后台，主要替换的就是 `playlist` 数据来源
+ *
+ * 状态拆分：
+ * - `currentIndex/currentTime/duration`：播放进度
+ * - `isPlaying/loopMode/muted/volume`：播放器控制状态
+ * - `lyrics/currentLyricIndex`：歌词解析与高亮
+ * - `expanded`：是否展开大面板
+ */
 interface Track {
   title: string
   artist: string
@@ -130,16 +143,21 @@ let audio: HTMLAudioElement | null = null
 const currentTrack = computed(() => playlist[currentIndex.value])
 
 function createAudio() {
+  // 整个组件只维护一个 Audio 实例，切歌时只替换 `src`。
+  // 这样逻辑会比每首歌都新建一个播放器简单得多。
   audio = new Audio()
   audio.preload = 'none'
   audio.volume = volume.value
   audio.src = currentTrack.value.src
+  // `loadedmetadata` 后才能拿到真实时长。
   audio.addEventListener('loadedmetadata', () => { duration.value = audio!.duration })
   audio.addEventListener('timeupdate', () => {
+    // 播放器时间更新时，同时驱动歌词高亮更新。
     currentTime.value = audio!.currentTime
     updateCurrentLyric()
   })
   audio.addEventListener('ended', () => {
+    // 单曲循环时回到 0 秒继续播；否则进入下一首。
     if (loopMode.value) { audio!.currentTime = 0; audio!.play() }
     else { next() }
   })
@@ -149,6 +167,8 @@ function createAudio() {
 
 function togglePlay() {
   if (!audio) return
+  // 真正的播放状态以 Audio 实例为准，
+  // `isPlaying` 只是由 `play/pause` 事件回写到界面。
   if (isPlaying.value) audio.pause()
   else audio.play().catch(() => {})
 }
@@ -158,6 +178,8 @@ function next() { loadTrack((currentIndex.value + 1) % playlist.length) }
 
 function loadTrack(index: number) {
   if (!audio) return
+  // 切歌时先记住当前是否正在播放；
+  // 如果用户原本在播放，换歌后自动续播，体验会更自然。
   const wasPlaying = isPlaying.value
   audio.pause()
   currentIndex.value = index
@@ -172,11 +194,13 @@ function loadTrack(index: number) {
 
 function onSeek(e: Event) {
   if (!audio) return
+  // 拖动进度条时直接改 Audio 当前时间。
   audio.currentTime = parseFloat((e.target as HTMLInputElement).value)
 }
 
 function seekToLyric(time: number) {
   if (!audio) return
+  // 点击歌词行，可以把播放进度跳到对应时间点。
   audio.currentTime = time
   if (!isPlaying.value) audio.play().catch(() => {})
 }
@@ -190,6 +214,9 @@ function onVolumeInput(e: Event) {
 watch(muted, (m) => { if (audio) audio.muted = m })
 
 function parseLRC(text: string): LyricLine[] {
+  // LRC 的每一行通常形如：
+  // [01:23.45] 这一句歌词
+  // 这里把它解析成“时间 + 文本”的结构，方便后面按时间高亮。
   const result: LyricLine[] = []
   for (const raw of text.split('\n')) {
     const m = raw.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/)
@@ -203,12 +230,15 @@ function parseLRC(text: string): LyricLine[] {
 
 async function fetchLyrics(url: string) {
   try {
+    // 歌词单独按文本文件读取，失败时就降级成“暂无歌词”。
     const res = await fetch(url)
     lyrics.value = res.ok ? parseLRC(await res.text()) : []
   } catch { lyrics.value = [] }
 }
 
 function updateCurrentLyric() {
+  // 当前时间一变，就从后往前找“最后一个不大于当前时间”的歌词行。
+  // 这样找到的就是此刻应当高亮的那一行。
   const t = currentTime.value
   const ls = lyrics.value
   if (!ls.length) return
@@ -219,6 +249,7 @@ function updateCurrentLyric() {
   if (idx !== currentLyricIndex.value) {
     currentLyricIndex.value = idx
     nextTick(() => {
+      // 高亮行变化后，把它滚到歌词面板中间位置，便于阅读。
       if (!lyricsRef.value || idx < 0) return
       const el = lyricsRef.value.querySelector(`[data-idx="${idx}"]`)
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -231,8 +262,18 @@ function formatTime(s: number): string {
   return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`
 }
 
-onMounted(() => { createAudio(); fetchLyrics(currentTrack.value.lrcUrl) })
-onBeforeUnmount(() => { if (audio) { audio.pause(); audio.src = '' } })
+onMounted(() => {
+  createAudio()
+  fetchLyrics(currentTrack.value.lrcUrl)
+})
+
+onBeforeUnmount(() => {
+  // 组件销毁时把音频停掉并清空资源地址，避免残留播放。
+  if (audio) {
+    audio.pause()
+    audio.src = ''
+  }
+})
 </script>
 
 <style scoped>

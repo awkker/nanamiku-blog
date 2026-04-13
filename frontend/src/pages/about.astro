@@ -2,17 +2,12 @@
 import BaseHead from '../components/base/BaseHead.astro'
 import BlogTopNav from '../components/blog/BlogTopNav.astro'
 import SiteFooter from '../components/base/SiteFooter.vue'
-import LiquidGlassCard from '../components/ui/LiquidGlassCard.vue'
-import AboutContactSection from '../components/about/AboutContactSection.vue'
-import AboutDynamicSections from '../components/about/AboutDynamicSections.vue'
 import AboutIntroSection from '../components/about/AboutIntroSection.vue'
 import { siteCopy } from '../content/copy'
 import { getPublishedPostCount } from '../lib/post-source'
 
 const copy = siteCopy.aboutPage
 const postCount = await getPublishedPostCount()
-
-const writingMap = copy.writingMap
 ---
 
 <!doctype html>
@@ -34,36 +29,7 @@ const writingMap = copy.writingMap
       </div>
 
       <div class="relative z-10 space-y-4 pb-20 sm:space-y-5">
-      <AboutIntroSection client:load post-count={postCount} />
-      <AboutDynamicSections client:load />
-
-      <section id="writing-map" class="relative mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
-        <div class="mb-3">
-          <h2 class="text-xl font-bold text-slate-900">{copy.writingMapSection.title}</h2>
-          <p class="mt-1 text-sm text-slate-500">{copy.writingMapSection.subtitle}</p>
-        </div>
-        <div class="grid gap-4 md:grid-cols-3">
-          {
-            writingMap.map((item, index) => (
-              <LiquidGlassCard client:visible padding="20px" maxWidth="100%">
-                <p class="text-xs tracking-[0.14em] text-slate-400">{copy.writingMapSection.pathPrefix} 0{index + 1}</p>
-                <h3 class="mt-1 text-base font-semibold text-slate-900">{item.title}</h3>
-                <p class="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
-                <a
-                  href={item.href}
-                  class="mt-3 inline-flex items-center rounded-lg border border-slate-200 bg-white/75 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-[#c084fc]/40 hover:text-[#8b5cf6]"
-                >
-                  {copy.writingMapSection.cta}
-                </a>
-              </LiquidGlassCard>
-            ))
-          }
-        </div>
-      </section>
-
-      <section class="relative mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
-        <AboutContactSection client:load />
-      </section>
+        <AboutIntroSection client:load post-count={postCount} />
       </div>
     </main>
 

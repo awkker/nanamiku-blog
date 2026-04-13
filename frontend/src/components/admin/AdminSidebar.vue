@@ -304,7 +304,6 @@ const settingsMenuGroups = computed(() => ([
     title: settingsCopy.sections.groups.identity.title,
     items: [
       { key: 'author-profile' as AdminSettingsSectionKey, label: settingsCopy.sections.authorProfile.title, href: '/admin/settings?section=author-profile' },
-      { key: 'about-page' as AdminSettingsSectionKey, label: settingsCopy.sections.aboutPage.title, href: '/admin/settings?section=about-page' },
       { key: 'site-integrations' as AdminSettingsSectionKey, label: settingsCopy.sections.siteIntegrations.title, href: '/admin/settings?section=site-integrations' },
     ],
   },

@@ -1,5 +1,6 @@
 import { siteCopy } from '../content/copy'
 
+// 首页右上角小组件设置。
 export interface SiteIntegrationsSettings {
   githubUsername: string
   weatherLocation: string
@@ -25,6 +26,7 @@ function normalizeBoolean(input: unknown, fallback: boolean): boolean {
 }
 
 export function getDefaultSiteIntegrationsSettings(): SiteIntegrationsSettings {
+  // GitHub 用户名默认沿用 About 页配置，其余显示开关给出比较完整的初始体验。
   return {
     githubUsername: trimText(siteCopy.aboutPage.githubUsername),
     weatherLocation: '',
@@ -35,6 +37,7 @@ export function getDefaultSiteIntegrationsSettings(): SiteIntegrationsSettings {
 }
 
 export function normalizeSiteIntegrationsSettings(input: unknown): SiteIntegrationsSettings {
+  // 同时兼容后端返回值、表单值和本地缓存值，最终统一成一种结构。
   const defaults = getDefaultSiteIntegrationsSettings()
   if (!input || typeof input !== 'object') {
     return defaults

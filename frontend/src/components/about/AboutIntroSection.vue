@@ -152,8 +152,11 @@ const contactEmail = computed(() => (settings.value.contactEmail || '').trim())
 const heroActions = computed(() => {
   const actions = [
     copy.heroActions[0],
-    copy.heroActions[1],
   ]
+
+  if (githubUsername.value) {
+    actions.push(copy.heroActions[1])
+  }
 
   if (contactEmail.value) {
     actions.push({

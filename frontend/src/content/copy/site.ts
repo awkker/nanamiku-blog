@@ -53,8 +53,10 @@ export const siteCopy = {
     },
   },
   home: {
+    // DIY 入口：首页 SEO 标题和描述。
     metaTitle: 'nanamiku blog',
     metaDescription: 'nanamiku blog 开屏页',
+    // 首页中央主视觉文案。
     heroTitle: '创作入口',
     heroSubtitle: '把写作、作品与公开资料收拢到同一站点。',
     // DIY 入口：首页轮播背景图。可按需增删顺序，建议使用 `public/` 下的静态路径。
@@ -64,6 +66,8 @@ export const siteCopy = {
       '/picture/fengmian/3.webp',
     ],
     dockItems: [
+      // 首页底部 Dock 主导航。
+      // `auth` 字段用于控制是否只在登录前/登录后显示。
       { name: '访客', href: '/about', icon: 'person' },
       { name: '博客', href: '/blog', icon: 'book' },
       { name: '说说', href: '/moments', icon: 'moments' },
@@ -240,14 +244,14 @@ export const siteCopy = {
   },
   aboutPage: {
     metaTitle: '关于我 | Miku Blog',
-    metaDescription: 'NanaMiku Blog 的作者介绍与创作地图模板',
+    metaDescription: 'NanaMiku Blog 的作者介绍模板',
     heroBadge: 'ABOUT CREATOR',
     heroTitle: '我是 Your Name',
-    heroDescription: '这里展示一位内容创作者的公开资料模板。你可以把简介、方向、项目与联系入口替换成自己的版本。',
+    heroDescription: '这里展示一位内容创作者的公开资料模板。你可以把简介、方向和公开资料替换成自己的版本。',
     identityTags: ['Astro', 'Vue Islands', 'Go', 'Tailwind', 'Nano Stores'],
     heroActions: [
       { href: '/blog#latest-posts', label: '看精选文章' },
-      { href: '#projects', label: '看主推项目' },
+      { href: '#github', label: '看 GitHub 动态' },
       { href: '', label: '联系我' },
     ],
     stats: {
@@ -264,147 +268,7 @@ export const siteCopy = {
       nowTitle: 'NOW / 近况',
       quote: '把每次写作、发布与配置，都整理成下一次还能继续复用的结构。',
     },
-    nowItems: [
-      '整理开源前默认值与示例值',
-      '补充 About 页的可维护资料结构',
-      '继续打磨 Astro + Vue Islands 的协作方式',
-    ],
-    introCards: [
-      {
-        title: '我在做什么',
-        description: '把站点默认值、运行时配置和页面骨架分清楚，让博客既能直接运行，也容易继续 DIY。',
-      },
-      {
-        title: '我为什么写作',
-        description: '写作是整理方法和输出观点的过程，目标是让每篇内容都能支持真实项目落地。',
-      },
-      {
-        title: '我关心的问题',
-        description: '信息层次是否清晰、默认值是否安全、组件是否可复用、系统是否能长期迭代。',
-      },
-    ],
-    timeline: {
-      title: '成长时间线',
-      subtitle: '从写作到全栈，再到创作者空间化。',
-      resultPrefix: '结果：',
-    },
-    milestones: [
-      {
-        year: '2024',
-        title: '开始系统写作',
-        summary: '从零散笔记转向结构化输出，建立个人技术写作节奏。',
-        result: '累计产出 20+ 篇可复用实践文章',
-      },
-      {
-        year: '2025',
-        title: '聚焦前端工程化',
-        summary: '主攻组件复用、样式规范与协作流程，减少重复开发。',
-        result: '沉淀多套前端页面模板与规范',
-      },
-      {
-        year: '2025',
-        title: '全栈化推进',
-        summary: '将前端体验与 Go 后端能力联动，关注性能与可维护性。',
-        result: '形成 Astro + Go 的完整博客技术路线',
-      },
-      {
-        year: '2026',
-        title: '创作者空间升级',
-        summary: '把博客从文章列表升级为有路径、有节奏的创作者入口。',
-        result: '上线 About / Blog 的新信息架构',
-      },
-    ],
-    capabilityGroups: [
-      {
-        title: '前端体验',
-        desc: '关注视觉层次、交互节奏与页面信息密度。',
-        stack: ['Astro', 'Vue 3', 'Tailwind CSS', '组件化设计'],
-      },
-      {
-        title: '工程化',
-        desc: '用规范和流程提升迭代效率与可维护性。',
-        stack: ['TypeScript', '模块化结构', '内容驱动页面', '性能优化'],
-      },
-      {
-        title: '后端协同',
-        desc: '强调接口稳定性、数据组织和全栈落地能力。',
-        stack: ['Go', 'Hertz', 'sqlc', 'PostgreSQL / Redis'],
-      },
-    ],
-    projectsSection: {
-      title: '主推项目',
-      subtitle: '我最希望访客优先进入的 3 条路径。',
-      cta: '查看详情',
-    },
-    featuredProjects: [
-      {
-        name: 'Starter Site Kit',
-        focus: 'Astro + Go 的亮色博客模板基座',
-        role: '负责默认配置、公开资料治理与页面骨架搭建',
-        metric: '让新仓库在未填后台配置时也能安全上线',
-        href: 'https://github.com/yourname/miku-blog-starter',
-      },
-      {
-        name: 'Glass UI Pack',
-        focus: '液态玻璃 UI 组件与页面模块实验集',
-        role: '负责组件 API 设计与亮色视觉统一策略',
-        metric: '形成可复用卡片、面板与信息块模式',
-        href: '/blog',
-      },
-      {
-        name: 'Content Workflow Notes',
-        focus: '围绕内容发布与公开资料维护的协作范式',
-        role: '负责状态拆分、默认回退和设置中心接入策略',
-        metric: '减少模板二次 DIY 时的重复改动成本',
-        href: '/blog',
-      },
-    ],
-    writingMapSection: {
-      title: '写作地图',
-      subtitle: '如果你是第一次来，可以这样阅读。',
-      pathPrefix: 'PATH',
-      cta: '进入',
-    },
-    writingMap: [
-      {
-        title: '入门先看',
-        desc: '先从精选文章了解我最核心的技术观点与实现方式。',
-        href: '/blog#latest-posts',
-      },
-      {
-        title: '系列专栏',
-        desc: '按专题连续阅读，适合系统学习同一方向。',
-        href: '/blog#archive',
-      },
-      {
-        title: '最近更新',
-        desc: '快速查看我当前在推进的主线和近期输出。',
-        href: '/blog#recent-updates',
-      },
-    ],
-    monthlyGoalsTitle: '本月目标',
-    monthlyGoals: ['补齐公开资料配置', '完善项目展示卡片', '检查移动端阅读体验'],
-    listeningTitle: '正在听',
-    listeningNow: ['Lo-fi Focus Mix', 'Ambient Writing Session', 'Late Night City Pop'],
-    signature: {
-      title: '固定签名',
-      description: '技术不是为了堆砌概念，而是为了让内容组织更清晰、让协作与维护更顺畅。',
-      footer: '愿每次更新都让这个模板更接近可长期维护的状态。',
-    },
-    contactSection: {
-      title: '如果你也在做类似方向，欢迎交流',
-      subtitle: '可以聊前端体验、工程化方案、站点搭建与公开资料治理。',
-      emailButton: '发邮件',
-      emailHref: '',
-      githubButton: 'GitHub',
-    },
     githubUsername: '',
-    socialLinks: [
-      { label: '作品集', href: 'https://example.com/portfolio' },
-      { label: '联系页', href: 'https://example.com/contact' },
-      { label: 'RSS', href: 'https://example.com/rss' },
-    ],
-    backToTopAria: '返回顶部',
   },
   notFoundPage: {
     metaTitle: '404 | Miku Blog',
@@ -616,6 +480,7 @@ export const siteCopy = {
       views: '访问',
     },
     musicPlayer: {
+      // 首页音乐播放器按钮和状态文案。
       prevAria: '上一首',
       nextAria: '下一首',
       pauseAria: '暂停',
@@ -628,6 +493,7 @@ export const siteCopy = {
       noLyrics: '暂无歌词',
     },
     heroShuffleBtn: {
+      // 首页换图按钮文案。
       label: '换图',
       titlePrefix: '切换封面',
     },
@@ -646,6 +512,7 @@ export const siteCopy = {
       visitAriaPrefix: '访问友链 ',
     },
     heroParallax: {
+      // 首页背景图 alt 前缀。
       coverAltPrefix: '封面 ',
     },
     richContentWithGif: {

@@ -21,10 +21,14 @@ import {
 import HeroTitle from './HeroTitle.vue'
 import TypewriterSubtitle from './TypewriterSubtitle.vue'
 
+// `homeHeroSettings` 是首页主视觉文案的统一状态。
+// 组件本身不直接请求接口，而是只消费 store，保持模板层尽量简单。
 const settings = useStore(homeHeroSettings)
 
 onMounted(() => {
+  // 首页进入时先用本地缓存秒开，避免标题/副标题闪动。
   primeHomeHeroSettingsFromCache()
+  // 然后再异步请求后台最新配置，把缓存值校正成服务端版本。
   void hydrateHomeHeroSettings()
 })
 </script>

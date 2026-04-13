@@ -9,6 +9,8 @@ import {
   type HomeAssetsSettingsPayload,
 } from '../lib/home-assets'
 
+// 首页背景资源配置 store。
+// 当前只存 `heroImages`，但结构独立出来是为了以后继续扩展首页素材项。
 const STORAGE_KEY = 'miku_home_assets_settings'
 
 function readCachedHomeAssetsSettings(): HomeAssetsSettings | null {
@@ -70,6 +72,7 @@ export async function hydrateHomeAssetsSettings(force = false): Promise<HomeAsse
   hydrationPromise = api
     .get<HomeAssetsSettingsPayload | undefined>('/site-settings/home-assets')
     .then((data) => {
+      // 这里的 normalize 会顺便做图片链接合法化和去重。
       const normalized = normalizeHomeAssetsSettings(data)
       homeAssetsSettings.set(normalized)
       writeCachedHomeAssetsSettings(normalized)
@@ -77,6 +80,7 @@ export async function hydrateHomeAssetsSettings(force = false): Promise<HomeAsse
       return normalized
     })
     .catch(() => {
+      // 背景资源拉取失败时，直接保留默认图或缓存图即可。
       const fallback = homeAssetsSettings.get()
       homeAssetsSettings.set(fallback)
       return fallback
