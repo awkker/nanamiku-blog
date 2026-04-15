@@ -113,6 +113,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { siteCopy } from '../../content/copy'
 import { getAuthorAvatarFallbackChain } from '../../lib/author-profile'
+import { api, type PagedData } from '../../lib/api'
 import {
   authorProfileSettings,
   hydrateAuthorProfileSettings,
@@ -141,9 +142,10 @@ const authorStore = useStore(authorProfileSettings)
 const integrationsStore = useStore(siteIntegrationsSettings)
 const avatarReady = ref(false)
 const avatarFallbackIndex = ref(0)
+const runtimePostCount = ref(Number(props.postCount || 0))
 
 const settings = computed(() => authorStore.value)
-const postCount = computed(() => props.postCount)
+const postCount = computed(() => runtimePostCount.value)
 const heroTitle = computed(() => settings.value.displayName ? `我是 ${settings.value.displayName}` : copy.heroTitle)
 const aboutDescription = computed(() => settings.value.aboutDescription || copy.heroDescription)
 const identityTags = computed(() => settings.value.skills.length > 0 ? settings.value.skills : copy.identityTags)
@@ -192,10 +194,20 @@ function handleAvatarError() {
   avatarReady.value = true
 }
 
+async function hydratePostCount() {
+  try {
+    const data = await api.get<PagedData<{ id: string }>>('/posts?page=1&size=1')
+    runtimePostCount.value = Number(data.total || data.items?.length || 0)
+  } catch {
+    runtimePostCount.value = Number(props.postCount || 0)
+  }
+}
+
 onMounted(() => {
   void Promise.all([
     hydrateAuthorProfileSettings(),
     hydrateSiteIntegrationsSettings(),
+    hydratePostCount(),
   ])
 })
 </script>

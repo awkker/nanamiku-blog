@@ -240,6 +240,74 @@ const commentCount = ref(Number(props.initialPost?.comment_count || 0))
 
 const renderedContent = computed(() => markdownHtml.value)
 
+function resolveAbsoluteURL(pathOrURL?: string): string {
+  if (!pathOrURL || typeof window === 'undefined') {
+    return ''
+  }
+
+  try {
+    return new URL(pathOrURL, window.location.origin).toString()
+  } catch {
+    return pathOrURL
+  }
+}
+
+function updateMetaNodes(selector: string, content: string, options: { original?: string; usesDefault?: boolean } = {}) {
+  document.querySelectorAll<HTMLElement>(selector).forEach((node) => {
+    node.setAttribute('content', content)
+
+    if (typeof options.original === 'string') {
+      node.setAttribute('data-site-original', options.original)
+    }
+
+    if (typeof options.usesDefault === 'boolean') {
+      node.setAttribute('data-site-uses-default', options.usesDefault ? 'true' : 'false')
+    }
+  })
+}
+
+function syncRuntimeHead(nextPost: PostDetail) {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return
+  }
+
+  const pageTitle = `${nextPost.title} | ${siteCopy.seo.siteTitle}`
+  const pageDescription = nextPost.excerpt || siteCopy.seo.defaultDescription
+  const pageURL = window.location.href
+  const socialImageURL = resolveAbsoluteURL(nextPost.hero_image_url || siteCopy.seo.defaultSocialImage)
+
+  document.title = pageTitle
+
+  document.querySelectorAll<HTMLElement>('title[data-site-original]').forEach((node) => {
+    node.textContent = pageTitle
+    node.setAttribute('data-site-original', pageTitle)
+  })
+
+  updateMetaNodes('[data-site-title-meta]', pageTitle, { original: pageTitle })
+  updateMetaNodes('[data-site-description-meta]', pageDescription, {
+    original: pageDescription,
+    usesDefault: false,
+  })
+
+  if (socialImageURL) {
+    updateMetaNodes('[data-site-image-meta]', socialImageURL, {
+      original: socialImageURL,
+      usesDefault: false,
+    })
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-site-og-url], [data-site-twitter-url]').forEach((node) => {
+    node.setAttribute('content', pageURL)
+  })
+
+  document.querySelectorAll<HTMLLinkElement>('[data-site-canonical]').forEach((node) => {
+    node.setAttribute('href', pageURL)
+  })
+
+  const ogType = document.querySelector<HTMLElement>('meta[property="og:type"]')
+  ogType?.setAttribute('content', 'article')
+}
+
 function formatDate(iso?: string): string {
   if (!iso) return '--'
   try {
@@ -281,6 +349,7 @@ async function loadRelatedPosts(currentSlug: string) {
 async function applyPostState(nextPost: PostDetail) {
   post.value = nextPost
   commentCount.value = Number(nextPost.comment_count || 0)
+  syncRuntimeHead(nextPost)
 
   if (!markdownHtml.value) {
     const rendered = await renderPostMarkdown(nextPost.content_markdown || '')

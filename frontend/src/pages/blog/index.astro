@@ -2,12 +2,7 @@
 import BaseHead from '../../components/base/BaseHead.astro'
 import BlogTopNav from '../../components/blog/BlogTopNav.astro'
 import SiteFooter from '../../components/base/SiteFooter.vue'
-import LiquidGlassCard from '../../components/ui/LiquidGlassCard.vue'
-import LatestMoments from '../../components/moments/LatestMoments.vue'
-import BlogFeed from '../../components/blog/BlogFeed.vue'
-import BlogHeroSection from '../../components/blog/BlogHeroSection.vue'
-import BlogAuthorSidebar from '../../components/blog/BlogAuthorSidebar.vue'
-import SiteTrend from '../../components/blog/SiteTrend.vue'
+import BlogRouteView from '../../components/blog/BlogRouteView.vue'
 import { siteCopy } from '../../content/copy'
 
 const copy = siteCopy.blogIndex
@@ -20,44 +15,10 @@ const copy = siteCopy.blogIndex
   </head>
   <body class="bg-slate-100 text-slate-800">
     <div class="relative min-h-screen pt-14">
-      <div class="blog-index-background pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(57,197,187,0.22),transparent_46%),radial-gradient(circle_at_85%_18%,rgba(192,132,252,0.16),transparent_36%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]" />
       <div id="scroll-progress" class="fixed left-0 top-14 z-[60] h-0.5 w-full bg-gradient-to-r from-[#c084fc] via-miku to-[#c084fc]" />
       <BlogTopNav currentPath={Astro.url.pathname} />
 
-      <BlogHeroSection client:load />
-
-      <main id="content-start" class="mx-auto mt-6 grid w-full max-w-[1320px] grid-cols-1 gap-8 px-4 pb-20 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section id="archive" class="scroll-mt-24">
-          <div id="latest-posts" class="scroll-mt-24" />
-          <BlogFeed client:load />
-        </section>
-
-        <aside class="space-y-6">
-          <BlogAuthorSidebar client:load />
-
-          <div class="glass-layer rounded-2xl p-4">
-            <h3 class="text-sm font-semibold text-slate-900">{copy.playlistTitle}</h3>
-            <ul class="mt-3 space-y-2 text-xs text-slate-600">
-              {
-                copy.playlist.map((song) => (
-                  <li class="rounded-lg border border-white/60 bg-white/66 px-3 py-2">{song}</li>
-                ))
-              }
-            </ul>
-          </div>
-
-
-          <div class="relative z-0 mb-8 overflow-hidden rounded-2xl border border-white/35 bg-white/20 p-4 shadow-md backdrop-blur-xl">
-            <SiteTrend client:load />
-          </div>
-
-          <div class="relative z-0">
-            <LiquidGlassCard client:load padding="20px">
-              <LatestMoments client:load />
-            </LiquidGlassCard>
-          </div>
-        </aside>
-      </main>
+      <BlogRouteView client:load />
     </div>
 
     <SiteFooter client:load />
@@ -87,11 +48,18 @@ const copy = siteCopy.blogIndex
   </body>
 </html>
 
-<style>
+<style is:global>
   html.theme-night .blog-index-background {
     background:
       radial-gradient(circle at top, rgba(57, 197, 187, 0.12), transparent 46%),
       radial-gradient(circle at 85% 18%, rgba(192, 132, 252, 0.1), transparent 38%),
+      linear-gradient(180deg, #0b1220 0%, #0a1020 45%, #060b16 100%) !important;
+  }
+
+  html.theme-night .blog-post-view-background {
+    background:
+      radial-gradient(circle at top, rgba(57, 197, 187, 0.12), transparent 48%),
+      radial-gradient(circle at 85% 18%, rgba(192, 132, 252, 0.1), transparent 40%),
       linear-gradient(180deg, #0b1220 0%, #0a1020 45%, #060b16 100%) !important;
   }
 
