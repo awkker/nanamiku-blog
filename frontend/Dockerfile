@@ -2,6 +2,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+ARG SITE_URL
+ENV SITE_URL=${SITE_URL}
+
 COPY package*.json ./
 RUN npm ci
 

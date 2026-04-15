@@ -3,6 +3,7 @@
 skills-lock.json
 .env
 .env.*
+!.env.example
 *.local
 backend/.env
 frontend/.env

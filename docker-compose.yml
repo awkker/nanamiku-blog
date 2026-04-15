@@ -75,6 +75,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        SITE_URL: ${SITE_URL:-http://127.0.0.1:${FRONTEND_PORT:-4321}}
     container_name: miku-blog-frontend
     restart: unless-stopped
     depends_on:
